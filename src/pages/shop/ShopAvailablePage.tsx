@@ -7,6 +7,7 @@ import { listLimitedProducts } from '../../lib/productService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { ImageLightbox } from '../../components/ui/ImageLightbox'
 import { Modal } from '../../components/ui/Modal'
 import type { LimitedProduct, OrderLineItem, ShopName } from '../../types/models'
 
@@ -20,6 +21,7 @@ export function ShopAvailablePage() {
   const [cart, setCart] = useState<Record<string, Line>>({})
   const [previewOpen, setPreviewOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [imageView, setImageView] = useState<{ url: string; title: string } | null>(null)
 
   const refresh = useCallback(async () => {
     if (!db) return
@@ -53,6 +55,10 @@ export function ShopAvailablePage() {
       next[product.id] = { product, quantity: clamped }
       return next
     })
+  }
+
+  function openImage(product: LimitedProduct) {
+    setImageView({ url: product.photoUrl, title: `${product.name} (${product.size})` })
   }
 
   async function submit() {
@@ -122,12 +128,19 @@ export function ShopAvailablePage() {
               <Card key={p.id} className="overflow-hidden p-0">
                 <div className="aspect-[4/3] w-full bg-slate-100">
                   {p.photoUrl ? (
-                    <img
-                      src={p.photoUrl}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
+                    <button
+                      type="button"
+                      className="h-full w-full"
+                      onClick={() => openImage(p)}
+                      onTouchEnd={() => openImage(p)}
+                    >
+                      <img
+                        src={p.photoUrl}
+                        alt={p.name}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    </button>
                   ) : (
                     <div className="flex h-full items-center justify-center text-xs text-slate-500">
                       No photo
@@ -157,9 +170,22 @@ export function ShopAvailablePage() {
                       >
                         <Minus className="h-4 w-4" />
                       </button>
-                      <span className="min-w-[2.5rem] text-center text-sm font-semibold tabular-nums">
-                        {qty}
-                      </span>
+                      <input
+                        className="w-20 rounded-lg border border-transparent bg-transparent px-2 py-1 text-center text-sm font-semibold tabular-nums outline-none focus:border-slate-300 focus:bg-white"
+                        inputMode="numeric"
+                        value={qty === 0 ? '' : String(qty)}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const raw = e.target.value.trim()
+                          if (raw === '') {
+                            setQty(p, 0)
+                            return
+                          }
+                          const n = Number(raw)
+                          if (!Number.isFinite(n)) return
+                          setQty(p, Math.max(0, Math.floor(n)))
+                        }}
+                      />
                       <button
                         type="button"
                         className="rounded-lg p-2 text-slate-700 hover:bg-white disabled:opacity-40"
@@ -239,6 +265,12 @@ export function ShopAvailablePage() {
           ))}
         </div>
       </Modal>
+      <ImageLightbox
+        open={Boolean(imageView)}
+        imageUrl={imageView?.url ?? ''}
+        title={imageView?.title}
+        onClose={() => setImageView(null)}
+      />
 
       {lines.length > 0 ? <div className="h-24 lg:h-0" /> : null}
     </div>

@@ -1,4 +1,4 @@
-import { Plus, Search, Trash2 } from 'lucide-react'
+import { Minus, Plus, Search, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Button } from '../../components/ui/Button'
@@ -108,6 +108,18 @@ export function ShopNewOrderPage() {
 
   function updateLine(id: string, patch: Partial<DraftLine>) {
     setLines((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)))
+  }
+
+  function stepLineQty(id: string, delta: number) {
+    setLines((prev) =>
+      prev.map((line) => {
+        if (line.id !== id) return line
+        const curr = Number(line.quantity)
+        const safe = Number.isFinite(curr) ? curr : 0
+        const next = Math.max(0, Math.floor(safe + delta))
+        return { ...line, quantity: next === 0 ? '' : String(next) }
+      }),
+    )
   }
 
   const validLines = useMemo(() => {
@@ -288,12 +300,31 @@ export function ShopNewOrderPage() {
                       </div>
 
                       <div className="col-span-6 md:col-span-2">
-                        <Input
-                          inputMode="numeric"
-                          value={line.quantity}
-                          placeholder="0"
-                          onChange={(e) => updateLine(line.id, { quantity: e.target.value })}
-                        />
+                        <div className="flex items-center rounded-lg border border-slate-200 bg-white px-1 py-0.5">
+                          <button
+                            type="button"
+                            className="rounded-md p-1 text-slate-700 hover:bg-slate-100"
+                            onClick={() => stepLineQty(line.id, -1)}
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </button>
+                          <Input
+                            className="!border-0 !shadow-none !ring-0 text-center"
+                            inputMode="numeric"
+                            value={line.quantity}
+                            placeholder="0"
+                            onChange={(e) => updateLine(line.id, { quantity: e.target.value })}
+                          />
+                          <button
+                            type="button"
+                            className="rounded-md p-1 text-slate-700 hover:bg-slate-100"
+                            onClick={() => stepLineQty(line.id, 1)}
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
 
                       <div className="col-span-6 md:col-span-2">

@@ -14,7 +14,13 @@ import {
   writeBatch,
   type Firestore,
 } from 'firebase/firestore'
-import { getDownloadURL, ref, uploadBytes, type FirebaseStorage } from 'firebase/storage'
+import {
+  deleteObject,
+  getDownloadURL,
+  ref,
+  uploadBytes,
+  type FirebaseStorage,
+} from 'firebase/storage'
 import type { LimitedProduct, Unit, UnlimitedProduct } from '../types/models'
 
 const unlimitedCol = 'unlimitedProducts'
@@ -211,11 +217,64 @@ export async function uploadLimitedProductPhoto(
   file: File,
   productId: string,
 ) {
+  const compressed = await compressImageToMaxSize(file, 755 * 1024)
   const safe = file.name.replace(/[^\w.-]+/g, '_')
-  const path = `limited-products/${productId}/${Date.now()}_${safe}`
+  const path = `limited-products/${productId}/${Date.now()}_${safe}.jpg`
   const r = ref(storage, path)
-  await uploadBytes(r, file, { contentType: file.type || 'image/jpeg' })
+  await uploadBytes(r, compressed, { contentType: 'image/jpeg' })
   return getDownloadURL(r)
+}
+
+async function blobFromCanvas(
+  canvas: HTMLCanvasElement,
+  quality: number,
+): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob((b) => resolve(b), 'image/jpeg', quality)
+  })
+}
+
+async function compressImageToMaxSize(file: File, maxBytes: number): Promise<File> {
+  if (!file.type.startsWith('image/')) return file
+
+  const imageUrl = URL.createObjectURL(file)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image()
+      el.onload = () => resolve(el)
+      el.onerror = () => reject(new Error('Could not read image.'))
+      el.src = imageUrl
+    })
+
+    const maxDim = 2200
+    let scale = Math.min(1, maxDim / Math.max(img.width, img.height))
+    if (!Number.isFinite(scale) || scale <= 0) scale = 1
+
+    for (let attempt = 0; attempt < 7; attempt += 1) {
+      const width = Math.max(1, Math.floor(img.width * scale))
+      const height = Math.max(1, Math.floor(img.height * scale))
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Could not initialize image compressor.')
+      ctx.drawImage(img, 0, 0, width, height)
+
+      for (const quality of [0.9, 0.82, 0.74, 0.66, 0.58, 0.5]) {
+        const blob = await blobFromCanvas(canvas, quality)
+        if (!blob) continue
+        if (blob.size <= maxBytes) {
+          const name = file.name.replace(/\.[a-zA-Z0-9]+$/, '') || 'product'
+          return new File([blob], `${name}.jpg`, { type: 'image/jpeg' })
+        }
+      }
+      scale *= 0.82
+    }
+  } finally {
+    URL.revokeObjectURL(imageUrl)
+  }
+
+  return file
 }
 
 export async function createLimitedProduct(
@@ -264,4 +323,19 @@ export async function updateLimitedProduct(
     ...input,
     updatedAt: serverTimestamp(),
   })
+}
+
+export async function deleteLimitedProductWithPhoto(
+  firestore: Firestore,
+  storage: FirebaseStorage,
+  input: { id: string; photoUrl?: string },
+) {
+  if (input.photoUrl) {
+    try {
+      await deleteObject(ref(storage, input.photoUrl))
+    } catch {
+      // Continue deleting doc even if photo is already missing.
+    }
+  }
+  await deleteDoc(doc(firestore, limitedCol, input.id))
 }

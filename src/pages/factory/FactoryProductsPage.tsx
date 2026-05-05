@@ -3,6 +3,7 @@ import { db, storage } from '../../lib/firebase'
 import {
   createLimitedProductWithPhoto,
   createUnlimitedProduct,
+  deleteLimitedProductWithPhoto,
   deleteUnlimitedProduct,
   listAllUnlimitedForFactory,
   listLimitedProducts,
@@ -14,6 +15,7 @@ import {
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { ImageLightbox } from '../../components/ui/ImageLightbox'
 import { Input } from '../../components/ui/Input'
 import type { LimitedProduct, Unit, UnlimitedProduct } from '../../types/models'
 import * as XLSX from 'xlsx'
@@ -40,6 +42,7 @@ export function FactoryProductsPage() {
   const [cSize, setCSize] = useState('')
   const [cUnit, setCUnit] = useState<'box' | 'bag' | 'pcs'>('pcs')
   const [catalogFile, setCatalogFile] = useState<File | null>(null)
+  const [imageView, setImageView] = useState<{ url: string; title: string } | null>(null)
 
   const refresh = useCallback(async () => {
     if (!db) return
@@ -210,6 +213,10 @@ export function FactoryProductsPage() {
     XLSX.writeFile(workbook, 'standard-catalogue-template.xlsx')
   }
 
+  function openImage(product: LimitedProduct) {
+    setImageView({ url: product.photoUrl, title: `${product.name} (${product.size})` })
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -304,7 +311,19 @@ export function FactoryProductsPage() {
                   <Card key={p.id} className="overflow-hidden p-0">
                     <div className="aspect-[4/3] bg-slate-100">
                       {p.photoUrl ? (
-                        <img src={p.photoUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+                        <button
+                          type="button"
+                          className="h-full w-full"
+                          onClick={() => openImage(p)}
+                          onTouchEnd={() => openImage(p)}
+                        >
+                          <img
+                            src={p.photoUrl}
+                            alt={p.name}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        </button>
                       ) : null}
                     </div>
                     <div className="space-y-2 p-4">
@@ -496,6 +515,32 @@ export function FactoryProductsPage() {
                 </div>
               </div>
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="danger"
+                  disabled={busy}
+                  onClick={async () => {
+                    if (!db || !storage || !edit) return
+                    if (!confirm(`Delete limited product “${edit.name} (${edit.size})”?`)) return
+                    setBusy(true)
+                    setError(null)
+                    try {
+                      await deleteLimitedProductWithPhoto(db, storage, {
+                        id: edit.id,
+                        photoUrl: edit.photoUrl,
+                      })
+                      setEdit(null)
+                      setLFile(null)
+                      await refresh()
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Could not delete product.')
+                    } finally {
+                      setBusy(false)
+                    }
+                  }}
+                >
+                  Delete product
+                </Button>
                 <Button type="button" variant="secondary" disabled={busy} onClick={() => setEdit(null)}>
                   Cancel
                 </Button>
@@ -507,6 +552,12 @@ export function FactoryProductsPage() {
           </Card>
         </div>
       ) : null}
+      <ImageLightbox
+        open={Boolean(imageView)}
+        imageUrl={imageView?.url ?? ''}
+        title={imageView?.title}
+        onClose={() => setImageView(null)}
+      />
     </div>
   )
 }
