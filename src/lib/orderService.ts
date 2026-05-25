@@ -2,7 +2,9 @@ import {
   Timestamp,
   addDoc,
   collection,
+  deleteDoc,
   doc,
+  getDoc,
   getDocs,
   limit,
   orderBy,
@@ -11,6 +13,7 @@ import {
   serverTimestamp,
   updateDoc,
   where,
+  type DocumentSnapshot,
   type Firestore,
 } from 'firebase/firestore'
 import type { Order, OrderKind, OrderLineItem, OrderMilestones, OrderStatus } from '../types/models'
@@ -42,16 +45,19 @@ export async function createOrder(
     const orderRef = doc(collection(firestore, ordersCol))
 
     await runTransaction(firestore, async (tx) => {
+      // Phase 1: all reads
+      const snapshots = new Map<string, { snap: DocumentSnapshot; qty: number; label: string }>()
       for (const [productId, { qty, label }] of qtyByProduct) {
         const ref = doc(firestore, limitedCol, productId)
-        const snap = await tx.get(ref)
+        snapshots.set(productId, { snap: await tx.get(ref), qty, label })
+      }
+
+      // Phase 2: validate then all writes
+      for (const { snap, qty, label } of snapshots.values()) {
         if (!snap.exists()) throw new Error(`Product missing: ${label}`)
         const stock = Number(snap.data()?.stock ?? 0)
-        if (stock < qty) throw new Error(`Insufficient stock for “${label}”.`)
-        tx.update(ref, {
-          stock: stock - qty,
-          updatedAt: serverTimestamp(),
-        })
+        if (stock < qty) throw new Error(`Insufficient stock for "${label}".`)
+        tx.update(snap.ref, { stock: stock - qty, updatedAt: serverTimestamp() })
       }
 
       tx.set(orderRef, {
@@ -179,6 +185,39 @@ export async function listAllOrdersForFactory(firestore: Firestore): Promise<Ord
   const qy = query(collection(firestore, ordersCol), orderBy('createdAt', 'desc'), limit(300))
   const snap = await getDocs(qy)
   return snap.docs.map((docu) => mapOrder(docu.id, docu.data() as Record<string, unknown>))
+}
+
+export async function deleteOrder(firestore: Firestore, orderId: string) {
+  const orderRef = doc(firestore, ordersCol, orderId)
+  const orderSnap = await getDoc(orderRef)
+  if (!orderSnap.exists()) throw new Error('Order not found.')
+
+  const order = mapOrder(orderId, orderSnap.data() as Record<string, unknown>)
+
+  // Unlimited orders have no stock to restore — simple delete
+  if (order.orderKind !== 'limited' || order.items.length === 0) {
+    await deleteDoc(orderRef)
+    return
+  }
+
+  // Limited orders: restore each product's stock atomically then delete
+  await runTransaction(firestore, async (tx) => {
+    // Phase 1: all reads
+    const reads: Array<{ snap: DocumentSnapshot; quantity: number }> = []
+    for (const item of order.items) {
+      const productRef = doc(firestore, limitedCol, item.productId)
+      reads.push({ snap: await tx.get(productRef), quantity: item.quantity })
+    }
+
+    // Phase 2: all writes
+    for (const { snap, quantity } of reads) {
+      if (snap.exists()) {
+        const currentStock = Number(snap.data()?.stock ?? 0)
+        tx.update(snap.ref, { stock: currentStock + quantity, updatedAt: serverTimestamp() })
+      }
+    }
+    tx.delete(orderRef)
+  })
 }
 
 export async function updateOrderMilestones(

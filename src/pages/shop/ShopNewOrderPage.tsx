@@ -20,6 +20,7 @@ export function ShopNewOrderPage() {
   const [error, setError] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const [qtys, setQtys] = useState<Record<string, number>>({})
 
   const refresh = useCallback(async () => {
@@ -127,6 +128,7 @@ export function ShopNewOrderPage() {
         items: validLines,
       })
       setQtys({})
+      setSubmitted(true)
       setPreviewOpen(false)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not submit order.')
@@ -150,6 +152,24 @@ export function ShopNewOrderPage() {
         <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
           {error}
         </p>
+      ) : null}
+
+      {submitted ? (
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 w-max max-w-[calc(100vw-2rem)]">
+          <div className="flex items-center gap-3 rounded-xl bg-emerald-600 px-5 py-3 shadow-lg shadow-emerald-900/20">
+            <p className="text-sm font-semibold text-white">
+              Order submitted! Track it in Order history.
+            </p>
+            <button
+              type="button"
+              className="shrink-0 text-emerald-200 hover:text-white"
+              onClick={() => setSubmitted(false)}
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">

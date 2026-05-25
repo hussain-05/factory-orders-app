@@ -1,13 +1,14 @@
-import { ChevronDown, ChevronRight, Printer } from 'lucide-react'
+import { ChevronDown, ChevronRight, Printer, Trash2 } from 'lucide-react'
 import { FirebaseError } from 'firebase/app'
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
-import { listOrdersForShop } from '../../lib/orderService'
+import { deleteOrder, listOrdersForShop } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { Modal } from '../../components/ui/Modal'
 import type { Order } from '../../types/models'
 import { formatDate, formatDateTime, fulfillmentSummary } from '../../utils/format'
 
@@ -18,6 +19,8 @@ export function ShopOrderHistoryPage() {
   const [error, setError] = useState<string | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
 
   const refresh = useCallback(async () => {
     if (!db || !user) return
@@ -149,6 +152,16 @@ export function ShopOrderHistoryPage() {
                         <Printer className="h-4 w-4" />
                         {pdfBusyId === o.id ? 'Preparing PDF…' : 'Print / PDF'}
                       </Button>
+
+                      {o.status === 'pending' && (
+                        <Button
+                          variant="danger"
+                          onClick={() => setDeleteTarget(o)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete order
+                        </Button>
+                      )}
                     </div>
 
                     <div>
@@ -171,6 +184,53 @@ export function ShopOrderHistoryPage() {
           })}
         </div>
       )}
+      <Modal
+        open={Boolean(deleteTarget)}
+        title="Delete order?"
+        onClose={() => { if (!deleteBusy) setDeleteTarget(null) }}
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              variant="secondary"
+              disabled={deleteBusy}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Keep order
+            </Button>
+            <Button
+              variant="danger"
+              disabled={deleteBusy}
+              onClick={async () => {
+                if (!db || !deleteTarget) return
+                setDeleteBusy(true)
+                setError(null)
+                try {
+                  await deleteOrder(db, deleteTarget.id)
+                  setDeleteTarget(null)
+                  if (openId === deleteTarget.id) setOpenId(null)
+                  await refresh()
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : 'Could not delete order.')
+                  setDeleteTarget(null)
+                } finally {
+                  setDeleteBusy(false)
+                }
+              }}
+            >
+              {deleteBusy ? 'Deleting…' : 'Yes, delete'}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm text-slate-700">
+          This will permanently remove the order placed on{' '}
+          <span className="font-semibold">
+            {formatDateTime(deleteTarget?.createdAt)}
+          </span>{' '}
+          with {deleteTarget?.items.length} line{deleteTarget?.items.length === 1 ? '' : 's'}.
+        </p>
+
+      </Modal>
     </div>
   )
 }

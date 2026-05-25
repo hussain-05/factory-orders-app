@@ -21,6 +21,7 @@ export function ShopAvailablePage() {
   const [cart, setCart] = useState<Record<string, Line>>({})
   const [previewOpen, setPreviewOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const [imageView, setImageView] = useState<{ url: string; title: string } | null>(null)
 
   const refresh = useCallback(async () => {
@@ -82,6 +83,7 @@ export function ShopAvailablePage() {
         items: payload,
       })
       setCart({})
+      setSubmitted(true)
       setPreviewOpen(false)
       await refresh()
     } catch (e) {
@@ -112,6 +114,24 @@ export function ShopAvailablePage() {
         <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
           {error}
         </p>
+      ) : null}
+
+      {submitted ? (
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 w-max max-w-[calc(100vw-2rem)]">
+          <div className="flex items-center gap-3 rounded-xl bg-emerald-600 px-5 py-3 shadow-lg shadow-emerald-900/20">
+            <p className="text-sm font-semibold text-white">
+              Order submitted! Track it in Order history.
+            </p>
+            <button
+              type="button"
+              className="shrink-0 text-emerald-200 hover:text-white"
+              onClick={() => setSubmitted(false)}
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
       ) : null}
 
       {loading ? (
