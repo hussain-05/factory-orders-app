@@ -2,7 +2,7 @@ import { ChevronDown, ChevronRight, Printer } from 'lucide-react'
 import { FirebaseError } from 'firebase/app'
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { downloadOrderPdf } from '../../lib/downloadOrderPdf'
+import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
 import { listOrdersForShop } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
@@ -139,7 +139,7 @@ export function ShopOrderHistoryPage() {
                         onClick={async () => {
                           setPdfBusyId(o.id)
                           try {
-                            await downloadOrderPdf(o)
+                            await previewOrderPdf(o)
                           } finally {
                             setPdfBusyId(null)
                           }

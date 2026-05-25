@@ -19,7 +19,6 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 18, fontWeight: 700, marginBottom: 4 },
   meta: { fontSize: 9, color: '#475569' },
-  row: { flexDirection: 'row' },
   tableHeader: {
     flexDirection: 'row',
     borderBottomWidth: 1,
@@ -28,25 +27,26 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     fontSize: 9,
   },
-  cellName: { width: '52%' },
-  cellSize: { width: '12%' },
-  cellQty: { width: '12%', textAlign: 'right' },
-  cellRate: { width: '12%', textAlign: 'right' },
-  cellLine: { width: '12%', textAlign: 'right' },
+  cellName: { width: '60%' },
+  cellSize: { width: '20%' },
+  cellQty: { width: '10%', textAlign: 'right' },
+  cellCheck: { width: '10%', alignItems: 'center' },
   rowItem: {
     flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
     fontSize: 9,
   },
+  checkbox: {
+    width: 10,
+    height: 10,
+    borderWidth: 1,
+    borderColor: '#64748b',
+  },
   footer: { marginTop: 16, fontSize: 8, color: '#64748b' },
 })
-
-function money(n: number | undefined) {
-  if (n === undefined || Number.isNaN(n)) return '—'
-  return `₹${n.toFixed(2)}`
-}
 
 export function OrderPdfDocument({ order }: { order: Order }) {
   const created = order.createdAt ? format(order.createdAt, 'dd MMM yyyy, HH:mm') : '—'
@@ -56,12 +56,6 @@ export function OrderPdfDocument({ order }: { order: Order }) {
   const actual = order.actualDeliveryDate
     ? format(order.actualDeliveryDate, 'dd MMM yyyy')
     : '—'
-
-  const lines = order.items.map((it) => {
-    const rate = it.rate ?? 0
-    const line = rate ? rate * it.quantity : undefined
-    return { ...it, line }
-  })
 
   return (
     <Document>
@@ -85,22 +79,24 @@ export function OrderPdfDocument({ order }: { order: Order }) {
           <Text style={styles.cellName}>Item</Text>
           <Text style={styles.cellSize}>Size</Text>
           <Text style={styles.cellQty}>Qty</Text>
-          <Text style={styles.cellRate}>Rate</Text>
-          <Text style={styles.cellLine}>Line</Text>
+          <View style={styles.cellCheck}>
+            <Text>✓</Text>
+          </View>
         </View>
 
-        {lines.map((it, idx) => (
+        {order.items.map((it, idx) => (
           <View key={`${it.productId}-${idx}`} style={styles.rowItem} wrap={false}>
             <Text style={styles.cellName}>{it.name}</Text>
             <Text style={styles.cellSize}>{it.size ?? '—'}</Text>
             <Text style={styles.cellQty}>{String(it.quantity)}</Text>
-            <Text style={styles.cellRate}>{it.rate !== undefined ? money(it.rate) : '—'}</Text>
-            <Text style={styles.cellLine}>{it.line !== undefined ? money(it.line) : '—'}</Text>
+            <View style={styles.cellCheck}>
+              <View style={styles.checkbox} />
+            </View>
           </View>
         ))}
 
         <Text style={styles.footer}>
-          Generated from Seva Factory Orders. Totals are informational where rates are present.
+          Generated from Seva Factory Orders.
         </Text>
       </Page>
     </Document>

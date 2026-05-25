@@ -1,15 +1,13 @@
 import type { Order } from '../types/models'
 
-export async function downloadOrderPdf(order: Order) {
+export async function previewOrderPdf(order: Order) {
   const [{ pdf }, { OrderPdfDocument }] = await Promise.all([
     import('@react-pdf/renderer'),
     import('../pdf/OrderPdf'),
   ])
   const blob = await pdf(<OrderPdfDocument order={order} />).toBlob()
   const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `factory-order-${order.id}.pdf`
-  a.click()
-  URL.revokeObjectURL(url)
+  window.open(url, '_blank')
+  // Revoke after a delay to give the new tab time to load the blob
+  setTimeout(() => URL.revokeObjectURL(url), 10_000)
 }

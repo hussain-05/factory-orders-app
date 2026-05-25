@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight, Printer } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { downloadOrderPdf } from '../../lib/downloadOrderPdf'
+import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
 import { listAllOrdersForFactory } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
@@ -128,7 +128,7 @@ export function FactoryOrderHistoryPage() {
                         onClick={async () => {
                           setPdfBusyId(o.id)
                           try {
-                            await downloadOrderPdf(o)
+                            await previewOrderPdf(o)
                           } finally {
                             setPdfBusyId(null)
                           }
