@@ -274,12 +274,9 @@ export function ShopAvailablePage() {
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-slate-900">{l.product.name}</p>
                 <p className="text-xs text-slate-500">
-                  {l.product.size} · ₹{l.product.rate.toFixed(2)} × {l.quantity}
+                  {l.product.size} · qty {l.quantity}
                 </p>
               </div>
-              <p className="text-sm font-semibold tabular-nums text-slate-900">
-                ₹{(l.product.rate * l.quantity).toFixed(2)}
-              </p>
             </div>
           ))}
         </div>
