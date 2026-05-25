@@ -315,7 +315,6 @@ export function FactoryProductsPage() {
                           type="button"
                           className="h-full w-full"
                           onClick={() => openImage(p)}
-                          onTouchEnd={() => openImage(p)}
                         >
                           <img
                             src={p.photoUrl}
