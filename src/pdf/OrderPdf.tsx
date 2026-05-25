@@ -27,8 +27,9 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     fontSize: 9,
   },
-  cellName: { width: '60%' },
-  cellSize: { width: '20%' },
+  cellName: { width: '55%' },
+  cellSize: { width: '15%' },
+  cellUnit: { width: '10%' },
   cellQty: { width: '10%', textAlign: 'right' },
   cellCheck: { width: '10%', alignItems: 'center' },
   rowItem: {
@@ -78,6 +79,7 @@ export function OrderPdfDocument({ order }: { order: Order }) {
         <View style={styles.tableHeader}>
           <Text style={styles.cellName}>Item</Text>
           <Text style={styles.cellSize}>Size</Text>
+          <Text style={styles.cellUnit}>Unit</Text>
           <Text style={styles.cellQty}>Qty</Text>
           <View style={styles.cellCheck}>
             <Text>✓</Text>
@@ -88,6 +90,7 @@ export function OrderPdfDocument({ order }: { order: Order }) {
           <View key={`${it.productId}-${idx}`} style={styles.rowItem} wrap={false}>
             <Text style={styles.cellName}>{it.name}</Text>
             <Text style={styles.cellSize}>{it.size ?? '—'}</Text>
+            <Text style={styles.cellUnit}>{it.unit ?? '—'}</Text>
             <Text style={styles.cellQty}>{String(it.quantity)}</Text>
             <View style={styles.cellCheck}>
               <View style={styles.checkbox} />
