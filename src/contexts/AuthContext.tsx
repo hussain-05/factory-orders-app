@@ -35,6 +35,7 @@ type AuthContextValue = AuthState & {
     displayName: string
     role: UserRole
     shopName?: ShopName
+    whatsappNumber?: string
   }) => Promise<void>
   logout: () => Promise<void>
 }
@@ -92,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       displayName: string
       role: UserRole
       shopName?: ShopName
+      whatsappNumber?: string
     }) => {
       if (!auth || !db) throw new Error('Firebase is not configured.')
       setError(null)
@@ -115,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         displayName: input.displayName.trim(),
         role: input.role,
         shopName: input.shopName,
+        whatsappNumber: input.whatsappNumber,
       })
     },
     [],

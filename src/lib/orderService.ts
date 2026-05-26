@@ -1,6 +1,5 @@
 import {
   Timestamp,
-  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -20,6 +19,11 @@ import type { Order, OrderKind, OrderLineItem, OrderMilestones, OrderStatus } fr
 
 const ordersCol = 'orders'
 const limitedCol = 'limitedProducts'
+const counterRef = (firestore: Firestore) => doc(firestore, 'counters', 'orders')
+
+function nextOrderNumber(current: number): string {
+  return String(current + 1).padStart(6, '0')
+}
 
 export async function createOrder(
   firestore: Firestore,
@@ -29,9 +33,10 @@ export async function createOrder(
     shopUserId: string
     requestorName: string
     requestorEmail: string
+    shopWhatsappNumber?: string
     items: OrderLineItem[]
   },
-) {
+): Promise<{ orderNumber: string }> {
   if (input.items.length === 0) throw new Error('Add at least one line item.')
 
   if (input.orderKind === 'limited') {
@@ -43,21 +48,31 @@ export async function createOrder(
     }
 
     const orderRef = doc(collection(firestore, ordersCol))
+    let orderNumber = ''
 
     await runTransaction(firestore, async (tx) => {
-      // Phase 1: all reads
+      // Phase 1: all reads (counter + stock)
+      const counterSnap = await tx.get(counterRef(firestore))
       const snapshots = new Map<string, { snap: DocumentSnapshot; qty: number; label: string }>()
       for (const [productId, { qty, label }] of qtyByProduct) {
         const ref = doc(firestore, limitedCol, productId)
         snapshots.set(productId, { snap: await tx.get(ref), qty, label })
       }
 
-      // Phase 2: validate then all writes
+      // Phase 2: validate stock
       for (const { snap, qty, label } of snapshots.values()) {
         if (!snap.exists()) throw new Error(`Product missing: ${label}`)
         const stock = Number(snap.data()?.stock ?? 0)
         if (stock < qty) throw new Error(`Insufficient stock for "${label}".`)
-        tx.update(snap.ref, { stock: stock - qty, updatedAt: serverTimestamp() })
+      }
+
+      // Phase 3: all writes
+      const lastNum = counterSnap.exists() ? Number(counterSnap.data()?.lastOrderNumber ?? 0) : 0
+      orderNumber = nextOrderNumber(lastNum)
+      tx.set(counterRef(firestore), { lastOrderNumber: lastNum + 1 }, { merge: true })
+
+      for (const { snap, qty } of snapshots.values()) {
+        tx.update(snap.ref, { stock: Number(snap.data()?.stock ?? 0) - qty, updatedAt: serverTimestamp() })
       }
 
       tx.set(orderRef, {
@@ -66,6 +81,8 @@ export async function createOrder(
         shopUserId: input.shopUserId,
         requestorName: input.requestorName,
         requestorEmail: input.requestorEmail,
+        shopWhatsappNumber: input.shopWhatsappNumber ?? null,
+        orderNumber,
         items: input.items,
         status: 'pending',
         milestones: {},
@@ -75,23 +92,36 @@ export async function createOrder(
         updatedAt: serverTimestamp(),
       })
     })
-    return
+    return { orderNumber }
   }
 
-  await addDoc(collection(firestore, ordersCol), {
-    orderKind: input.orderKind,
-    shopName: input.shopName,
-    shopUserId: input.shopUserId,
-    requestorName: input.requestorName,
-    requestorEmail: input.requestorEmail,
-    items: input.items,
-    status: 'pending',
-    milestones: {},
-    expectedDeliveryDate: null,
-    actualDeliveryDate: null,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+  // Unlimited — use transaction for counter
+  let orderNumber = ''
+  const orderRef = doc(collection(firestore, ordersCol))
+
+  await runTransaction(firestore, async (tx) => {
+    const counterSnap = await tx.get(counterRef(firestore))
+    const lastNum = counterSnap.exists() ? Number(counterSnap.data()?.lastOrderNumber ?? 0) : 0
+    orderNumber = nextOrderNumber(lastNum)
+    tx.set(counterRef(firestore), { lastOrderNumber: lastNum + 1 }, { merge: true })
+    tx.set(orderRef, {
+      orderKind: input.orderKind,
+      shopName: input.shopName,
+      shopUserId: input.shopUserId,
+      requestorName: input.requestorName,
+      requestorEmail: input.requestorEmail,
+      shopWhatsappNumber: input.shopWhatsappNumber ?? null,
+      orderNumber,
+      items: input.items,
+      status: 'pending',
+      milestones: {},
+      expectedDeliveryDate: null,
+      actualDeliveryDate: null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
   })
+  return { orderNumber }
 }
 
 function mapOrder(id: string, d: Record<string, unknown>): Order {
@@ -148,6 +178,8 @@ function mapOrder(id: string, d: Record<string, unknown>): Order {
         : typeof d.completedAt === 'number'
           ? d.completedAt
           : null,
+    shopWhatsappNumber: typeof d.shopWhatsappNumber === 'string' ? d.shopWhatsappNumber : undefined,
+    orderNumber: typeof d.orderNumber === 'string' ? d.orderNumber : undefined,
   }
 }
 

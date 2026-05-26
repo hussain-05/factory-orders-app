@@ -226,6 +226,9 @@ export function ShopOrderHistoryPage() {
                             <p className="truncate font-semibold text-slate-900">
                               {o.orderKind === 'limited' ? 'Limited stock' : 'Standard catalogue'}
                             </p>
+                            {o.orderNumber && (
+                              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-mono font-semibold text-slate-600">#{o.orderNumber}</span>
+                            )}
                             <Badge tone={o.status === 'completed' ? 'success' : 'warning'}>
                               {o.status === 'completed' ? 'Completed' : 'Pending'}
                             </Badge>

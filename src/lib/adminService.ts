@@ -2,6 +2,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   setDoc,
   updateDoc,
@@ -9,6 +10,7 @@ import {
 } from 'firebase/firestore'
 
 const allowedCol = 'allowedEmails'
+const settingsDoc = (firestore: Firestore) => doc(firestore, 'settings', 'app')
 
 export interface AllowedEmail {
   email: string
@@ -49,4 +51,16 @@ export async function setAdminStatus(
   isAdmin: boolean,
 ): Promise<void> {
   await updateDoc(doc(firestore, allowedCol, email), { isAdmin })
+}
+
+export async function getFactoryWhatsappNumber(firestore: Firestore): Promise<string> {
+  const snap = await getDoc(settingsDoc(firestore))
+  return snap.exists() ? (snap.data()?.factoryWhatsappNumber ?? '') : ''
+}
+
+export async function setFactoryWhatsappNumber(
+  firestore: Firestore,
+  number: string,
+): Promise<void> {
+  await setDoc(settingsDoc(firestore), { factoryWhatsappNumber: number.trim() }, { merge: true })
 }

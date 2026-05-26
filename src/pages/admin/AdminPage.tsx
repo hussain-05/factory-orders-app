@@ -3,9 +3,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { db } from '../../lib/firebase'
 import {
   addAllowedEmail,
+  getFactoryWhatsappNumber,
   listAllowedEmails,
   removeAllowedEmail,
   setAdminStatus,
+  setFactoryWhatsappNumber,
   type AllowedEmail,
 } from '../../lib/adminService'
 import { Badge } from '../../components/ui/Badge'
@@ -21,15 +23,22 @@ export function AdminPage() {
   const [newIsAdmin, setNewIsAdmin] = useState(false)
   const [busy, setBusy] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [factoryNumber, setFactoryNumber] = useState('')
+  const [numberSaved, setNumberSaved] = useState(false)
 
   const refresh = useCallback(async () => {
     if (!db) return
     setLoading(true)
     setError(null)
     try {
-      setEmails(await listAllowedEmails(db))
+      const [emailList, factNum] = await Promise.all([
+        listAllowedEmails(db),
+        getFactoryWhatsappNumber(db),
+      ])
+      setEmails(emailList)
+      setFactoryNumber(factNum)
     } catch {
-      setError('Could not load allowed emails.')
+      setError('Could not load settings.')
     } finally {
       setLoading(false)
     }
@@ -103,6 +112,43 @@ export function AdminPage() {
           {error}
         </p>
       )}
+
+      {/* Factory WhatsApp number */}
+      <Card>
+        <h2 className="font-display text-lg font-semibold text-slate-900">Factory WhatsApp number</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Shop users will see a "Notify factory" button after placing an order, which opens WhatsApp with this number pre-filled.
+        </p>
+        <div className="mt-4 flex items-center gap-3">
+          <Input
+            className="flex-1"
+            type="tel"
+            placeholder="e.g. 9876543210"
+            value={factoryNumber}
+            onChange={(e) => { setFactoryNumber(e.target.value); setNumberSaved(false) }}
+            disabled={busy}
+          />
+          <Button
+            variant="secondary"
+            disabled={busy || !factoryNumber.trim()}
+            onClick={async () => {
+              if (!db) return
+              setBusy(true)
+              setError(null)
+              try {
+                await setFactoryWhatsappNumber(db, factoryNumber)
+                setNumberSaved(true)
+              } catch (e) {
+                setError(e instanceof Error ? e.message : 'Could not save number.')
+              } finally {
+                setBusy(false)
+              }
+            }}
+          >
+            {numberSaved ? '✓ Saved' : 'Save'}
+          </Button>
+        </div>
+      </Card>
 
       {/* Add new email */}
       <Card>

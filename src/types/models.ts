@@ -15,6 +15,7 @@ export interface UserProfile {
   shopName?: ShopName
   createdAt: number
   isAdmin?: boolean
+  whatsappNumber?: string
 }
 
 export interface UnlimitedProduct {
@@ -66,4 +67,6 @@ export interface Order {
   createdAt: number
   updatedAt: number
   completedAt?: number | null
+  shopWhatsappNumber?: string
+  orderNumber?: string
 }

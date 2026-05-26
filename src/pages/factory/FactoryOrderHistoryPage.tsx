@@ -207,6 +207,9 @@ export function FactoryOrderHistoryPage() {
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="truncate font-semibold text-slate-900">{o.shopName}</p>
+                            {o.orderNumber && (
+                              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-mono font-semibold text-slate-600">#{o.orderNumber}</span>
+                            )}
                             <Badge tone="neutral">{o.orderKind === 'limited' ? 'Limited' : 'Standard'}</Badge>
                             <Badge tone={o.status === 'completed' ? 'success' : 'warning'}>
                               {o.status === 'completed' ? 'Completed' : 'Pending'}

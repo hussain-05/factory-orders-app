@@ -22,6 +22,7 @@ export async function fetchUserProfile(
     role: d.role === 'factory' ? 'factory' : 'shop',
     shopName: d.shopName as ShopName | undefined,
     createdAt: typeof d.createdAt?.toMillis === 'function' ? d.createdAt.toMillis() : 0,
+    whatsappNumber: typeof d.whatsappNumber === 'string' ? d.whatsappNumber : undefined,
   }
 }
 
@@ -33,6 +34,7 @@ export async function saveUserProfile(
     displayName: string
     role: UserRole
     shopName?: ShopName
+    whatsappNumber?: string
   },
 ) {
   await setDoc(
@@ -42,6 +44,7 @@ export async function saveUserProfile(
       displayName: input.displayName,
       role: input.role,
       shopName: input.role === 'shop' ? input.shopName ?? null : null,
+      whatsappNumber: input.whatsappNumber ?? null,
       updatedAt: serverTimestamp(),
       createdAt: serverTimestamp(),
     },

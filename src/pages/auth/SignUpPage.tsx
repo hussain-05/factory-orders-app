@@ -17,6 +17,7 @@ export function SignUpPage() {
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<UserRole>('shop')
   const [shopName, setShopName] = useState<ShopName>('Seva')
+  const [whatsappNumber, setWhatsappNumber] = useState('')
   const [localError, setLocalError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -39,6 +40,7 @@ export function SignUpPage() {
         displayName,
         role,
         shopName: role === 'shop' ? shopName : undefined,
+        whatsappNumber: whatsappNumber.trim() || undefined,
       })
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Sign-up failed.')
@@ -138,6 +140,22 @@ export function SignUpPage() {
                 minLength={8}
               />
               <p className="mt-2 text-xs text-slate-500">Minimum 8 characters.</p>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-700" htmlFor="whatsapp">
+                WhatsApp number <span className="font-normal text-slate-400">(optional)</span>
+              </label>
+              <Input
+                id="whatsapp"
+                className="mt-1"
+                type="tel"
+                placeholder="e.g. 9876543210"
+                value={whatsappNumber}
+                onChange={(e) => setWhatsappNumber(e.target.value)}
+                autoComplete="tel"
+              />
+              <p className="mt-1 text-xs text-slate-500">Used to receive order updates on WhatsApp.</p>
             </div>
 
             {(localError || error) && (

@@ -80,6 +80,15 @@ service cloud.firestore {
         && resource.data.status == 'pending';
     }
 
+    match /settings/{doc} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /counters/{doc} {
+      allow read, write: if signedIn();
+    }
+
     match /_fcmDedup/{id} {
       allow read, write: if false;
     }
