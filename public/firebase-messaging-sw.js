@@ -17,10 +17,19 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
  
 messaging.onBackgroundMessage((payload) => {
-  const title = payload.notification?.title ?? 'Factory Orders';
-  const body = payload.notification?.body ?? '';
-  self.registration.showNotification(title, {
-    body,
-    icon: '/favicon.ico',
-  });
+  // If the app is open and visible, skip the system notification —
+  // the in-app foreground toast will handle it instead.
+  self.clients
+    .matchAll({ type: 'window', includeUncontrolled: true })
+    .then((clients) => {
+      const appIsOpen = clients.some((c) => c.visibilityState === 'visible');
+      if (appIsOpen) return;
+ 
+      const title = payload.notification?.title ?? 'Factory Orders';
+      const body = payload.notification?.body ?? '';
+      self.registration.showNotification(title, {
+        body,
+        icon: '/favicon.ico',
+      });
+    });
 });
