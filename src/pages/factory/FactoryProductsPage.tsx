@@ -392,6 +392,9 @@ export function FactoryProductsPage() {
                   <option value="pcs">pcs</option>
                 </select>
               </div>
+              <Button className="w-full" type="submit" disabled={busy}>
+                {busy ? 'Saving…' : 'Add to catalogue'}
+              </Button>
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <p className="text-xs font-semibold text-slate-700">Replace from Excel</p>
                 <p className="mt-1 text-xs text-slate-500">
@@ -422,9 +425,6 @@ export function FactoryProductsPage() {
                   Replace entire catalogue from file
                 </Button>
               </div>
-              <Button className="w-full" type="submit" disabled={busy}>
-                {busy ? 'Saving…' : 'Add to catalogue'}
-              </Button>
             </form>
           </Card>
 
@@ -441,7 +441,7 @@ export function FactoryProductsPage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-slate-900">{p.name}</p>
                     <p className="text-xs text-slate-500">
-                      Size: {p.size || '—'} · Unit: {p.defaultUnit ?? 'pcs'} · Sort {p.sortIndex}
+                      Size: {p.size || '—'} · Unit: {p.defaultUnit ?? 'pcs'}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
