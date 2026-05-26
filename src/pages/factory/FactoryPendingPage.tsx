@@ -201,7 +201,9 @@ function PendingCard({
                   key={`${it.productId}-${idx}`}
                   className="flex items-center justify-between gap-3 py-2 text-sm"
                 >
-                  <span className="min-w-0 truncate text-slate-900">{it.name}</span>
+                  <span className="min-w-0 truncate text-slate-900">
+                    {it.name}{it.size ? ` · ${it.size}` : ''}
+                  </span>
                   <span className="shrink-0 font-semibold tabular-nums text-slate-900">
                     ×{it.quantity}
                   </span>
