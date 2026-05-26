@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
+import { getMessaging, isSupported } from 'firebase/messaging'
 import { getStorage } from 'firebase/storage'
 
 const firebaseConfig = {
@@ -34,3 +35,8 @@ const app = firebaseReady
 export const auth = app ? getAuth(app) : null
 export const db = app ? getFirestore(app) : null
 export const storage = app ? getStorage(app) : null
+
+// Messaging is only available in secure contexts with service worker support
+export const messaging = app
+  ? await isSupported().then((ok) => (ok ? getMessaging(app) : null)).catch(() => null)
+  : null
