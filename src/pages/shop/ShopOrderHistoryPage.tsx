@@ -23,6 +23,113 @@ function groupByMonth(orders: Order[]): Array<{ label: string; orders: Order[] }
   return Array.from(map.entries()).map(([label, orders]) => ({ label, orders }))
 }
 
+interface TimelineStage {
+  label: string
+  sublabel?: string
+  ts: number | null | undefined
+  done: boolean
+}
+
+function OrderTimeline({ order }: { order: Order }) {
+  const stages: TimelineStage[] = [
+    {
+      label: 'Order placed',
+      sublabel: order.requestorName,
+      ts: order.createdAt,
+      done: true,
+    },
+    {
+      label: 'Received by factory',
+      ts: order.milestones.receivedAt,
+      done: Boolean(order.milestones.receivedAt),
+    },
+    {
+      label: 'Dispatched',
+      ts: order.milestones.dispatchedAt,
+      done: Boolean(order.milestones.dispatchedAt),
+    },
+    {
+      label: 'Delivered',
+      sublabel: order.expectedDeliveryDate
+        ? `Expected ${formatDate(order.expectedDeliveryDate)}`
+        : undefined,
+      ts: order.actualDeliveryDate,
+      done: order.status === 'completed',
+    },
+  ]
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        Order progress
+      </p>
+      <div className="flex flex-col gap-0">
+        {stages.map((stage, idx) => {
+          const isLast = idx === stages.length - 1
+          const nextDone = !isLast && stages[idx + 1].done
+
+          return (
+            <div key={stage.label} className="flex gap-3">
+              {/* Column: dot + connector line */}
+              <div className="flex flex-col items-center">
+                <div
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                    stage.done
+                      ? 'border-emerald-500 bg-emerald-500'
+                      : 'border-slate-300 bg-white'
+                  }`}
+                >
+                  {stage.done ? (
+                    <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 12 12" fill="none">
+                      <path
+                        d="M2 6l3 3 5-5"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  ) : (
+                    <div className="h-2 w-2 rounded-full bg-slate-300" />
+                  )}
+                </div>
+                {!isLast && (
+                  <div
+                    className={`w-0.5 flex-1 my-1 min-h-[20px] ${
+                      nextDone ? 'bg-emerald-400' : 'bg-slate-200'
+                    }`}
+                  />
+                )}
+              </div>
+
+              {/* Content */}
+              <div className={`pb-4 ${isLast ? 'pb-0' : ''}`}>
+                <p
+                  className={`text-sm font-semibold leading-7 ${
+                    stage.done ? 'text-slate-900' : 'text-slate-400'
+                  }`}
+                >
+                  {stage.label}
+                </p>
+                {stage.done && stage.ts ? (
+                  <p className="text-xs text-emerald-600">{formatDateTime(stage.ts)}</p>
+                ) : !stage.done ? (
+                  <p className="text-xs text-slate-400">Pending</p>
+                ) : null}
+                {stage.sublabel && !stage.ts ? (
+                  <p className="text-xs text-slate-400">{stage.sublabel}</p>
+                ) : stage.sublabel && stage.done ? (
+                  <p className="text-xs text-slate-500">{stage.sublabel}</p>
+                ) : null}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export function ShopOrderHistoryPage() {
   const { user } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
@@ -137,6 +244,10 @@ export function ShopOrderHistoryPage() {
 
                       {open ? (
                         <div className="space-y-4 border-t border-slate-100 px-5 py-4">
+                          {/* Timeline */}
+                          <OrderTimeline order={o} />
+
+                          {/* Delivery info */}
                           <div className="grid gap-3 sm:grid-cols-2">
                             <div className="rounded-xl bg-slate-50 p-3">
                               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -158,12 +269,14 @@ export function ShopOrderHistoryPage() {
                             </div>
                           </div>
 
-                          <div className="rounded-xl bg-slate-50 p-3">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Lead time
-                            </p>
-                            <p className="mt-1 text-sm font-semibold text-slate-900">{fulfillmentSummary(o)}</p>
-                          </div>
+                          {o.status === 'completed' && (
+                            <div className="rounded-xl bg-slate-50 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Lead time
+                              </p>
+                              <p className="mt-1 text-sm font-semibold text-slate-900">{fulfillmentSummary(o)}</p>
+                            </div>
+                          )}
 
                           <div className="flex flex-wrap gap-2">
                             <Button
