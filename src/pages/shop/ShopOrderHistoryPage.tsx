@@ -44,11 +44,6 @@ function OrderTimeline({ order }: { order: Order }) {
       done: Boolean(order.milestones.receivedAt),
     },
     {
-      label: 'Dispatched',
-      ts: order.milestones.dispatchedAt,
-      done: Boolean(order.milestones.dispatchedAt),
-    },
-    {
       label: 'Delivered',
       sublabel: order.expectedDeliveryDate
         ? `Expected ${formatDate(order.expectedDeliveryDate)}`
