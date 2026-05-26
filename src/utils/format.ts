@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, format, formatDistanceStrict } from 'date-fns'
+import { differenceInCalendarDays, format } from 'date-fns'
 
 export function formatDate(ms: number | null | undefined) {
   if (!ms) return '—'
@@ -14,9 +14,19 @@ export function fulfillmentSummary(order: {
   createdAt: number
   completedAt?: number | null
   actualDeliveryDate?: number | null
+  expectedDeliveryDate?: number | null
 }) {
-  const end = order.actualDeliveryDate ?? order.completedAt ?? null
-  if (!end) return '—'
-  const days = differenceInCalendarDays(new Date(end), new Date(order.createdAt))
-  return `${formatDistanceStrict(new Date(order.createdAt), new Date(end))} (${days} day${days === 1 ? '' : 's'})`
+  const actual = order.actualDeliveryDate ?? order.completedAt ?? null
+  if (!actual) return '—'
+
+  const totalDays = differenceInCalendarDays(new Date(actual), new Date(order.createdAt))
+  const base = `${totalDays} day${totalDays === 1 ? '' : 's'} from order`
+
+  if (!order.expectedDeliveryDate) return base
+
+  const delta = differenceInCalendarDays(new Date(actual), new Date(order.expectedDeliveryDate))
+
+  if (delta === 0) return `${base} · ✓ On time`
+  if (delta < 0) return `${base} · ✓ ${Math.abs(delta)} day${Math.abs(delta) === 1 ? '' : 's'} early`
+  return `${base} · ⚠ ${delta} day${delta === 1 ? '' : 's'} late`
 }
