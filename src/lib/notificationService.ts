@@ -44,8 +44,9 @@ export function listenForForegroundMessages(
   onNotification: (title: string, body: string) => void,
 ) {
   return onMessage(messaging, (payload) => {
-    const title = payload.notification?.title ?? 'New notification'
-    const body = payload.notification?.body ?? ''
+    // Data-only messages: title/body are in payload.data
+    const title = payload.data?.title ?? payload.notification?.title ?? 'New notification'
+    const body = payload.data?.body ?? payload.notification?.body ?? ''
     onNotification(title, body)
   })
 }

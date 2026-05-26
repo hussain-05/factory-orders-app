@@ -23,7 +23,15 @@ async function sendToTokens(
 ): Promise<void> {
   if (tokens.length === 0) return
 
-  const response = await messaging.sendEachForMulticast({ tokens, notification })
+  // Send as data-only (no notification field) so the OS never auto-displays it.
+  // The service worker handles background display; onMessage handles foreground.
+  const response = await messaging.sendEachForMulticast({
+    tokens,
+    data: {
+      title: notification.title,
+      body: notification.body,
+    },
+  })
 
   const stale: string[] = []
   response.responses.forEach((r, i) => {

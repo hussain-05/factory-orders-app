@@ -16,20 +16,14 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
  
+// Only fires when app is in background/closed.
+// We use data-only messages so the OS never auto-displays —
+// this handler is the sole place background notifications are shown.
 messaging.onBackgroundMessage((payload) => {
-  // If the app is open and visible, skip the system notification —
-  // the in-app foreground toast will handle it instead.
-  self.clients
-    .matchAll({ type: 'window', includeUncontrolled: true })
-    .then((clients) => {
-      const appIsOpen = clients.some((c) => c.visibilityState === 'visible');
-      if (appIsOpen) return;
- 
-      const title = payload.notification?.title ?? 'Factory Orders';
-      const body = payload.notification?.body ?? '';
-      self.registration.showNotification(title, {
-        body,
-        icon: '/favicon.ico',
-      });
-    });
+  const title = payload.data?.title ?? 'Factory Orders';
+  const body = payload.data?.body ?? '';
+  self.registration.showNotification(title, {
+    body,
+    icon: '/favicon.ico',
+  });
 });
