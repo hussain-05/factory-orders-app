@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { format } from 'date-fns'
 import { db } from '../../lib/firebase'
 import { listPendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
@@ -22,6 +23,16 @@ function millisToYmd(ms: number | null | undefined) {
   const m = String(dt.getMonth() + 1).padStart(2, '0')
   const d = String(dt.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
+}
+
+function groupByMonth(orders: Order[]): Array<{ label: string; orders: Order[] }> {
+  const map = new Map<string, Order[]>()
+  for (const o of orders) {
+    const label = o.createdAt ? format(new Date(o.createdAt), 'MMMM yyyy') : 'Unknown'
+    if (!map.has(label)) map.set(label, [])
+    map.get(label)!.push(o)
+  }
+  return Array.from(map.entries()).map(([label, orders]) => ({ label, orders }))
 }
 
 export function FactoryPendingPage() {
@@ -70,7 +81,10 @@ export function FactoryPendingPage() {
     })
   }, [orders])
 
-  const sorted = useMemo(() => orders, [orders])
+  const grouped = useMemo(() => {
+    const sorted = [...orders].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+    return groupByMonth(sorted)
+  }, [orders])
 
   async function patch(order: Order, patch: Parameters<typeof updateOrderMilestones>[2]) {
     if (!db) return
@@ -85,6 +99,8 @@ export function FactoryPendingPage() {
       setBusyId(null)
     }
   }
+
+  const totalOrders = grouped.reduce((s, g) => s + g.orders.length, 0)
 
   return (
     <div className="space-y-6">
@@ -114,149 +130,165 @@ export function FactoryPendingPage() {
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-900 border-t-transparent" />
           Loading…
         </div>
-      ) : sorted.length === 0 ? (
+      ) : totalOrders === 0 ? (
         <Card>
           <p className="text-sm text-slate-600">No pending orders. Nice and quiet.</p>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {sorted.map((o) => {
-            const busy = busyId === o.id
-            return (
-              <Card key={o.id} className="space-y-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-display text-lg font-semibold text-slate-900">{o.shopName}</p>
-                      <Badge tone="neutral">{o.orderKind === 'limited' ? 'Limited' : 'Standard'}</Badge>
-                    </div>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {formatDateTime(o.createdAt)} · {o.items.length} lines · {o.requestorName} ·{' '}
-                      {o.requestorEmail}
-                    </p>
-                  </div>
-                  <Badge tone="warning">Pending</Badge>
-                </div>
+        <div className="space-y-8">
+          {grouped.map(({ label, orders: groupOrders }) => (
+            <div key={label}>
+              <div className="mb-3 flex items-center gap-3">
+                <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">
+                  {label}
+                </h2>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
+                  {groupOrders.length}
+                </span>
+                <div className="h-px flex-1 bg-slate-200" />
+              </div>
 
-                <div className="grid gap-3 lg:grid-cols-3">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Received
-                    </p>
-                    <p className="mt-2 text-sm text-slate-800">
-                      {o.milestones.receivedAt ? formatDateTime(o.milestones.receivedAt) : 'Not marked'}
-                    </p>
-                    <Button
-                      className="mt-3 w-full"
-                      variant="secondary"
-                      disabled={busy || Boolean(o.milestones.receivedAt)}
-                      onClick={() =>
-                        void patch(o, { milestones: { receivedAt: Date.now() } })
-                      }
-                    >
-                      Mark received
-                    </Button>
-                  </div>
+              <div className="space-y-4">
+                {groupOrders.map((o) => {
+                  const busy = busyId === o.id
+                  return (
+                    <Card key={o.id} className="space-y-4">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-display text-lg font-semibold text-slate-900">{o.shopName}</p>
+                            <Badge tone="neutral">{o.orderKind === 'limited' ? 'Limited' : 'Standard'}</Badge>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {formatDateTime(o.createdAt)} · {o.items.length} lines · {o.requestorName} ·{' '}
+                            {o.requestorEmail}
+                          </p>
+                        </div>
+                        <Badge tone="warning">Pending</Badge>
+                      </div>
 
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Dispatched
-                    </p>
-                    <p className="mt-2 text-sm text-slate-800">
-                      {o.milestones.dispatchedAt ? formatDateTime(o.milestones.dispatchedAt) : 'Not marked'}
-                    </p>
-                    <Button
-                      className="mt-3 w-full"
-                      variant="secondary"
-                      disabled={busy || Boolean(o.milestones.dispatchedAt)}
-                      onClick={() =>
-                        void patch(o, { milestones: { dispatchedAt: Date.now() } })
-                      }
-                    >
-                      Mark dispatched
-                    </Button>
-                  </div>
+                      <div className="grid gap-3 lg:grid-cols-3">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Received
+                          </p>
+                          <p className="mt-2 text-sm text-slate-800">
+                            {o.milestones.receivedAt ? formatDateTime(o.milestones.receivedAt) : 'Not marked'}
+                          </p>
+                          <Button
+                            className="mt-3 w-full"
+                            variant="secondary"
+                            disabled={busy || Boolean(o.milestones.receivedAt)}
+                            onClick={() =>
+                              void patch(o, { milestones: { receivedAt: Date.now() } })
+                            }
+                          >
+                            Mark received
+                          </Button>
+                        </div>
 
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Expected delivery
-                    </p>
-                    <Input
-                      className="mt-2"
-                      type="date"
-                      value={expectedDraft[o.id] ?? ''}
-                      onChange={(e) =>
-                        setExpectedDraft((prev) => ({ ...prev, [o.id]: e.target.value }))
-                      }
-                      disabled={busy}
-                    />
-                    <Button
-                      className="mt-3 w-full"
-                      variant="secondary"
-                      disabled={busy}
-                      onClick={() => {
-                        const ms = ymdToMillis(expectedDraft[o.id] ?? '')
-                        void patch(o, { expectedDeliveryDate: ms })
-                      }}
-                    >
-                      Save expected date
-                    </Button>
-                  </div>
-                </div>
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Dispatched
+                          </p>
+                          <p className="mt-2 text-sm text-slate-800">
+                            {o.milestones.dispatchedAt ? formatDateTime(o.milestones.dispatchedAt) : 'Not marked'}
+                          </p>
+                          <Button
+                            className="mt-3 w-full"
+                            variant="secondary"
+                            disabled={busy || Boolean(o.milestones.dispatchedAt)}
+                            onClick={() =>
+                              void patch(o, { milestones: { dispatchedAt: Date.now() } })
+                            }
+                          >
+                            Mark dispatched
+                          </Button>
+                        </div>
 
-                <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-3">
-                  <div className="min-w-[220px] flex-1">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Complete order
-                    </p>
-                    <Input
-                      className="mt-2"
-                      type="date"
-                      value={actualDraft[o.id] ?? ''}
-                      onChange={(e) =>
-                        setActualDraft((prev) => ({ ...prev, [o.id]: e.target.value }))
-                      }
-                      disabled={busy}
-                    />
-                    <p className="mt-2 text-xs text-slate-500">
-                      Set the actual delivery date, then mark completed.
-                    </p>
-                  </div>
-                  <Button
-                    variant="primary"
-                    className="bg-slate-900 hover:bg-slate-800"
-                    disabled={busy}
-                    onClick={() => {
-                      const ms = ymdToMillis(actualDraft[o.id] ?? '')
-                      if (!ms) {
-                        setError('Pick an actual delivery date before completing.')
-                        return
-                      }
-                      void patch(o, { status: 'completed', actualDeliveryDate: ms })
-                    }}
-                  >
-                    Mark completed
-                  </Button>
-                </div>
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Expected delivery
+                          </p>
+                          <Input
+                            className="mt-2"
+                            type="date"
+                            value={expectedDraft[o.id] ?? ''}
+                            onChange={(e) =>
+                              setExpectedDraft((prev) => ({ ...prev, [o.id]: e.target.value }))
+                            }
+                            disabled={busy}
+                          />
+                          <Button
+                            className="mt-3 w-full"
+                            variant="secondary"
+                            disabled={busy}
+                            onClick={() => {
+                              const ms = ymdToMillis(expectedDraft[o.id] ?? '')
+                              void patch(o, { expectedDeliveryDate: ms })
+                            }}
+                          >
+                            Save expected date
+                          </Button>
+                        </div>
+                      </div>
 
-                <details className="rounded-xl border border-slate-100 bg-slate-50">
-                  <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-800">
-                    Line items
-                  </summary>
-                  <ul className="divide-y divide-slate-200 px-4 pb-3">
-                    {o.items.map((it, idx) => (
-                      <li key={`${it.productId}-${idx}`} className="flex items-center justify-between gap-3 py-2 text-sm">
-                        <span className="min-w-0 truncate text-slate-900">{it.name}</span>
-                        <span className="shrink-0 font-semibold tabular-nums text-slate-900">
-                          ×{it.quantity}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              </Card>
-            )
-          })}
+                      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                        <div className="min-w-[220px] flex-1">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Complete order
+                          </p>
+                          <Input
+                            className="mt-2"
+                            type="date"
+                            value={actualDraft[o.id] ?? ''}
+                            onChange={(e) =>
+                              setActualDraft((prev) => ({ ...prev, [o.id]: e.target.value }))
+                            }
+                            disabled={busy}
+                          />
+                          <p className="mt-2 text-xs text-slate-500">
+                            Set the actual delivery date, then mark completed.
+                          </p>
+                        </div>
+                        <Button
+                          variant="primary"
+                          className="bg-slate-900 hover:bg-slate-800"
+                          disabled={busy}
+                          onClick={() => {
+                            const ms = ymdToMillis(actualDraft[o.id] ?? '')
+                            if (!ms) {
+                              setError('Pick an actual delivery date before completing.')
+                              return
+                            }
+                            void patch(o, { status: 'completed', actualDeliveryDate: ms })
+                          }}
+                        >
+                          Mark completed
+                        </Button>
+                      </div>
+
+                      <details className="rounded-xl border border-slate-100 bg-slate-50">
+                        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-800">
+                          Line items
+                        </summary>
+                        <ul className="divide-y divide-slate-200 px-4 pb-3">
+                          {o.items.map((it, idx) => (
+                            <li key={`${it.productId}-${idx}`} className="flex items-center justify-between gap-3 py-2 text-sm">
+                              <span className="min-w-0 truncate text-slate-900">{it.name}</span>
+                              <span className="shrink-0 font-semibold tabular-nums text-slate-900">
+                                ×{it.quantity}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    </Card>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
