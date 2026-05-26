@@ -53,11 +53,13 @@ export function FactoryShell() {
             </NavLink>
             <NavLink className={linkClass} to="/factory/pending">
               <ClipboardList className="h-4 w-4 shrink-0" />
-              Pending orders
+              <span className="sm:hidden">Pending</span>
+              <span className="hidden sm:inline">Pending orders</span>
             </NavLink>
             <NavLink className={linkClass} to="/factory/history">
               <ScrollText className="h-4 w-4 shrink-0" />
-              Order history
+              <span className="sm:hidden">History</span>
+              <span className="hidden sm:inline">Order history</span>
             </NavLink>
             {profile?.isAdmin && (
               <NavLink className={linkClass} to="/admin">

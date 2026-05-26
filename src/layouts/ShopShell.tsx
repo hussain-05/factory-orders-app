@@ -49,7 +49,8 @@ export function ShopShell() {
           >
             <NavLink className={linkClass} to="/shop/available">
               <LayoutGrid className="h-4 w-4 shrink-0" />
-              Available products
+              <span className="sm:hidden">Available</span>
+              <span className="hidden sm:inline">Available products</span>
             </NavLink>
             <NavLink className={linkClass} to="/shop/new-order">
               <PackagePlus className="h-4 w-4 shrink-0" />
@@ -57,7 +58,8 @@ export function ShopShell() {
             </NavLink>
             <NavLink className={linkClass} to="/shop/history">
               <ScrollText className="h-4 w-4 shrink-0" />
-              Order history
+              <span className="sm:hidden">History</span>
+              <span className="hidden sm:inline">Order history</span>
             </NavLink>
             {profile?.isAdmin && (
               <NavLink className={linkClass} to="/admin">
