@@ -255,7 +255,20 @@ export function FactoryProductsPage() {
             <form className="mt-4 space-y-3" onSubmit={addLimited}>
               <div>
                 <label className="text-xs font-semibold text-slate-700">Photo</label>
-                <Input className="mt-1" type="file" accept="image/*" onChange={(e) => setLFile(e.target.files?.[0] ?? null)} />
+                <label className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 hover:bg-slate-100 transition-colors">
+                  <span className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 shadow-sm">
+                    Choose photo
+                  </span>
+                  <span className="truncate text-xs text-slate-500">
+                    {lFile ? lFile.name : 'No photo selected'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={(e) => setLFile(e.target.files?.[0] ?? null)}
+                  />
+                </label>
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700">Name</label>
@@ -471,7 +484,20 @@ export function FactoryProductsPage() {
             <form className="mt-4 space-y-3" onSubmit={saveEdit}>
               <div>
                 <label className="text-xs font-semibold text-slate-700">Replace photo (optional)</label>
-                <Input className="mt-1" type="file" accept="image/*" onChange={(e) => setLFile(e.target.files?.[0] ?? null)} />
+                <label className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 hover:bg-slate-100 transition-colors">
+                  <span className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 shadow-sm">
+                    Choose photo
+                  </span>
+                  <span className="truncate text-xs text-slate-500">
+                    {lFile ? lFile.name : 'No new photo selected'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={(e) => setLFile(e.target.files?.[0] ?? null)}
+                  />
+                </label>
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700">Name</label>
