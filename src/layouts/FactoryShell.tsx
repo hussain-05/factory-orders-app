@@ -1,4 +1,4 @@
-import { ClipboardList, LogOut, ScrollText, Warehouse } from 'lucide-react'
+import { ClipboardList, LogOut, ScrollText, Shield, Warehouse } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
@@ -59,6 +59,12 @@ export function FactoryShell() {
               <ScrollText className="h-4 w-4 shrink-0" />
               Order history
             </NavLink>
+            {profile?.isAdmin && (
+              <NavLink className={linkClass} to="/admin">
+                <Shield className="h-4 w-4 shrink-0" />
+                Admin
+              </NavLink>
+            )}
           </nav>
         </div>
       </header>

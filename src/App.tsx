@@ -1,11 +1,14 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { RequireAuth } from './components/RequireAuth'
+import { RequireAdmin } from './components/RequireAdmin'
 import { useAuth } from './contexts/AuthContext'
+import { AdminShell } from './layouts/AdminShell'
 import { FactoryShell } from './layouts/FactoryShell'
 import { ShopShell } from './layouts/ShopShell'
 import { MissingFirebase } from './pages/MissingFirebase'
 import { LoginPage } from './pages/auth/LoginPage'
 import { SignUpPage } from './pages/auth/SignUpPage'
+import { AdminPage } from './pages/admin/AdminPage'
 import { FactoryOrderHistoryPage } from './pages/factory/FactoryOrderHistoryPage'
 import { FactoryPendingPage } from './pages/factory/FactoryPendingPage'
 import { FactoryProductsPage } from './pages/factory/FactoryProductsPage'
@@ -52,6 +55,12 @@ export default function App() {
           <Route path="products" element={<FactoryProductsPage />} />
           <Route path="pending" element={<FactoryPendingPage />} />
           <Route path="history" element={<FactoryOrderHistoryPage />} />
+        </Route>
+      </Route>
+
+      <Route element={<RequireAdmin />}>
+        <Route path="/admin" element={<AdminShell />}>
+          <Route index element={<AdminPage />} />
         </Route>
       </Route>
 

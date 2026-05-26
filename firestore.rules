@@ -17,10 +17,28 @@ service cloud.firestore {
       return signedIn() && userDoc().role == 'shop';
     }
 
+    function isEmailAllowed(email) {
+      return exists(/databases/$(database)/documents/allowedEmails/$(email));
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email != null
+        && get(/databases/$(database)/documents/allowedEmails/$(request.auth.token.email)).data.isAdmin == true;
+    }
+
+    // Allowlist — readable without auth (needed for pre-signup check),
+    // writable only by admins.
+    match /allowedEmails/{email} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /users/{uid} {
       allow read: if signedIn() && request.auth.uid == uid;
       allow create: if signedIn()
         && request.auth.uid == uid
+        && isEmailAllowed(request.auth.token.email)
         && request.resource.data.role in ['shop', 'factory']
         && (request.resource.data.role != 'shop'
             || request.resource.data.shopName in ['Seva', 'Seva Mart', 'Seva Super Store']);

@@ -5,6 +5,7 @@ import {
   signOut,
   type User,
 } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
 import {
   createContext,
   useCallback,
@@ -64,6 +65,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       try {
         const p = await fetchUserProfile(db, u.uid)
+        if (p && u.email) {
+          const allowedSnap = await getDoc(doc(db, 'allowedEmails', u.email.toLowerCase()))
+          p.isAdmin = allowedSnap.exists() && allowedSnap.data()?.isAdmin === true
+        }
         setProfile(p)
       } catch {
         setProfile(null)
@@ -77,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInEmail = useCallback(async (email: string, password: string) => {
     if (!auth) throw new Error('Firebase is not configured.')
     setError(null)
-    await signInWithEmailAndPassword(auth, email.trim(), password)
+    await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password)
   }, [])
 
   const signUpEmail = useCallback(
@@ -92,14 +97,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null)
       if (input.role === 'shop' && !input.shopName) throw new Error('Select your shop.')
 
+      // Check allowlist before creating the Auth account
+      const normalizedEmail = input.email.trim().toLowerCase()
+      const allowedDoc = await getDoc(doc(db, 'allowedEmails', normalizedEmail))
+      if (!allowedDoc.exists()) {
+        throw new Error('This email is not authorised to sign up. Contact your administrator.')
+      }
+
       const cred = await createUserWithEmailAndPassword(
         auth,
-        input.email.trim(),
+        normalizedEmail,
         input.password,
       )
       await saveUserProfile(db, {
         uid: cred.user.uid,
-        email: input.email.trim(),
+        email: normalizedEmail,
         displayName: input.displayName.trim(),
         role: input.role,
         shopName: input.shopName,
