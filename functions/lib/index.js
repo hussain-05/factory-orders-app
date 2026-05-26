@@ -39,6 +39,16 @@ const functions = __importStar(require("firebase-functions"));
 admin.initializeApp();
 const db = admin.firestore();
 const messaging = admin.messaging();
+// ── Helper: convert Firestore Timestamp or plain ms number → ms ──────────────
+function toMs(val) {
+    if (!val)
+        return null;
+    if (typeof val === 'number')
+        return val;
+    if (typeof val.toMillis === 'function')
+        return val.toMillis();
+    return null;
+}
 // ── Helper: send multicast and silently remove stale tokens ──────────────────
 async function sendToTokens(tokens, notification) {
     if (tokens.length === 0)
@@ -93,7 +103,7 @@ exports.onNewOrder = functions.firestore
 // ── Trigger 2: Milestone updated → notify the shop user ──────────────────────
 exports.onOrderUpdate = functions.firestore
     .document('orders/{orderId}')
-    .onUpdate(async (change) => {
+    .onUpdate(async (change, context) => {
     const before = change.before.data();
     const after = change.after.data();
     if (!before || !after)
@@ -102,6 +112,13 @@ exports.onOrderUpdate = functions.firestore
     const completedNow = before.status !== 'completed' && after.status === 'completed';
     if (!receivedNow && !completedNow)
         return;
+    // Deduplicate using event ID to prevent double-firing
+    const eventId = context.eventId;
+    const dedupRef = db.collection('_fcmDedup').doc(eventId);
+    const dedupSnap = await dedupRef.get();
+    if (dedupSnap.exists)
+        return;
+    await dedupRef.set({ processedAt: admin.firestore.FieldValue.serverTimestamp() });
     const userSnap = await db.collection('users').doc(after.shopUserId).get();
     const tokens = userSnap.data()?.fcmTokens || [];
     if (completedNow) {
@@ -111,8 +128,9 @@ exports.onOrderUpdate = functions.firestore
         });
     }
     else if (receivedNow) {
-        const expected = after.expectedDeliveryDate
-            ? new Date(after.expectedDeliveryDate).toLocaleDateString('en-IN', {
+        const expectedMs = toMs(after.expectedDeliveryDate);
+        const expected = expectedMs
+            ? new Date(expectedMs).toLocaleDateString('en-IN', {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',

@@ -79,5 +79,9 @@ service cloud.firestore {
         && resource.data.shopUserId == request.auth.uid
         && resource.data.status == 'pending';
     }
+
+    match /_fcmDedup/{id} {
+      allow read, write: if false;
+    }
   }
 }

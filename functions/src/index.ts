@@ -6,6 +6,15 @@ admin.initializeApp()
 const db = admin.firestore()
 const messaging = admin.messaging()
 
+// ── Helper: convert Firestore Timestamp or plain ms number → ms ──────────────
+
+function toMs(val: any): number | null {
+  if (!val) return null
+  if (typeof val === 'number') return val
+  if (typeof val.toMillis === 'function') return val.toMillis()
+  return null
+}
+
 // ── Helper: send multicast and silently remove stale tokens ──────────────────
 
 async function sendToTokens(
@@ -75,7 +84,7 @@ export const onNewOrder = functions.firestore
 
 export const onOrderUpdate = functions.firestore
   .document('orders/{orderId}')
-  .onUpdate(async (change) => {
+  .onUpdate(async (change, context) => {
     const before = change.before.data()
     const after = change.after.data()
     if (!before || !after) return
@@ -84,6 +93,13 @@ export const onOrderUpdate = functions.firestore
     const completedNow = before.status !== 'completed' && after.status === 'completed'
 
     if (!receivedNow && !completedNow) return
+
+    // Deduplicate using event ID to prevent double-firing
+    const eventId = context.eventId
+    const dedupRef = db.collection('_fcmDedup').doc(eventId)
+    const dedupSnap = await dedupRef.get()
+    if (dedupSnap.exists) return
+    await dedupRef.set({ processedAt: admin.firestore.FieldValue.serverTimestamp() })
 
     const userSnap = await db.collection('users').doc(after.shopUserId).get()
     const tokens: string[] = userSnap.data()?.fcmTokens || []
@@ -94,8 +110,9 @@ export const onOrderUpdate = functions.firestore
         body: `Your order from ${after.shopName} has been marked as delivered.`,
       })
     } else if (receivedNow) {
-      const expected = after.expectedDeliveryDate
-        ? new Date(after.expectedDeliveryDate).toLocaleDateString('en-IN', {
+      const expectedMs = toMs(after.expectedDeliveryDate)
+      const expected = expectedMs
+        ? new Date(expectedMs).toLocaleDateString('en-IN', {
             day: 'numeric',
             month: 'short',
             year: 'numeric',
