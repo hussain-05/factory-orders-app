@@ -1,6 +1,7 @@
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Printer } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
+import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
 import { listPendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
@@ -52,6 +53,23 @@ interface PendingCardProps {
   onExpectedChange: (v: string) => void
   onActualChange: (v: string) => void
   onPatch: (patch: Parameters<typeof updateOrderMilestones>[2]) => void
+}
+
+function PrintButton({ order }: { order: Order }) {
+  const [busy, setBusy] = useState(false)
+  return (
+    <Button
+      variant="secondary"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true)
+        try { await previewOrderPdf(order) } finally { setBusy(false) }
+      }}
+    >
+      <Printer className="h-4 w-4" />
+      {busy ? 'Preparing PDF…' : 'Print / PDF'}
+    </Button>
+  )
 }
 
 function PendingCard({
@@ -189,6 +207,9 @@ function PendingCard({
               </div>
             </TimelineStage>
           </div>
+
+          {/* Print / PDF */}
+          <PrintButton order={o} />
 
           {/* Line items */}
           <details className="rounded-xl border border-slate-100 bg-slate-50">
