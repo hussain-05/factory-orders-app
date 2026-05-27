@@ -7,7 +7,6 @@ import { listAllOrdersForFactory } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
-import { Input } from '../../components/ui/Input'
 import type { Order } from '../../types/models'
 import { formatDate, formatDateTime, fulfillmentSummary } from '../../utils/format'
 
