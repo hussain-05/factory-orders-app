@@ -68,7 +68,7 @@ service cloud.firestore {
     }
 
     match /orders/{id} {
-      allow read: if signedIn() && (isFactory() || resource.data.shopUserId == request.auth.uid);
+      allow read: if signedIn() && (isFactory() || isAdmin() || resource.data.shopUserId == request.auth.uid);
       allow create: if signedIn()
         && isShop()
         && request.resource.data.shopUserId == request.auth.uid

@@ -209,7 +209,7 @@ export function FactoryOrderHistoryPage() {
 
           {/* Order number search — narrower */}
           <div className="relative flex flex-1 items-center px-3">
-            <Search className="pointer-events-none absolute left-6 h-4 w-4 text-slate-400" />
+            {loading ? <div className="pointer-events-none absolute left-6 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" /> : <Search className="pointer-events-none absolute left-6 h-4 w-4 text-slate-400" />}
             <input
               type="text"
               inputMode="numeric"

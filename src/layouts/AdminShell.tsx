@@ -1,7 +1,14 @@
-import { LogOut, Shield } from 'lucide-react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { LayoutDashboard, LogOut, Shield, Users } from 'lucide-react'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
+
+const linkClass = ({ isActive }: { isActive: boolean }) =>
+  `flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
+    isActive
+      ? 'bg-slate-900/90 text-white shadow-sm'
+      : 'text-slate-600 hover:bg-white/70'
+  }`
 
 export function AdminShell() {
   const { profile, logout } = useAuth()
@@ -25,7 +32,7 @@ export function AdminShell() {
               variant="secondary"
               className="shrink-0"
               onClick={() => {
-                const dest = profile?.role === 'factory' ? '/factory/pending' : '/shop/available'
+                const dest = profile?.role === 'factory' ? '/factory/dashboard' : '/shop/available'
                 nav(dest)
               }}
             >
@@ -45,10 +52,25 @@ export function AdminShell() {
             </Button>
           </div>
         </div>
-        <div className="h-3" />
+
+        <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
+          <nav
+            aria-label="Admin navigation"
+            className="inline-flex gap-1 rounded-2xl border border-white/50 bg-white/50 p-1.5 shadow-md shadow-slate-900/8 backdrop-blur-xl"
+          >
+            <NavLink className={linkClass} to="/admin/dashboard">
+              <LayoutDashboard className="h-4 w-4 shrink-0" />
+              Dashboard
+            </NavLink>
+            <NavLink className={linkClass} to="/admin" end>
+              <Users className="h-4 w-4 shrink-0" />
+              User access
+            </NavLink>
+          </nav>
+        </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         <Outlet />
       </main>
     </div>

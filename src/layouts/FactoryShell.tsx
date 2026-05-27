@@ -1,8 +1,22 @@
-import { Bell, BellOff, ClipboardList, LogOut, ScrollText, Shield, Warehouse } from 'lucide-react'
+import { Bell, BellOff, ClipboardList, LayoutDashboard, LogOut, ScrollText, Shield, Warehouse } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
 import { Button } from '../components/ui/Button'
+import { db } from '../lib/firebase'
+import { listPendingOrdersForFactory } from '../lib/orderService'
+
+function usePendingOrderCount() {
+  const [count, setCount] = useState<number | null>(null)
+  useEffect(() => {
+    if (!db) return
+    listPendingOrdersForFactory(db)
+      .then((orders) => setCount(orders.length))
+      .catch(() => setCount(null))
+  }, [])
+  return count
+}
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
@@ -15,6 +29,7 @@ export function FactoryShell() {
   const { profile, logout } = useAuth()
   const nav = useNavigate()
   const { status, toast, dismissToast, enable } = useNotifications()
+  const pendingCount = usePendingOrderCount()
 
   return (
     <div className="min-h-dvh bg-slate-50">
@@ -68,6 +83,11 @@ export function FactoryShell() {
             aria-label="Main navigation"
             className="inline-flex gap-1 rounded-2xl border border-white/50 bg-white/50 p-1.5 shadow-md shadow-slate-900/8 backdrop-blur-xl"
           >
+            <NavLink className={linkClass} to="/factory/dashboard">
+              <LayoutDashboard className="h-4 w-4 shrink-0" />
+              <span className="sm:hidden">Dash</span>
+              <span className="hidden sm:inline">Dashboard</span>
+            </NavLink>
             <NavLink className={linkClass} to="/factory/products">
               <Warehouse className="h-4 w-4 shrink-0" />
               Products
@@ -76,6 +96,11 @@ export function FactoryShell() {
               <ClipboardList className="h-4 w-4 shrink-0" />
               <span className="sm:hidden">Pending</span>
               <span className="hidden sm:inline">Pending orders</span>
+              {pendingCount != null && pendingCount > 0 && (
+                <span className="ml-0.5 rounded-full bg-rose-500 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
+                  {pendingCount}
+                </span>
+              )}
             </NavLink>
             <NavLink className={linkClass} to="/factory/history">
               <ScrollText className="h-4 w-4 shrink-0" />

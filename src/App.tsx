@@ -9,6 +9,7 @@ import { MissingFirebase } from './pages/MissingFirebase'
 import { LoginPage } from './pages/auth/LoginPage'
 import { SignUpPage } from './pages/auth/SignUpPage'
 import { AdminPage } from './pages/admin/AdminPage'
+import { FactoryDashboardPage } from './pages/factory/FactoryDashboardPage'
 import { FactoryOrderHistoryPage } from './pages/factory/FactoryOrderHistoryPage'
 import { FactoryPendingPage } from './pages/factory/FactoryPendingPage'
 import { FactoryProductsPage } from './pages/factory/FactoryProductsPage'
@@ -29,7 +30,7 @@ function HomeRedirect() {
   }
   if (!user) return <Navigate to="/login" replace />
   if (!profile) return <Navigate to="/login" replace />
-  const dest = profile.role === 'factory' ? '/factory/pending' : '/shop/available'
+  const dest = profile.role === 'factory' ? '/factory/dashboard' : '/shop/available'
   return <Navigate to={dest} replace />
 }
 
@@ -51,7 +52,8 @@ export default function App() {
 
       <Route element={<RequireAuth role="factory" />}>
         <Route path="/factory" element={<FactoryShell />}>
-          <Route index element={<Navigate to="pending" replace />} />
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<FactoryDashboardPage />} />
           <Route path="products" element={<FactoryProductsPage />} />
           <Route path="pending" element={<FactoryPendingPage />} />
           <Route path="history" element={<FactoryOrderHistoryPage />} />
@@ -61,6 +63,7 @@ export default function App() {
       <Route element={<RequireAdmin />}>
         <Route path="/admin" element={<AdminShell />}>
           <Route index element={<AdminPage />} />
+          <Route path="dashboard" element={<FactoryDashboardPage />} />
         </Route>
       </Route>
 
