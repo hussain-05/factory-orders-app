@@ -53,7 +53,11 @@ export function SignUpPage() {
     <div className="min-h-dvh bg-slate-50 px-6 py-14">
       <div className="mx-auto w-full max-w-md">
         <Card className="p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Seva</p>
+          <img
+            src="/seva-logo.png"
+            alt="Seva"
+            className="mb-1 block h-10 w-auto mx-auto"
+          />
           <h1 className="mt-2 font-display text-2xl font-semibold text-slate-900">Create account</h1>
           <p className="mt-2 text-sm text-slate-600">
             Choose whether you are signing up as a shop owner or a factory owner.

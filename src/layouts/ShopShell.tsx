@@ -20,7 +20,7 @@ export function ShopShell() {
     <div className="min-h-dvh bg-slate-50">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl">
         {/* Row 1: identity + sign out */}
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-3 sm:px-6">
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-3 sm:px-6">
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
               Shop console
@@ -30,6 +30,14 @@ export function ShopShell() {
             </p>
             <p className="truncate text-xs text-slate-500">{profile?.displayName}</p>
           </div>
+
+          {/* Seva logo — absolutely centred so it's unaffected by unequal side widths */}
+          <img
+            src="/seva-logo.png"
+            alt="Seva"
+            className="absolute left-1/2 top-1/2 h-9 w-auto -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+          />
+
           <div className="flex items-center gap-2">
             {status === 'unknown' && (
               <Button variant="secondary" className="shrink-0 !gap-1.5" onClick={() => void enable()}>

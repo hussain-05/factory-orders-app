@@ -43,6 +43,11 @@ export function LoginPage() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-500/25 via-slate-950 to-slate-950" />
       <div className="relative mx-auto grid min-h-dvh max-w-6xl grid-cols-1 lg:grid-cols-2">
         <div className="hidden flex-col justify-end px-10 pb-16 pt-10 text-white lg:flex">
+          <img
+            src="/seva-logo.png"
+            alt="Seva"
+            className="mb-6 h-14 w-auto self-center"
+          />
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-200/90">
             Seva supply chain
           </p>
@@ -58,9 +63,11 @@ export function LoginPage() {
         <div className="flex items-center justify-center px-6 py-14">
           <Card className="w-full max-w-md border-white/10 bg-white/95 p-8 shadow-2xl shadow-emerald-900/20 backdrop-blur">
             <div className="lg:hidden">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
-                Seva
-              </p>
+              <img
+                src="/seva-logo.png"
+                alt="Seva"
+                className="mb-3 block h-10 w-auto mx-auto"
+              />
               <h2 className="mt-2 font-display text-2xl font-semibold text-slate-900">Sign in</h2>
             </div>
             <div className="hidden lg:block">
