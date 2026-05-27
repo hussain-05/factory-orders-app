@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { addMonths, differenceInCalendarDays, format, startOfMonth } from 'date-fns'
 import { AlertTriangle, BarChart3, Clock, Package, RefreshCw, TrendingUp } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { db } from '../../lib/firebase'
 import { listAllOrdersForFactory } from '../../lib/orderService'
 import { listLimitedProducts } from '../../lib/productService'
@@ -54,12 +55,14 @@ function StatCard({
   sub,
   icon,
   tone = 'default',
+  onClick,
 }: {
   label: string
   value: string | number
   sub?: string
   icon: React.ReactNode
   tone?: 'default' | 'warning' | 'success'
+  onClick?: () => void
 }) {
   const iconClass = {
     default: 'bg-slate-100 text-slate-600',
@@ -67,11 +70,9 @@ function StatCard({
     success: 'bg-emerald-100 text-emerald-700',
   }[tone]
 
-  return (
-    <Card className="flex items-start gap-4 p-5">
-      <div
-        className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconClass}`}
-      >
+  const inner = (
+    <>
+      <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconClass}`}>
         {icon}
       </div>
       <div className="min-w-0">
@@ -79,8 +80,20 @@ function StatCard({
         <p className="mt-1 font-display text-2xl font-bold tabular-nums text-slate-900">{value}</p>
         {sub && <p className="mt-0.5 text-xs text-slate-500">{sub}</p>}
       </div>
-    </Card>
+    </>
   )
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className="block w-full h-full text-left group">
+        <Card className="flex h-full items-start gap-4 p-5 transition-shadow group-hover:shadow-md group-hover:ring-1 group-hover:ring-slate-200">
+          {inner}
+        </Card>
+      </button>
+    )
+  }
+
+  return <Card className="flex h-full items-start gap-4 p-5">{inner}</Card>
 }
 
 function PipelineStage({
@@ -88,31 +101,40 @@ function PipelineStage({
   count,
   total,
   color,
+  onClick,
 }: {
   label: string
   count: number
   total: number
   color: string
+  onClick?: () => void
 }) {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0
-  return (
-    <div className="flex-1 text-center">
+  const inner = (
+    <>
       <p className="font-display text-2xl font-bold tabular-nums text-slate-900">{count}</p>
       <div className="mx-auto my-2 h-1.5 w-full rounded-full bg-slate-100">
-        <div
-          className={`h-1.5 rounded-full transition-all ${color}`}
-          style={{ width: `${pct}%` }}
-        />
+        <div className={`h-1.5 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
       </div>
       <p className="text-xs font-medium text-slate-700">{label}</p>
       <p className="text-xs text-slate-400">{pct}%</p>
-    </div>
+    </>
   )
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className="flex-1 text-center transition-opacity hover:opacity-70">
+        {inner}
+      </button>
+    )
+  }
+  return <div className="flex-1 text-center">{inner}</div>
 }
 
 // ─── main page ────────────────────────────────────────────────────────────
 
 export function FactoryDashboardPage() {
+  const nav = useNavigate()
   const [orders, setOrders] = useState<Order[]>([])
   const [limitedProducts, setLimitedProducts] = useState<LimitedProduct[]>([])
   const [loading, setLoading] = useState(true)
@@ -222,13 +244,14 @@ export function FactoryDashboardPage() {
       )}
 
       {/* ── Stat cards ── */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 items-stretch">
         <StatCard
           label="Pending orders"
           value={pending.length}
           sub={`${stages.placed} placed · ${stages.inProduction} in prod · ${stages.dispatched} dispatched`}
           icon={<Package className="h-5 w-5" />}
           tone={pending.length > 0 ? 'warning' : 'default'}
+          onClick={() => nav('/factory/pending')}
         />
         <StatCard
           label="Completed this month"
@@ -236,6 +259,7 @@ export function FactoryDashboardPage() {
           sub={`${completed.length} all time`}
           icon={<TrendingUp className="h-5 w-5" />}
           tone="success"
+          onClick={() => nav('/factory/history')}
         />
         <StatCard
           label="Avg lead time"
@@ -248,6 +272,7 @@ export function FactoryDashboardPage() {
           value={orders.length}
           sub="all time"
           icon={<BarChart3 className="h-5 w-5" />}
+          onClick={() => nav('/factory/history')}
         />
       </div>
 
@@ -268,6 +293,7 @@ export function FactoryDashboardPage() {
                 count={stages.placed}
                 total={pending.length}
                 color="bg-blue-400"
+                onClick={() => nav('/factory/pending')}
               />
               <span className="mt-4 shrink-0 text-slate-300">→</span>
               <PipelineStage
@@ -275,6 +301,7 @@ export function FactoryDashboardPage() {
                 count={stages.inProduction}
                 total={pending.length}
                 color="bg-amber-400"
+                onClick={() => nav('/factory/pending')}
               />
               <span className="mt-4 shrink-0 text-slate-300">→</span>
               <PipelineStage
@@ -282,6 +309,7 @@ export function FactoryDashboardPage() {
                 count={stages.dispatched}
                 total={pending.length}
                 color="bg-emerald-500"
+                onClick={() => nav('/factory/pending')}
               />
             </div>
           )}
@@ -351,20 +379,27 @@ export function FactoryDashboardPage() {
             <ul className="divide-y divide-slate-100">
               {recentActivity.map(o => {
                 const { label, tone } = lastActivityLabel(o)
+                const dest = o.status === 'completed' ? '/factory/history' : '/factory/pending'
                 return (
-                  <li key={o.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-900">
-                        {o.shopName}
-                        {o.orderNumber ? (
-                          <span className="ml-1.5 font-mono text-xs text-slate-500">
-                            #{o.orderNumber}
-                          </span>
-                        ) : null}
-                      </p>
-                      <p className="text-xs text-slate-500">{formatDateTime(o.updatedAt)}</p>
-                    </div>
-                    <Badge tone={tone}>{label}</Badge>
+                  <li key={o.id}>
+                    <button
+                      type="button"
+                      onClick={() => nav(dest, { state: { openId: o.id } })}
+                      className="flex w-full items-center justify-between gap-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-50 rounded-lg px-1 -mx-1"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-slate-900">
+                          {o.shopName}
+                          {o.orderNumber ? (
+                            <span className="ml-1.5 font-mono text-xs text-slate-500">
+                              #{o.orderNumber}
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className="text-xs text-slate-500">{formatDateTime(o.updatedAt)}</p>
+                      </div>
+                      <Badge tone={tone}>{label}</Badge>
+                    </button>
                   </li>
                 )
               })}
@@ -390,14 +425,20 @@ export function FactoryDashboardPage() {
           ) : (
             <ul className="divide-y divide-slate-100">
               {lowStock.map(p => (
-                <li key={p.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-slate-900">{p.name}</p>
-                    <p className="text-xs text-slate-500">{p.size}</p>
-                  </div>
-                  <Badge tone={p.stock === 0 ? 'danger' : 'warning'}>
-                    {p.stock === 0 ? 'Out of stock' : `${p.stock} left`}
-                  </Badge>
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    onClick={() => nav('/factory/products')}
+                    className="flex w-full items-center justify-between gap-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-50 rounded-lg px-1 -mx-1"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-slate-900">{p.name}</p>
+                      <p className="text-xs text-slate-500">{p.size}</p>
+                    </div>
+                    <Badge tone={p.stock === 0 ? 'danger' : 'warning'}>
+                      {p.stock === 0 ? 'Out of stock' : `${p.stock} left`}
+                    </Badge>
+                  </button>
                 </li>
               ))}
             </ul>

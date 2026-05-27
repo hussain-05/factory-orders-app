@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
 import { FirebaseError } from 'firebase/app'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
@@ -130,7 +131,17 @@ export function ShopOrderHistoryPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [openId, setOpenId] = useState<string | null>(null)
+  const loc = useLocation() as { state?: { openId?: string } }
+  const [openId, setOpenId] = useState<string | null>(loc.state?.openId ?? null)
+
+  useEffect(() => {
+    const id = loc.state?.openId
+    if (!id || loading) return
+    const t = setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 100)
+    return () => clearTimeout(t)
+  }, [loading, loc.state?.openId])
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
@@ -325,7 +336,7 @@ export function ShopOrderHistoryPage() {
                 {groupOrders.map((o) => {
                   const open = openId === o.id
                   return (
-                    <Card key={o.id} className="p-0">
+                    <Card key={o.id} id={o.id} className="p-0">
                       <button
                         type="button"
                         className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"

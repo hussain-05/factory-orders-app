@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronRight, Filter, Printer, Search } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
@@ -46,6 +47,7 @@ function currentStageLabel(o: Order): string {
 
 interface PendingCardProps {
   order: Order
+  id: string
   open: boolean
   onToggle: () => void
   busy: boolean
@@ -83,6 +85,7 @@ function OrderActions({ order }: { order: Order }) {
 
 function PendingCard({
   order: o,
+  id,
   open,
   onToggle,
   busy,
@@ -93,7 +96,7 @@ function PendingCard({
   onPatch,
 }: PendingCardProps) {
   return (
-    <Card className="p-0">
+    <Card id={id} className="p-0">
       {/* ── Collapsed header ── */}
       <button
         type="button"
@@ -311,7 +314,17 @@ export function FactoryPendingPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
-  const [openId, setOpenId] = useState<string | null>(null)
+  const loc = useLocation() as { state?: { openId?: string } }
+  const [openId, setOpenId] = useState<string | null>(loc.state?.openId ?? null)
+
+  useEffect(() => {
+    const id = loc.state?.openId
+    if (!id || loading) return
+    const t = setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 100)
+    return () => clearTimeout(t)
+  }, [loading, loc.state?.openId])
   const [expectedDraft, setExpectedDraft] = useState<Record<string, string>>({})
   const [actualDraft, setActualDraft] = useState<Record<string, string>>({})
   const [notifyBanner, setNotifyBanner] = useState<{ message: string; number: string } | null>(null)
@@ -570,6 +583,7 @@ export function FactoryPendingPage() {
                 {groupOrders.map((o) => (
                   <PendingCard
                     key={o.id}
+                    id={o.id}
                     order={o}
                     open={openId === o.id}
                     onToggle={() => setOpenId(openId === o.id ? null : o.id)}
