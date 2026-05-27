@@ -14,6 +14,7 @@ import { FactoryOrderHistoryPage } from './pages/factory/FactoryOrderHistoryPage
 import { FactoryPendingPage } from './pages/factory/FactoryPendingPage'
 import { FactoryProductsPage } from './pages/factory/FactoryProductsPage'
 import { ShopAvailablePage } from './pages/shop/ShopAvailablePage'
+import { ShopDashboardPage } from './pages/shop/ShopDashboardPage'
 import { ShopNewOrderPage } from './pages/shop/ShopNewOrderPage'
 import { ShopOrderHistoryPage } from './pages/shop/ShopOrderHistoryPage'
 
@@ -30,7 +31,7 @@ function HomeRedirect() {
   }
   if (!user) return <Navigate to="/login" replace />
   if (!profile) return <Navigate to="/login" replace />
-  const dest = profile.role === 'factory' ? '/factory/dashboard' : '/shop/available'
+  const dest = profile.role === 'factory' ? '/factory/dashboard' : '/shop/dashboard'
   return <Navigate to={dest} replace />
 }
 
@@ -43,7 +44,8 @@ export default function App() {
 
       <Route element={<RequireAuth role="shop" />}>
         <Route path="/shop" element={<ShopShell />}>
-          <Route index element={<Navigate to="available" replace />} />
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<ShopDashboardPage />} />
           <Route path="available" element={<ShopAvailablePage />} />
           <Route path="new-order" element={<ShopNewOrderPage />} />
           <Route path="history" element={<ShopOrderHistoryPage />} />

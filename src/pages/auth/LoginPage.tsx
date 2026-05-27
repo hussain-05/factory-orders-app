@@ -20,8 +20,8 @@ export function LoginPage() {
       loc.state?.from && loc.state.from !== '/login'
         ? loc.state.from
         : profile.role === 'factory'
-          ? '/factory/pending'
-          : '/shop/available'
+          ? '/factory/dashboard'
+          : '/shop/dashboard'
     return <Navigate to={dest} replace />
   }
 
