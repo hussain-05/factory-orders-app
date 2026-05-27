@@ -217,7 +217,7 @@ export async function uploadLimitedProductPhoto(
   file: File,
   productId: string,
 ) {
-  const compressed = await compressImageToMaxSize(file, 300 * 1024)
+  const compressed = await compressImageToMaxSize(file, 100 * 1024)
   const safe = file.name.replace(/[^\w.-]+/g, '_')
   const path = `limited-products/${productId}/${Date.now()}_${safe}.jpg`
   const r = ref(storage, path)
