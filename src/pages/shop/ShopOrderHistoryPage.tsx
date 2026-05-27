@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Filter, Printer, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
 import { FirebaseError } from 'firebase/app'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
@@ -9,6 +9,7 @@ import { deleteOrder, listOrdersForShop } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
 import type { Order } from '../../types/models'
 import { formatDate, formatDateTime, fulfillmentSummary } from '../../utils/format'
@@ -137,6 +138,7 @@ export function ShopOrderHistoryPage() {
   const [filterRequestor, setFilterRequestor] = useState<string>('all')
   const [filterKind, setFilterKind] = useState<string>('all')
   const [filterOpen, setFilterOpen] = useState(false)
+  const [orderSearch, setOrderSearch] = useState('')
 
   const refresh = useCallback(async () => {
     if (!db || !user) return
@@ -169,14 +171,16 @@ export function ShopOrderHistoryPage() {
   )
 
   const grouped = useMemo(() => {
+    const needle = orderSearch.trim()
     const filtered = orders.filter(o => {
+      if (needle && !(o.orderNumber ?? '').includes(needle)) return false
       if (filterRequestor !== 'all' && o.requestorName !== filterRequestor) return false
       if (filterKind !== 'all' && o.orderKind !== filterKind) return false
       return true
     })
     const sorted = filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     return groupByMonth(sorted)
-  }, [orders, filterRequestor, filterKind])
+  }, [orders, orderSearch, filterRequestor, filterKind])
 
   const hasActiveFilters = filterRequestor !== 'all' || filterKind !== 'all'
 
@@ -197,24 +201,42 @@ export function ShopOrderHistoryPage() {
         </Button>
       </div>
 
-      {/* ── Filter bar ── */}
+      {/* ── Search + Filter bar ── */}
       <div className="rounded-xl border border-slate-200 bg-slate-50">
-        <button
-          type="button"
-          onClick={() => setFilterOpen(o => !o)}
-          className="flex w-full items-center justify-between px-4 py-3"
-        >
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-slate-400" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Filters</span>
-            {hasActiveFilters && (
-              <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-xs font-semibold text-white leading-none">
-                {[filterRequestor !== 'all', filterKind !== 'all'].filter(Boolean).length}
-              </span>
-            )}
+        <div className="flex divide-x divide-slate-200">
+
+          {/* Filter toggle — wider */}
+          <button
+            type="button"
+            onClick={() => setFilterOpen(o => !o)}
+            className="flex flex-[2] items-center justify-between px-4 py-3 text-left"
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-slate-400" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Filters</span>
+              {hasActiveFilters && (
+                <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-xs font-semibold text-white leading-none">
+                  {[filterRequestor !== 'all', filterKind !== 'all'].filter(Boolean).length}
+                </span>
+              )}
+            </div>
+            <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* Order number search — narrower */}
+          <div className="relative flex flex-1 items-center px-3">
+            <Search className="pointer-events-none absolute left-6 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="Order #…"
+              value={orderSearch}
+              onChange={e => setOrderSearch(e.target.value.replace(/\D/g, ''))}
+              className="w-full bg-transparent py-3 pl-7 text-sm text-slate-700 placeholder-slate-400 focus:outline-none"
+            />
           </div>
-          <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
-        </button>
+        </div>
 
         {filterOpen && (
           <div className="border-t border-slate-200 px-4 pb-4 pt-3 space-y-3">
