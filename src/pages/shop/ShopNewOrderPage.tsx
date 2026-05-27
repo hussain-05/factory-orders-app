@@ -1,5 +1,6 @@
 import { Minus, Plus, Search, ShoppingBag } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Fuse from 'fuse.js'
 import { useAuth } from '../../contexts/AuthContext'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -67,11 +68,21 @@ export function ShopNewOrderPage() {
       .sort((a, b) => a.name.localeCompare(b.name))
   }, [catalog])
 
+  const fuse = useMemo(
+    () => new Fuse(grouped, {
+      keys: ['name'],
+      threshold: 0.4,      // 0 = exact only, 1 = match anything; 0.4 tolerates ~2 char errors
+      ignoreLocation: true, // don't penalise matches that appear mid-string
+      minMatchCharLength: 2,
+    }),
+    [grouped]
+  )
+
   const filteredGroups = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = query.trim()
     if (!q) return grouped
-    return grouped.filter((g) => g.name.toLowerCase().includes(q))
-  }, [grouped, query])
+    return fuse.search(q).map(r => r.item)
+  }, [fuse, query, grouped])
 
   function setQty(id: string, qty: number) {
     setQtys((prev) => {
