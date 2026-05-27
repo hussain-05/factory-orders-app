@@ -9,7 +9,7 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import type { Order } from '../../types/models'
-import { formatDate, formatDateTime } from '../../utils/format'
+import { formatDateTime } from '../../utils/format'
 
 // ─── helpers ──────────────────────────────────────────────────────────────
 
@@ -179,7 +179,7 @@ export function ShopDashboardPage() {
   // ── derived metrics ──────────────────────────────────────────────────────
 
   const pending = useMemo(() => orders.filter(o => o.status === 'pending'), [orders])
-  const completed = useMemo(() => orders.filter(o => o.status === 'completed'), [orders])
+
 
   const stages = useMemo(() => ({
     placed: pending.filter(o => !o.milestones.receivedAt).length,
