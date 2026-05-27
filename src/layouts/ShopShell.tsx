@@ -83,7 +83,7 @@ export function ShopShell() {
             </NavLink>
             <NavLink className={linkClass} to="/shop/available">
               <LayoutGrid className="h-4 w-4 shrink-0" />
-              <span className="sm:hidden">Available</span>
+              <span className="sm:hidden">Stock</span>
               <span className="hidden sm:inline">Available products</span>
             </NavLink>
             <NavLink className={linkClass} to="/shop/new-order">
