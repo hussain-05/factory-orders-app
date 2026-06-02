@@ -38,6 +38,18 @@ export interface LimitedProduct {
   updatedAt: number
 }
 
+export interface OrderDispatch {
+  id: string
+  dispatchedAt: number
+  items: Array<{
+    productId: string
+    name: string
+    size?: string
+    qty: number
+  }>
+  receivedAt?: number | null
+}
+
 export interface OrderLineItem {
   productId: string
   name: string
@@ -69,4 +81,5 @@ export interface Order {
   completedAt?: number | null
   shopWhatsappNumber?: string
   orderNumber?: string
+  dispatches?: OrderDispatch[]
 }

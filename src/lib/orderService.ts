@@ -15,7 +15,7 @@ import {
   type DocumentSnapshot,
   type Firestore,
 } from 'firebase/firestore'
-import type { Order, OrderKind, OrderLineItem, OrderMilestones, OrderStatus } from '../types/models'
+import type { Order, OrderDispatch, OrderKind, OrderLineItem, OrderMilestones, OrderStatus } from '../types/models'
 
 const ordersCol = 'orders'
 const limitedCol = 'limitedProducts'
@@ -180,6 +180,22 @@ function mapOrder(id: string, d: Record<string, unknown>): Order {
           : null,
     shopWhatsappNumber: typeof d.shopWhatsappNumber === 'string' ? d.shopWhatsappNumber : undefined,
     orderNumber: typeof d.orderNumber === 'string' ? d.orderNumber : undefined,
+    dispatches: Array.isArray(d.dispatches)
+      ? (d.dispatches as Array<Record<string, unknown>>).map(disp => ({
+          id: String(disp.id ?? ''),
+          dispatchedAt: typeof disp.dispatchedAt === 'number' ? disp.dispatchedAt : 0,
+          items: Array.isArray(disp.items)
+            ? (disp.items as Array<Record<string, unknown>>).map(it => ({
+                productId: String(it.productId ?? ''),
+                name: String(it.name ?? ''),
+                size: typeof it.size === 'string' ? it.size : undefined,
+                qty: Number(it.qty ?? 0),
+              }))
+            : [],
+          receivedAt:
+            typeof disp.receivedAt === 'number' ? disp.receivedAt : null,
+        }))
+      : [],
   }
 }
 
@@ -296,4 +312,87 @@ export async function updateOrderMilestones(
   }
 
   await updateDoc(ref, payload)
+}
+
+// ─── Dispatch helpers ─────────────────────────────────────────────────────
+
+/** Factory: add a new dispatch entry to an order. */
+export async function addDispatch(
+  firestore: Firestore,
+  orderId: string,
+  items: OrderDispatch['items'],
+): Promise<void> {
+  const ref = doc(firestore, ordersCol, orderId)
+  const now = Date.now()
+  const dispatch: OrderDispatch = {
+    id: `d_${now}_${Math.random().toString(36).slice(2, 6)}`,
+    dispatchedAt: now,
+    items,
+    receivedAt: null,
+  }
+
+  await runTransaction(firestore, async (tx) => {
+    const snap = await tx.get(ref)
+    if (!snap.exists()) throw new Error('Order not found')
+    const data = snap.data() as Record<string, unknown>
+    const existing: OrderDispatch[] = Array.isArray(data.dispatches)
+      ? (data.dispatches as OrderDispatch[])
+      : []
+    const milestones = (data.milestones ?? {}) as Record<string, unknown>
+    const isFirst = !milestones.dispatchedAt
+
+    const update: Record<string, unknown> = {
+      dispatches: [...existing, dispatch],
+      updatedAt: serverTimestamp(),
+    }
+    if (isFirst) {
+      update['milestones.dispatchedAt'] = Timestamp.fromMillis(now)
+    }
+    tx.update(ref, update)
+  })
+}
+
+/** Shop: confirm receipt of a specific dispatch. Auto-completes order if all items received. */
+export async function confirmDispatch(
+  firestore: Firestore,
+  orderId: string,
+  dispatchId: string,
+): Promise<void> {
+  const ref = doc(firestore, ordersCol, orderId)
+  const now = Date.now()
+
+  await runTransaction(firestore, async (tx) => {
+    const snap = await tx.get(ref)
+    if (!snap.exists()) throw new Error('Order not found')
+    const order = mapOrder(orderId, snap.data() as Record<string, unknown>)
+
+    const dispatches: OrderDispatch[] = (order.dispatches ?? []).map(d =>
+      d.id === dispatchId ? { ...d, receivedAt: now } : d,
+    )
+
+    // Tally received quantities per product
+    const receivedQty: Record<string, number> = {}
+    for (const d of dispatches) {
+      if (d.receivedAt) {
+        for (const it of d.items) {
+          receivedQty[it.productId] = (receivedQty[it.productId] ?? 0) + it.qty
+        }
+      }
+    }
+
+    const allFulfilled = order.items.every(
+      it => (receivedQty[it.productId] ?? 0) >= it.quantity,
+    )
+
+    const update: Record<string, unknown> = {
+      dispatches,
+      updatedAt: serverTimestamp(),
+    }
+    if (allFulfilled) {
+      update.status = 'completed'
+      update.completedAt = serverTimestamp()
+      update.actualDeliveryDate = Timestamp.fromMillis(now)
+    }
+    tx.update(ref, update)
+  })
 }

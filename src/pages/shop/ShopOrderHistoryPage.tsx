@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useAdminMode } from '../../contexts/AdminModeContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
-import { deleteOrder, listOrdersForShop } from '../../lib/orderService'
+import { confirmDispatch, deleteOrder, listOrdersForShop } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -146,12 +146,26 @@ export function ShopOrderHistoryPage() {
     return () => clearTimeout(t)
   }, [loading, loc.state?.openId])
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null)
+  const [confirmBusyId, setConfirmBusyId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [filterRequestor, setFilterRequestor] = useState<string>('all')
   const [filterKind, setFilterKind] = useState<string>('all')
   const [filterOpen, setFilterOpen] = useState(false)
   const [orderSearch, setOrderSearch] = useState('')
+
+  async function handleConfirmDispatch(orderId: string, dispatchId: string) {
+    if (!db) return
+    setConfirmBusyId(dispatchId)
+    try {
+      await confirmDispatch(db, orderId, dispatchId)
+      await refresh()
+    } catch {
+      // silent — order will refresh
+    } finally {
+      setConfirmBusyId(null)
+    }
+  }
 
   const refresh = useCallback(async () => {
     if (!db || !user) return
@@ -373,6 +387,44 @@ export function ShopOrderHistoryPage() {
                         <div className="space-y-4 border-t border-slate-100 px-5 py-4">
                           {/* Timeline */}
                           <OrderTimeline order={o} />
+
+                          {/* Dispatches */}
+                          {(o.dispatches ?? []).length > 0 && (
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-3">
+                                Dispatches
+                              </p>
+                              {(o.dispatches ?? []).map((d, i) => (
+                                <div key={d.id} className="rounded-lg border border-slate-200 bg-white p-3 space-y-1.5">
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="font-semibold text-slate-700">
+                                      Dispatch {i + 1} · {format(d.dispatchedAt, 'dd MMM yyyy')}
+                                    </span>
+                                    {d.receivedAt
+                                      ? <span className="text-emerald-600 font-medium">✓ Received {format(d.receivedAt, 'dd MMM')}</span>
+                                      : <span className="text-amber-600 font-medium">Awaiting your confirmation</span>
+                                    }
+                                  </div>
+                                  {d.items.map(it => (
+                                    <div key={it.productId} className="flex justify-between text-xs text-slate-600">
+                                      <span>{it.name}{it.size ? ` · ${it.size}` : ''}</span>
+                                      <span className="font-semibold tabular-nums">×{it.qty}</span>
+                                    </div>
+                                  ))}
+                                  {!d.receivedAt && (
+                                    <Button
+                                      variant="secondary"
+                                      className="!py-1.5 !text-xs mt-2"
+                                      disabled={confirmBusyId === d.id}
+                                      onClick={() => void handleConfirmDispatch(o.id, d.id)}
+                                    >
+                                      {confirmBusyId === d.id ? 'Confirming…' : 'Confirm receipt'}
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
                           {/* Delivery info */}
                           <div className="grid gap-3 sm:grid-cols-2">

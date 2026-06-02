@@ -4,13 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
-import { listPendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
+import { addDispatch, listPendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
 import { whatsappLink } from '../../utils/whatsapp'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
-import type { Order } from '../../types/models'
+import type { Order, OrderDispatch } from '../../types/models'
 import { formatDate, formatDateTime } from '../../utils/format'
 
 function ymdToMillis(ymd: string) {
@@ -45,6 +45,18 @@ function currentStageLabel(o: Order): string {
   return 'Order placed'
 }
 
+// ─── Dispatch helpers ─────────────────────────────────────────────────────
+
+function dispatchedQtyByProduct(dispatches: OrderDispatch[]): Record<string, number> {
+  const map: Record<string, number> = {}
+  for (const d of dispatches) {
+    for (const it of d.items) {
+      map[it.productId] = (map[it.productId] ?? 0) + it.qty
+    }
+  }
+  return map
+}
+
 interface PendingCardProps {
   order: Order
   id: string
@@ -56,6 +68,7 @@ interface PendingCardProps {
   onExpectedChange: (v: string) => void
   onActualChange: (v: string) => void
   onPatch: (patch: Parameters<typeof updateOrderMilestones>[2]) => void
+  onAddDispatch: (items: OrderDispatch['items']) => void
 }
 
 const WhatsAppIcon = () => (
@@ -83,6 +96,99 @@ function OrderActions({ order }: { order: Order }) {
   )
 }
 
+// ─── Dispatch form ────────────────────────────────────────────────────────
+
+function DispatchForm({
+  order,
+  dispatchedQty,
+  busy,
+  onSubmit,
+  onCancel,
+}: {
+  order: Order
+  dispatchedQty: Record<string, number>
+  busy: boolean
+  onSubmit: (items: OrderDispatch['items']) => void
+  onCancel: () => void
+}) {
+  const remainingItems = order.items.filter(
+    it => (it.quantity - (dispatchedQty[it.productId] ?? 0)) > 0,
+  )
+
+  const [draft, setDraft] = useState<Record<string, number>>(() => {
+    const r: Record<string, number> = {}
+    for (const it of remainingItems) {
+      r[it.productId] = it.quantity - (dispatchedQty[it.productId] ?? 0)
+    }
+    return r
+  })
+
+  const handleSubmit = () => {
+    const items: OrderDispatch['items'] = remainingItems
+      .filter(it => (draft[it.productId] ?? 0) > 0)
+      .map(it => ({
+        productId: it.productId,
+        name: it.name,
+        size: it.size,
+        qty: draft[it.productId] ?? 0,
+      }))
+    if (items.length === 0) return
+    onSubmit(items)
+  }
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
+      <p className="text-xs font-semibold text-slate-700">New dispatch</p>
+      <div className="space-y-2">
+        {remainingItems.map(it => {
+          const remaining = it.quantity - (dispatchedQty[it.productId] ?? 0)
+          return (
+            <div key={it.productId} className="flex items-center justify-between gap-3 text-xs">
+              <div className="min-w-0">
+                <p className="font-medium text-slate-800 truncate">
+                  {it.name}{it.size ? ` · ${it.size}` : ''}
+                </p>
+                <p className="text-slate-400">
+                  Ordered {it.quantity} · {dispatchedQty[it.productId] ?? 0} already sent · {remaining} remaining
+                </p>
+              </div>
+              <Input
+                type="number"
+                min={0}
+                max={remaining}
+                value={draft[it.productId] ?? 0}
+                onChange={e => setDraft(prev => ({
+                  ...prev,
+                  [it.productId]: Math.min(remaining, Math.max(0, Number(e.target.value))),
+                }))}
+                disabled={busy}
+                className="!w-20 !py-1 !text-xs shrink-0"
+              />
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex gap-2">
+        <Button
+          variant="secondary"
+          className="!py-1.5 !text-xs"
+          onClick={onCancel}
+          disabled={busy}
+        >
+          Cancel
+        </Button>
+        <Button
+          className="!py-1.5 !text-xs bg-slate-900 hover:bg-slate-800 text-white"
+          onClick={handleSubmit}
+          disabled={busy || remainingItems.every(it => (draft[it.productId] ?? 0) === 0)}
+        >
+          {busy ? 'Saving…' : 'Dispatch'}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 function PendingCard({
   order: o,
   id,
@@ -94,7 +200,13 @@ function PendingCard({
   onExpectedChange,
   onActualChange,
   onPatch,
+  onAddDispatch,
 }: PendingCardProps) {
+  const [showDispatchForm, setShowDispatchForm] = useState(false)
+  const dispatches = o.dispatches ?? []
+  const dispatchedQty = dispatchedQtyByProduct(dispatches)
+  const allDispatched = o.items.every(it => (dispatchedQty[it.productId] ?? 0) >= it.quantity)
+  const allReceived = dispatches.length > 0 && dispatches.every(d => d.receivedAt)
   return (
     <Card id={id} className="p-0">
       {/* ── Collapsed header ── */}
@@ -193,43 +305,92 @@ function PendingCard({
               )}
             </TimelineStage>
 
-            {/* Stage 3: Delivered */}
+            {/* Stage 3: Dispatches */}
             <TimelineStage
-              done={false}
+              done={allReceived}
               isLast={true}
               nextDone={false}
-              dot="empty"
-              label="Delivered"
+              dot={allReceived ? 'check' : 'empty'}
+              label="Dispatches"
               timestamp={undefined}
             >
-              {o.milestones.receivedAt ? (
-                <div className="mt-2 space-y-2">
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Actual delivery date (required to complete)</p>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="date"
-                        className="!py-1 !text-xs"
-                        value={actualDraft}
-                        onChange={(e) => onActualChange(e.target.value)}
-                        disabled={busy}
-                      />
-                      <Button
-                        className="!py-1.5 !text-xs shrink-0 bg-slate-900 hover:bg-slate-800 text-white"
-                        disabled={busy || !actualDraft}
-                        onClick={() =>
-                          onPatch({ status: 'completed', actualDeliveryDate: ymdToMillis(actualDraft) })
-                        }
-                      >
-                        {busy ? 'Saving…' : 'Complete'}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+              {!o.milestones.receivedAt ? (
+                <p className="mt-2 text-xs text-slate-400 italic">Mark order as received first.</p>
               ) : (
-                <p className="mt-2 text-xs text-slate-400 italic">
-                  Mark order as received first.
-                </p>
+                <div className="mt-2 space-y-3">
+
+                  {/* Existing dispatches */}
+                  {dispatches.map((d, i) => (
+                    <div key={d.id} className="rounded-lg border border-slate-200 bg-white p-3 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-700">
+                          Dispatch {i + 1} · {format(d.dispatchedAt, 'dd MMM yyyy')}
+                        </span>
+                        {d.receivedAt
+                          ? <span className="text-emerald-600 font-medium">✓ Confirmed {format(d.receivedAt, 'dd MMM')}</span>
+                          : <span className="text-amber-600 font-medium">⏳ Awaiting confirmation</span>
+                        }
+                      </div>
+                      {d.items.map(it => (
+                        <div key={it.productId} className="flex justify-between text-slate-600">
+                          <span>{it.name}{it.size ? ` · ${it.size}` : ''}</span>
+                          <span className="font-semibold tabular-nums">×{it.qty}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+
+                  {/* Fulfillment progress */}
+                  {dispatches.length > 0 && (
+                    <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 space-y-1.5">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Fulfillment</p>
+                      {o.items.map(it => {
+                        const sent = dispatchedQty[it.productId] ?? 0
+                        const full = sent >= it.quantity
+                        return (
+                          <div key={it.productId} className="flex items-center justify-between text-xs">
+                            <span className="text-slate-600 truncate">{it.name}{it.size ? ` · ${it.size}` : ''}</span>
+                            <span className={`ml-3 shrink-0 font-semibold tabular-nums ${full ? 'text-emerald-600' : 'text-amber-600'}`}>
+                              {sent}/{it.quantity} {full ? '✓' : 'remaining'}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* All dispatched, awaiting shop confirmation */}
+                  {allDispatched && !allReceived && (
+                    <p className="text-xs text-amber-600 font-medium">
+                      All items dispatched · awaiting shop confirmation
+                    </p>
+                  )}
+
+                  {/* Add dispatch form */}
+                  {!allDispatched && (
+                    showDispatchForm ? (
+                      <DispatchForm
+                        order={o}
+                        dispatchedQty={dispatchedQty}
+                        busy={busy}
+                        onSubmit={(items) => {
+                          setShowDispatchForm(false)
+                          onAddDispatch(items)
+                        }}
+                        onCancel={() => setShowDispatchForm(false)}
+                      />
+                    ) : (
+                      <Button
+                        variant="secondary"
+                        className="!py-1.5 !text-xs"
+                        onClick={() => setShowDispatchForm(true)}
+                        disabled={busy}
+                      >
+                        + Add dispatch
+                      </Button>
+                    )
+                  )}
+                </div>
               )}
             </TimelineStage>
           </div>
@@ -433,6 +594,26 @@ export function FactoryPendingPage() {
     }
   }
 
+  async function handleAddDispatch(order: Order, items: OrderDispatch['items']) {
+    if (!db) return
+    setBusyId(order.id)
+    setError(null)
+    try {
+      await addDispatch(db, order.id, items)
+      if (order.shopWhatsappNumber) {
+        setNotifyBanner({
+          number: order.shopWhatsappNumber,
+          message: `Hi ${order.requestorName}, a dispatch for your order ${order.orderNumber ? `#${order.orderNumber}` : ''} from ${order.shopName} is on its way. Please confirm receipt when delivered.`,
+        })
+      }
+      await refresh()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Dispatch failed.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -604,6 +785,7 @@ export function FactoryPendingPage() {
                     onExpectedChange={(v) => setExpectedDraft((p) => ({ ...p, [o.id]: v }))}
                     onActualChange={(v) => setActualDraft((p) => ({ ...p, [o.id]: v }))}
                     onPatch={(p) => void patch(o, p)}
+                    onAddDispatch={(items) => void handleAddDispatch(o, items)}
                   />
                 ))}
               </div>

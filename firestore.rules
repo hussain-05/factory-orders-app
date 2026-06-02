@@ -74,7 +74,8 @@ service cloud.firestore {
         && request.resource.data.shopUserId == request.auth.uid
         && request.resource.data.shopName == userDoc().shopName
         && request.resource.data.status == 'pending';
-      allow update: if isFactory() || isAdmin();
+      allow update: if isFactory() || isAdmin()
+        || (isShop() && resource.data.shopName == userDoc().shopName && resource.data.status == 'pending');
       allow delete: if isShop()
         && resource.data.shopUserId == request.auth.uid
         && resource.data.status == 'pending';
