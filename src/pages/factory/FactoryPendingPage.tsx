@@ -64,9 +64,7 @@ interface PendingCardProps {
   onToggle: () => void
   busy: boolean
   expectedDraft: string
-  actualDraft: string
   onExpectedChange: (v: string) => void
-  onActualChange: (v: string) => void
   onPatch: (patch: Parameters<typeof updateOrderMilestones>[2]) => void
   onAddDispatch: (items: OrderDispatch['items']) => void
 }
@@ -196,9 +194,7 @@ function PendingCard({
   onToggle,
   busy,
   expectedDraft,
-  actualDraft,
   onExpectedChange,
-  onActualChange,
   onPatch,
   onAddDispatch,
 }: PendingCardProps) {
@@ -498,7 +494,6 @@ export function FactoryPendingPage() {
     return () => clearTimeout(t)
   }, [loading, loc.state?.openId])
   const [expectedDraft, setExpectedDraft] = useState<Record<string, string>>({})
-  const [actualDraft, setActualDraft] = useState<Record<string, string>>({})
   const [notifyBanner, setNotifyBanner] = useState<{ message: string; number: string } | null>(null)
   const [filterShop, setFilterShop] = useState<string>('all')
   const [filterRequestor, setFilterRequestor] = useState<string>('all')
@@ -528,13 +523,6 @@ export function FactoryPendingPage() {
         const next = { ...prev }
         for (const o of orders) {
           if (next[o.id] === undefined) next[o.id] = millisToYmd(o.expectedDeliveryDate ?? null)
-        }
-        return next
-      })
-      setActualDraft((prev) => {
-        const next = { ...prev }
-        for (const o of orders) {
-          if (next[o.id] === undefined) next[o.id] = millisToYmd(o.actualDeliveryDate ?? null)
         }
         return next
       })
@@ -781,9 +769,7 @@ export function FactoryPendingPage() {
                     onToggle={() => setOpenId(openId === o.id ? null : o.id)}
                     busy={busyId === o.id}
                     expectedDraft={expectedDraft[o.id] ?? ''}
-                    actualDraft={actualDraft[o.id] ?? ''}
                     onExpectedChange={(v) => setExpectedDraft((p) => ({ ...p, [o.id]: v }))}
-                    onActualChange={(v) => setActualDraft((p) => ({ ...p, [o.id]: v }))}
                     onPatch={(p) => void patch(o, p)}
                     onAddDispatch={(items) => void handleAddDispatch(o, items)}
                   />
