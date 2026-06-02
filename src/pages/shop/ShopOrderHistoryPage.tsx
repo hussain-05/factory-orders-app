@@ -4,6 +4,7 @@ import { FirebaseError } from 'firebase/app'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { useAuth } from '../../contexts/AuthContext'
+import { useAdminMode } from '../../contexts/AdminModeContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
 import { deleteOrder, listOrdersForShop } from '../../lib/orderService'
@@ -128,6 +129,8 @@ function OrderTimeline({ order }: { order: Order }) {
 
 export function ShopOrderHistoryPage() {
   const { user, profile } = useAuth()
+  const { shopView } = useAdminMode()
+  const effectiveShopName = profile?.isAdmin ? shopView : (profile?.shopName ?? '')
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -155,7 +158,7 @@ export function ShopOrderHistoryPage() {
     setLoading(true)
     setError(null)
     try {
-      setOrders(await listOrdersForShop(db, profile?.shopName ?? ''))
+      setOrders(await listOrdersForShop(db, effectiveShopName))
     } catch (e) {
       const msg =
         e instanceof FirebaseError
@@ -167,7 +170,7 @@ export function ShopOrderHistoryPage() {
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user, effectiveShopName])
 
   useEffect(() => {
     queueMicrotask(() => {

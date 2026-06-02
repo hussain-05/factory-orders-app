@@ -52,13 +52,13 @@ service cloud.firestore {
 
     match /unlimitedProducts/{id} {
       allow read: if signedIn();
-      allow write: if isFactory();
+      allow write: if isFactory() || isAdmin();
     }
 
     match /limitedProducts/{id} {
       allow read: if signedIn();
-      allow create, delete: if isFactory();
-      allow update: if isFactory()
+      allow create, delete: if isFactory() || isAdmin();
+      allow update: if isFactory() || isAdmin()
         || (
           isShop()
           && request.resource.data.stock is int
@@ -74,7 +74,7 @@ service cloud.firestore {
         && request.resource.data.shopUserId == request.auth.uid
         && request.resource.data.shopName == userDoc().shopName
         && request.resource.data.status == 'pending';
-      allow update: if isFactory();
+      allow update: if isFactory() || isAdmin();
       allow delete: if isShop()
         && resource.data.shopUserId == request.auth.uid
         && resource.data.status == 'pending';

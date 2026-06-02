@@ -16,7 +16,7 @@ export function RequireAdmin() {
   }
   if (!user) return <Navigate to="/login" replace state={{ from: loc.pathname }} />
   if (!profile?.isAdmin) {
-    const dest = profile?.role === 'factory' ? '/factory/pending' : '/shop/available'
+    const dest = profile?.role === 'factory' ? '/factory/dashboard' : '/shop/dashboard'
     return <Navigate to={dest ?? '/login'} replace />
   }
   return <Outlet />

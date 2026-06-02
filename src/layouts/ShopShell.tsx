@@ -3,6 +3,8 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
 import { Button } from '../components/ui/Button'
+import { ModeSwitcher } from '../components/ModeSwitcher'
+import { useAdminMode } from '../contexts/AdminModeContext'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all sm:gap-2 sm:px-3 ${
@@ -13,12 +15,15 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export function ShopShell() {
   const { profile, logout } = useAuth()
+  const { shopView } = useAdminMode()
+  const displayShopName = profile?.isAdmin ? shopView : (profile?.shopName ?? 'Shop')
   const nav = useNavigate()
   const { status, toast, dismissToast, enable } = useNotifications()
 
   return (
     <div className="min-h-dvh bg-slate-50">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl">
+        {profile?.isAdmin && <ModeSwitcher />}
         {/* Row 1: identity + sign out */}
         <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-3 sm:px-6">
           <div className="min-w-0">
@@ -26,7 +31,7 @@ export function ShopShell() {
               Shop console
             </p>
             <p className="truncate font-display text-lg font-semibold leading-tight text-slate-900">
-              {profile?.shopName ?? 'Shop'}
+              {displayShopName}
             </p>
             <p className="truncate text-xs text-slate-500">{profile?.displayName}</p>
           </div>
@@ -83,7 +88,7 @@ export function ShopShell() {
             </NavLink>
             <NavLink className={linkClass} to="/shop/available">
               <LayoutGrid className="h-4 w-4 shrink-0" />
-              <span className="sm:hidden">Stock</span>
+              <span className="sm:hidden">Available</span>
               <span className="hidden sm:inline">Available products</span>
             </NavLink>
             <NavLink className={linkClass} to="/shop/new-order">

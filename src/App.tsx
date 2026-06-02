@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { RequireAuth } from './components/RequireAuth'
 import { RequireAdmin } from './components/RequireAdmin'
 import { useAuth } from './contexts/AuthContext'
+import { AdminModeProvider } from './contexts/AdminModeContext'
 import { AdminShell } from './layouts/AdminShell'
 import { FactoryShell } from './layouts/FactoryShell'
 import { ShopShell } from './layouts/ShopShell'
@@ -31,45 +32,59 @@ function HomeRedirect() {
   }
   if (!user) return <Navigate to="/login" replace />
   if (!profile) return <Navigate to="/login" replace />
-  const dest = profile.role === 'factory' ? '/factory/dashboard' : '/shop/dashboard'
+
+  const dest = profile.isAdmin
+    ? (profile.role === 'shop' ? '/shop/dashboard' : '/factory/dashboard')
+    : profile.role === 'factory'
+      ? '/factory/dashboard'
+      : '/shop/dashboard'
+
   return <Navigate to={dest} replace />
 }
 
-export default function App() {
+function AppRoutes() {
+  const { profile } = useAuth()
+  const defaultMode = (profile?.role ?? 'factory') as 'factory' | 'shop'
+
   return (
-    <Routes>
-      <Route path="/" element={<HomeRedirect />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignUpPage />} />
+    <AdminModeProvider defaultMode={defaultMode}>
+      <Routes>
+        <Route path="/" element={<HomeRedirect />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
 
-      <Route element={<RequireAuth role="shop" />}>
-        <Route path="/shop" element={<ShopShell />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<ShopDashboardPage />} />
-          <Route path="available" element={<ShopAvailablePage />} />
-          <Route path="new-order" element={<ShopNewOrderPage />} />
-          <Route path="history" element={<ShopOrderHistoryPage />} />
+        <Route element={<RequireAuth role="shop" />}>
+          <Route path="/shop" element={<ShopShell />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<ShopDashboardPage />} />
+            <Route path="available" element={<ShopAvailablePage />} />
+            <Route path="new-order" element={<ShopNewOrderPage />} />
+            <Route path="history" element={<ShopOrderHistoryPage />} />
+          </Route>
         </Route>
-      </Route>
 
-      <Route element={<RequireAuth role="factory" />}>
-        <Route path="/factory" element={<FactoryShell />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<FactoryDashboardPage />} />
-          <Route path="products" element={<FactoryProductsPage />} />
-          <Route path="pending" element={<FactoryPendingPage />} />
-          <Route path="history" element={<FactoryOrderHistoryPage />} />
+        <Route element={<RequireAuth role="factory" />}>
+          <Route path="/factory" element={<FactoryShell />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<FactoryDashboardPage />} />
+            <Route path="products" element={<FactoryProductsPage />} />
+            <Route path="pending" element={<FactoryPendingPage />} />
+            <Route path="history" element={<FactoryOrderHistoryPage />} />
+          </Route>
         </Route>
-      </Route>
 
-      <Route element={<RequireAdmin />}>
-        <Route path="/admin" element={<AdminShell />}>
-          <Route index element={<AdminPage />} />
-          <Route path="dashboard" element={<FactoryDashboardPage />} />
+        <Route element={<RequireAdmin />}>
+          <Route path="/admin" element={<AdminShell />}>
+            <Route index element={<AdminPage />} />
+          </Route>
         </Route>
-      </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AdminModeProvider>
   )
+}
+
+export default function App() {
+  return <AppRoutes />
 }

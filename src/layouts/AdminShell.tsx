@@ -1,4 +1,4 @@
-import { LayoutDashboard, LogOut, Shield, Users } from 'lucide-react'
+import { LogOut, Shield, Users } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
@@ -31,10 +31,7 @@ export function AdminShell() {
             <Button
               variant="secondary"
               className="shrink-0"
-              onClick={() => {
-                const dest = profile?.role === 'factory' ? '/factory/dashboard' : '/shop/available'
-                nav(dest)
-              }}
+              onClick={() => nav('/factory/dashboard')}
             >
               <Shield className="h-4 w-4" />
               Back to app
@@ -58,10 +55,6 @@ export function AdminShell() {
             aria-label="Admin navigation"
             className="inline-flex gap-1 rounded-2xl border border-white/50 bg-white/50 p-1.5 shadow-md shadow-slate-900/8 backdrop-blur-xl"
           >
-            <NavLink className={linkClass} to="/admin/dashboard">
-              <LayoutDashboard className="h-4 w-4 shrink-0" />
-              Dashboard
-            </NavLink>
             <NavLink className={linkClass} to="/admin" end>
               <Users className="h-4 w-4 shrink-0" />
               User access

@@ -3,6 +3,7 @@ import { addMonths, differenceInCalendarDays, format, startOfMonth } from 'date-
 import { BarChart3, Clock, PackageCheck, RefreshCw, Repeat, TrendingUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useAdminMode } from '../../contexts/AdminModeContext'
 import { db } from '../../lib/firebase'
 import { listOrdersForShop } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
@@ -154,6 +155,8 @@ function PipelineStage({
 
 export function ShopDashboardPage() {
   const { user, profile } = useAuth()
+  const { shopView } = useAdminMode()
+  const effectiveShopName = profile?.isAdmin ? shopView : (profile?.shopName ?? '')
   const nav = useNavigate()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -164,13 +167,13 @@ export function ShopDashboardPage() {
     setLoading(true)
     setError(null)
     try {
-      setOrders(await listOrdersForShop(db, profile?.shopName ?? ''))
+      setOrders(await listOrdersForShop(db, effectiveShopName))
     } catch {
       setError('Could not load dashboard data.')
     } finally {
       setLoading(false)
     }
-  }, [user, profile?.shopName])
+  }, [user, profile?.shopName, effectiveShopName])
 
   useEffect(() => {
     queueMicrotask(() => { void refresh() })
@@ -247,7 +250,7 @@ export function ShopDashboardPage() {
             Dashboard
           </h1>
           <p className="mt-1 text-sm text-slate-600">
-            {profile?.shopName} orders at a glance.
+            {effectiveShopName} orders at a glance.
           </p>
         </div>
         <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>

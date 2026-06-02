@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
 import { Button } from '../components/ui/Button'
+import { ModeSwitcher } from '../components/ModeSwitcher'
 import { db } from '../lib/firebase'
 import { listPendingOrdersForFactory } from '../lib/orderService'
 
@@ -34,6 +35,7 @@ export function FactoryShell() {
   return (
     <div className="min-h-dvh bg-slate-50">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl">
+        {profile?.isAdmin && <ModeSwitcher />}
         {/* Row 1: identity + sign out */}
         <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-3 sm:px-6">
           <div className="min-w-0">
