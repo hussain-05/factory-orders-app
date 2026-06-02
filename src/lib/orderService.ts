@@ -185,13 +185,11 @@ function mapOrder(id: string, d: Record<string, unknown>): Order {
 
 export async function listOrdersForShop(
   firestore: Firestore,
-  shopUserId: string,
+  shopName: string,
 ): Promise<Order[]> {
-  // Intentionally no `orderBy('createdAt')` here: combining it with `where('shopUserId')`
-  // requires a composite index in Firebase. Sort client-side so history works out of the box.
   const qy = query(
     collection(firestore, ordersCol),
-    where('shopUserId', '==', shopUserId),
+    where('shopName', '==', shopName),
     limit(200),
   )
   const snap = await getDocs(qy)

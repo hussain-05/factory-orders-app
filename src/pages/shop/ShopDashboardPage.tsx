@@ -153,7 +153,7 @@ function PipelineStage({
 // ─── main page ────────────────────────────────────────────────────────────
 
 export function ShopDashboardPage() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const nav = useNavigate()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -164,13 +164,13 @@ export function ShopDashboardPage() {
     setLoading(true)
     setError(null)
     try {
-      setOrders(await listOrdersForShop(db, user.uid))
+      setOrders(await listOrdersForShop(db, profile?.shopName ?? ''))
     } catch {
       setError('Could not load dashboard data.')
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user, profile?.shopName])
 
   useEffect(() => {
     queueMicrotask(() => { void refresh() })
@@ -193,9 +193,10 @@ export function ShopDashboardPage() {
   }, [orders])
 
   const lastOrder = useMemo(() => {
-    if (orders.length === 0) return null
-    return orders.reduce((latest, o) => o.createdAt > latest.createdAt ? o : latest)
-  }, [orders])
+    const mine = orders.filter(o => o.shopUserId === user?.uid)
+    if (mine.length === 0) return null
+    return mine.reduce((latest, o) => o.createdAt > latest.createdAt ? o : latest)
+  }, [orders, user?.uid])
 
   const avgLead = useMemo(() => calcAvgLeadDays(orders), [orders])
 
@@ -246,7 +247,7 @@ export function ShopDashboardPage() {
             Dashboard
           </h1>
           <p className="mt-1 text-sm text-slate-600">
-            Your orders at a glance.
+            {profile?.shopName} orders at a glance.
           </p>
         </div>
         <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>

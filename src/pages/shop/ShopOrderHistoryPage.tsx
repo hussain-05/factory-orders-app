@@ -127,7 +127,7 @@ function OrderTimeline({ order }: { order: Order }) {
 }
 
 export function ShopOrderHistoryPage() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -155,7 +155,7 @@ export function ShopOrderHistoryPage() {
     setLoading(true)
     setError(null)
     try {
-      setOrders(await listOrdersForShop(db, user.uid))
+      setOrders(await listOrdersForShop(db, profile?.shopName ?? ''))
     } catch (e) {
       const msg =
         e instanceof FirebaseError
