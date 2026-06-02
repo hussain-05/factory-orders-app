@@ -158,11 +158,31 @@ export function ShopOrderHistoryPage() {
     if (!db) return
     const key = `${dispatchId}:${productId}`
     setConfirmBusyId(key)
+    const now = Date.now()
     try {
       await confirmDispatchItem(db, orderId, dispatchId, productId)
-      await refresh()
+      // Update local state directly — no full refresh, no scroll reset
+      setOrders(prev => prev.map(o => {
+        if (o.id !== orderId) return o
+        const updatedDispatches = (o.dispatches ?? []).map(d => {
+          if (d.id !== dispatchId) return d
+          const updatedItems = d.items.map(it =>
+            it.productId === productId ? { ...it, confirmedAt: now } : it,
+          )
+          const allConfirmed = updatedItems.every(it => it.confirmedAt)
+          return { ...d, items: updatedItems, receivedAt: allConfirmed ? (d.receivedAt ?? now) : d.receivedAt }
+        })
+        const confirmedQty: Record<string, number> = {}
+        for (const d of updatedDispatches) {
+          for (const it of d.items) {
+            if (it.confirmedAt) confirmedQty[it.productId] = (confirmedQty[it.productId] ?? 0) + it.qty
+          }
+        }
+        const allFulfilled = o.items.every(it => (confirmedQty[it.productId] ?? 0) >= it.quantity)
+        return { ...o, dispatches: updatedDispatches, status: allFulfilled ? 'completed' : o.status }
+      }))
     } catch {
-      // silent
+      await refresh() // only on error — restores correct state
     } finally {
       setConfirmBusyId(null)
     }
