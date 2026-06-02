@@ -8,7 +8,7 @@ import { listLimitedProducts } from '../../lib/productService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
-import type { LimitedProduct, Order } from '../../types/models'
+import type { LimitedProduct, Order, OrderDispatch } from '../../types/models'
 import { formatDateTime } from '../../utils/format'
 
 // ─── helpers ──────────────────────────────────────────────────────────────
@@ -20,6 +20,50 @@ function lastActivityLabel(o: Order): { label: string; tone: 'success' | 'neutra
   if (o.milestones.dispatchedAt) return { label: 'Dispatched', tone: 'neutral' }
   if (o.milestones.receivedAt) return { label: 'In production', tone: 'warning' }
   return { label: 'Order placed', tone: 'neutral' }
+}
+
+function dispQtyByProduct(dispatches: OrderDispatch[]): Record<string, number> {
+  const map: Record<string, number> = {}
+  for (const d of dispatches) {
+    for (const it of d.items) map[it.productId] = (map[it.productId] ?? 0) + it.qty
+  }
+  return map
+}
+
+type DispatchStage = 'new' | 'partial' | 'awaiting'
+function orderDispatchStage(o: Order): DispatchStage {
+  const dispatches = o.dispatches ?? []
+  if (dispatches.length === 0) return 'new'
+  const dispatched = dispQtyByProduct(dispatches)
+  const allSent = o.items.every(it => (dispatched[it.productId] ?? 0) >= it.quantity)
+  return allSent ? 'awaiting' : 'partial'
+}
+
+interface OutstandingItem {
+  productId: string
+  name: string
+  size?: string
+  remaining: number
+  ordered: number
+}
+
+function buildOutstandingItems(pendingOrders: Order[]): OutstandingItem[] {
+  const map = new Map<string, OutstandingItem>()
+  for (const o of pendingOrders) {
+    const dispatched = dispQtyByProduct(o.dispatches ?? [])
+    for (const it of o.items) {
+      const remaining = it.quantity - (dispatched[it.productId] ?? 0)
+      if (remaining <= 0) continue
+      const existing = map.get(it.productId)
+      if (existing) {
+        existing.remaining += remaining
+        existing.ordered += it.quantity
+      } else {
+        map.set(it.productId, { productId: it.productId, name: it.name, size: it.size, remaining, ordered: it.quantity })
+      }
+    }
+  }
+  return [...map.values()].sort((a, b) => b.remaining - a.remaining)
 }
 
 function calcAvgLeadDays(orders: Order[]): number | null {
@@ -165,10 +209,13 @@ export function FactoryDashboardPage() {
   const completed = useMemo(() => orders.filter(o => o.status === 'completed'), [orders])
 
   const stages = useMemo(() => ({
-    placed: pending.filter(o => !o.milestones.receivedAt).length,
-    inProduction: pending.filter(o => o.milestones.receivedAt && !o.milestones.dispatchedAt).length,
-    dispatched: pending.filter(o => o.milestones.dispatchedAt).length,
+    placed:   pending.filter(o => !o.milestones.receivedAt).length,
+    inProduction: pending.filter(o => o.milestones.receivedAt && orderDispatchStage(o) === 'new').length,
+    partial:  pending.filter(o => orderDispatchStage(o) === 'partial').length,
+    awaiting: pending.filter(o => orderDispatchStage(o) === 'awaiting').length,
   }), [pending])
+
+  const outstanding = useMemo(() => buildOutstandingItems(pending), [pending])
 
   const completedThisMonth = useMemo(() => {
     const start = startOfMonth(new Date()).getTime()
@@ -248,7 +295,7 @@ export function FactoryDashboardPage() {
         <StatCard
           label="Pending orders"
           value={pending.length}
-          sub={`${stages.placed} placed · ${stages.inProduction} in prod · ${stages.dispatched} dispatched`}
+          sub={`${stages.placed} new · ${stages.inProduction} in prod · ${stages.partial} partial · ${stages.awaiting} awaiting`}
           icon={<Package className="h-5 w-5" />}
           tone={pending.length > 0 ? 'warning' : 'default'}
           onClick={() => nav('/factory/pending')}
@@ -305,8 +352,16 @@ export function FactoryDashboardPage() {
               />
               <span className="mt-4 shrink-0 text-slate-300">→</span>
               <PipelineStage
-                label="Awaiting delivery"
-                count={stages.dispatched}
+                label="Partially dispatched"
+                count={stages.partial}
+                total={pending.length}
+                color="bg-orange-400"
+                onClick={() => nav('/factory/pending')}
+              />
+              <span className="mt-4 shrink-0 text-slate-300">→</span>
+              <PipelineStage
+                label="Awaiting confirmation"
+                count={stages.awaiting}
                 total={pending.length}
                 color="bg-emerald-500"
                 onClick={() => nav('/factory/pending')}
@@ -340,6 +395,39 @@ export function FactoryDashboardPage() {
           </div>
         </Card>
       </div>
+
+      {/* ── Outstanding quantities ── */}
+      {outstanding.length > 0 && (
+        <Card className="p-5">
+          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Outstanding quantities
+          </p>
+          <div className="space-y-3">
+            {outstanding.map(item => {
+              const pct = Math.round((item.remaining / item.ordered) * 100)
+              return (
+                <div key={item.productId}>
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span className="font-medium text-slate-700 truncate">
+                      {item.name}{item.size ? ` · ${item.size}` : ''}
+                    </span>
+                    <span className="ml-3 shrink-0 text-xs text-slate-500">
+                      <span className="font-semibold text-amber-600">{item.remaining}</span>
+                      {' '}remaining of {item.ordered} ordered
+                    </span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-slate-100">
+                    <div
+                      className="h-2 rounded-full bg-amber-400 transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      )}
 
       {/* ── Monthly trend ── */}
       <Card className="p-5">

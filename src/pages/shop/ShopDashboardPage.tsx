@@ -9,7 +9,7 @@ import { listOrdersForShop } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
-import type { Order } from '../../types/models'
+import type { Order, OrderDispatch } from '../../types/models'
 import { formatDateTime } from '../../utils/format'
 
 // ─── helpers ──────────────────────────────────────────────────────────────
@@ -65,6 +65,23 @@ function orderStatusLabel(o: Order): { label: string; tone: 'success' | 'neutral
   if (o.milestones.dispatchedAt) return { label: 'Dispatched', tone: 'neutral' }
   if (o.milestones.receivedAt) return { label: 'In production', tone: 'warning' }
   return { label: 'Order placed', tone: 'neutral' }
+}
+
+function dispQtyByProduct(dispatches: OrderDispatch[]): Record<string, number> {
+  const map: Record<string, number> = {}
+  for (const d of dispatches) {
+    for (const it of d.items) map[it.productId] = (map[it.productId] ?? 0) + it.qty
+  }
+  return map
+}
+
+type DispatchStage = 'new' | 'partial' | 'awaiting'
+function orderDispatchStage(o: Order): DispatchStage {
+  const dispatches = o.dispatches ?? []
+  if (dispatches.length === 0) return 'new'
+  const dispatched = dispQtyByProduct(dispatches)
+  const allSent = o.items.every(it => (dispatched[it.productId] ?? 0) >= it.quantity)
+  return allSent ? 'awaiting' : 'partial'
 }
 
 // ─── sub-components ───────────────────────────────────────────────────────
@@ -185,10 +202,18 @@ export function ShopDashboardPage() {
 
 
   const stages = useMemo(() => ({
-    placed: pending.filter(o => !o.milestones.receivedAt).length,
-    inProduction: pending.filter(o => o.milestones.receivedAt && !o.milestones.dispatchedAt).length,
-    dispatched: pending.filter(o => o.milestones.dispatchedAt).length,
+    placed:   pending.filter(o => !o.milestones.receivedAt).length,
+    inProduction: pending.filter(o => o.milestones.receivedAt && orderDispatchStage(o) === 'new').length,
+    partial:  pending.filter(o => orderDispatchStage(o) === 'partial').length,
+    awaiting: pending.filter(o => orderDispatchStage(o) === 'awaiting').length,
   }), [pending])
+
+  const pendingConfirmations = useMemo(() =>
+    pending.reduce((count, o) =>
+      count + (o.dispatches ?? []).reduce((c, d) =>
+        c + d.items.filter(it => !it.confirmedAt).length, 0), 0),
+    [pending]
+  )
 
   const placedThisMonth = useMemo(() => {
     const start = startOfMonth(new Date()).getTime()
@@ -270,7 +295,13 @@ export function ShopDashboardPage() {
         <StatCard
           label="Active orders"
           value={pending.length}
-          sub={pending.length === 0 ? 'All clear' : `${stages.placed} placed · ${stages.inProduction} in prod · ${stages.dispatched} dispatched`}
+          sub={pending.length === 0 ? 'All clear' : [
+            stages.placed > 0 && `${stages.placed} placed`,
+            stages.inProduction > 0 && `${stages.inProduction} in prod`,
+            stages.partial > 0 && `${stages.partial} partial`,
+            stages.awaiting > 0 && `${stages.awaiting} awaiting`,
+            pendingConfirmations > 0 && `${pendingConfirmations} to confirm`,
+          ].filter(Boolean).join(' · ')}
           icon={<PackageCheck className="h-5 w-5" />}
           tone={pending.length > 0 ? 'warning' : 'success'}
           onClick={() => nav('/shop/history')}
@@ -327,8 +358,16 @@ export function ShopDashboardPage() {
               />
               <span className="mt-4 shrink-0 text-slate-300">→</span>
               <PipelineStage
-                label="Awaiting delivery"
-                count={stages.dispatched}
+                label="Partially dispatched"
+                count={stages.partial}
+                total={pending.length}
+                color="bg-orange-400"
+                onClick={() => nav('/shop/history')}
+              />
+              <span className="mt-4 shrink-0 text-slate-300">→</span>
+              <PipelineStage
+                label="Awaiting confirmation"
+                count={stages.awaiting}
                 total={pending.length}
                 color="bg-emerald-500"
                 onClick={() => nav('/shop/history')}

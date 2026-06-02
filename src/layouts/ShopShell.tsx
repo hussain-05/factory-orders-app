@@ -1,10 +1,13 @@
 import { Bell, BellOff, LayoutDashboard, LayoutGrid, LogOut, PackagePlus, ScrollText, Shield } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
 import { Button } from '../components/ui/Button'
 import { ModeSwitcher } from '../components/ModeSwitcher'
 import { useAdminMode } from '../contexts/AdminModeContext'
+import { db } from '../lib/firebase'
+import { listOrdersForShop } from '../lib/orderService'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all sm:gap-2 sm:px-3 ${
@@ -17,6 +20,19 @@ export function ShopShell() {
   const { profile, logout } = useAuth()
   const { shopView } = useAdminMode()
   const displayShopName = profile?.isAdmin ? shopView : (profile?.shopName ?? 'Shop')
+  const [awaitingCount, setAwaitingCount] = useState(0)
+
+  useEffect(() => {
+    const shopName = profile?.isAdmin ? shopView : profile?.shopName
+    if (!db || !shopName) return
+    listOrdersForShop(db, shopName).then(orders => {
+      const count = orders.filter(o =>
+        o.status === 'pending' &&
+        (o.dispatches ?? []).some(d => d.items.some(it => !it.confirmedAt))
+      ).length
+      setAwaitingCount(count)
+    }).catch(() => {})
+  }, [profile?.shopName, profile?.isAdmin, shopView])
   const nav = useNavigate()
   const { status, toast, dismissToast, enable } = useNotifications()
 
@@ -100,6 +116,11 @@ export function ShopShell() {
               <ScrollText className="h-4 w-4 shrink-0" />
               <span className="sm:hidden">History</span>
               <span className="hidden sm:inline">Order history</span>
+              {awaitingCount > 0 && (
+                <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
+                  {awaitingCount}
+                </span>
+              )}
             </NavLink>
           </nav>
         </div>

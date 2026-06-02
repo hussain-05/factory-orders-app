@@ -344,7 +344,7 @@ export function FactoryOrderHistoryPage() {
                     <Card key={o.id} id={o.id} className="p-0">
                       <button
                         type="button"
-                        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
+                        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
                         onClick={() => setOpenId(open ? null : o.id)}
                       >
                         <div className="min-w-0">
@@ -371,7 +371,7 @@ export function FactoryOrderHistoryPage() {
                       </button>
 
                       {open ? (
-                        <div className="space-y-4 border-t border-slate-100 px-5 py-4">
+                        <div className="space-y-4 border-t border-slate-100 px-4 py-3">
 
                           {/* Timeline */}
                           <OrderTimeline order={o} />

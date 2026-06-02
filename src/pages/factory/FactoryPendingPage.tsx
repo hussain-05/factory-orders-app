@@ -209,7 +209,7 @@ function PendingCard({
       {/* ── Collapsed header ── */}
       <button
         type="button"
-        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
         onClick={onToggle}
       >
         <div className="min-w-0 flex-1">
@@ -238,7 +238,7 @@ function PendingCard({
 
       {/* ── Expanded body ── */}
       {open && (
-        <div className="border-t border-slate-100 px-5 py-5 space-y-5">
+        <div className="border-t border-slate-100 px-4 py-4 space-y-4">
 
           {/* Interactive timeline */}
           <div>
