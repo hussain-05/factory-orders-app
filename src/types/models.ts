@@ -46,6 +46,7 @@ export interface OrderDispatch {
     name: string
     size?: string
     qty: number
+    confirmedAt?: number | null
   }>
   receivedAt?: number | null
 }

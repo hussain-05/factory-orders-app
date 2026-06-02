@@ -88,7 +88,7 @@ function OrderActions({ order }: { order: Order }) {
         }}
       >
         <Printer className="h-4 w-4" />
-        {busy ? 'Preparing…' : 'Print / PDF'}
+        {busy ? 'Preparing…' : 'Print'}
       </Button>
     </div>
   )
@@ -159,6 +159,7 @@ function DispatchForm({
                   ...prev,
                   [it.productId]: Math.min(remaining, Math.max(0, Number(e.target.value))),
                 }))}
+                onFocus={e => e.target.select()}
                 disabled={busy}
                 className="!w-20 !py-1 !text-xs shrink-0"
               />
@@ -202,7 +203,7 @@ function PendingCard({
   const dispatches = o.dispatches ?? []
   const dispatchedQty = dispatchedQtyByProduct(dispatches)
   const allDispatched = o.items.every(it => (dispatchedQty[it.productId] ?? 0) >= it.quantity)
-  const allReceived = dispatches.length > 0 && dispatches.every(d => d.receivedAt)
+  const allReceived = dispatches.length > 0 && dispatches.every(d => d.items.every(it => it.confirmedAt))
   return (
     <Card id={id} className="p-0">
       {/* ── Collapsed header ── */}
@@ -323,14 +324,20 @@ function PendingCard({
                           Dispatch {i + 1} · {format(d.dispatchedAt, 'dd MMM yyyy')}
                         </span>
                         {d.receivedAt
-                          ? <span className="text-emerald-600 font-medium">✓ Confirmed {format(d.receivedAt, 'dd MMM')}</span>
+                          ? <span className="text-emerald-600 font-medium">✓ All confirmed</span>
                           : <span className="text-amber-600 font-medium">⏳ Awaiting confirmation</span>
                         }
                       </div>
                       {d.items.map(it => (
                         <div key={it.productId} className="flex justify-between text-slate-600">
                           <span>{it.name}{it.size ? ` · ${it.size}` : ''}</span>
-                          <span className="font-semibold tabular-nums">×{it.qty}</span>
+                          <span className="flex items-center gap-2">
+                            <span className="font-semibold tabular-nums">×{it.qty}</span>
+                            {it.confirmedAt
+                              ? <span className="text-emerald-600">✓ {format(it.confirmedAt, 'dd MMM')}</span>
+                              : <span className="text-amber-500">⏳</span>
+                            }
+                          </span>
                         </div>
                       ))}
                     </div>

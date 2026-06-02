@@ -410,7 +410,7 @@ export function FactoryOrderHistoryPage() {
                               disabled={pdfBusyId === o.id}
                             >
                               <Printer className="h-4 w-4" />
-                              {pdfBusyId === o.id ? 'Preparing PDF…' : 'Print / PDF'}
+                              {pdfBusyId === o.id ? 'Preparing…' : 'Print'}
                             </Button>
                           </div>
 

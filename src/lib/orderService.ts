@@ -190,6 +190,7 @@ function mapOrder(id: string, d: Record<string, unknown>): Order {
                 name: String(it.name ?? ''),
                 size: typeof it.size === 'string' ? it.size : undefined,
                 qty: Number(it.qty ?? 0),
+                confirmedAt: typeof it.confirmedAt === 'number' ? it.confirmedAt : null,
               }))
             : [],
           receivedAt:
@@ -352,11 +353,12 @@ export async function addDispatch(
   })
 }
 
-/** Shop: confirm receipt of a specific dispatch. Auto-completes order if all items received. */
-export async function confirmDispatch(
+/** Shop: confirm receipt of a specific item within a dispatch. Auto-completes order when all items fully received. */
+export async function confirmDispatchItem(
   firestore: Firestore,
   orderId: string,
   dispatchId: string,
+  productId: string,
 ): Promise<void> {
   const ref = doc(firestore, ordersCol, orderId)
   const now = Date.now()
@@ -366,22 +368,33 @@ export async function confirmDispatch(
     if (!snap.exists()) throw new Error('Order not found')
     const order = mapOrder(orderId, snap.data() as Record<string, unknown>)
 
-    const dispatches: OrderDispatch[] = (order.dispatches ?? []).map(d =>
-      d.id === dispatchId ? { ...d, receivedAt: now } : d,
-    )
+    const dispatches: OrderDispatch[] = (order.dispatches ?? []).map(d => {
+      if (d.id !== dispatchId) return d
+      const updatedItems = d.items.map(it =>
+        it.productId === productId && !it.confirmedAt
+          ? { ...it, confirmedAt: now }
+          : it,
+      )
+      const allItemsConfirmed = updatedItems.every(it => it.confirmedAt)
+      return {
+        ...d,
+        items: updatedItems,
+        receivedAt: allItemsConfirmed ? (d.receivedAt ?? now) : d.receivedAt,
+      }
+    })
 
-    // Tally received quantities per product
-    const receivedQty: Record<string, number> = {}
+    // Tally confirmed quantities per product across all dispatches
+    const confirmedQty: Record<string, number> = {}
     for (const d of dispatches) {
-      if (d.receivedAt) {
-        for (const it of d.items) {
-          receivedQty[it.productId] = (receivedQty[it.productId] ?? 0) + it.qty
+      for (const it of d.items) {
+        if (it.confirmedAt) {
+          confirmedQty[it.productId] = (confirmedQty[it.productId] ?? 0) + it.qty
         }
       }
     }
 
     const allFulfilled = order.items.every(
-      it => (receivedQty[it.productId] ?? 0) >= it.quantity,
+      it => (confirmedQty[it.productId] ?? 0) >= it.quantity,
     )
 
     const update: Record<string, unknown> = {

@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useAdminMode } from '../../contexts/AdminModeContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
-import { confirmDispatch, deleteOrder, listOrdersForShop } from '../../lib/orderService'
+import { confirmDispatchItem, deleteOrder, listOrdersForShop } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -154,14 +154,15 @@ export function ShopOrderHistoryPage() {
   const [filterOpen, setFilterOpen] = useState(false)
   const [orderSearch, setOrderSearch] = useState('')
 
-  async function handleConfirmDispatch(orderId: string, dispatchId: string) {
+  async function handleConfirmDispatch(orderId: string, dispatchId: string, productId: string) {
     if (!db) return
-    setConfirmBusyId(dispatchId)
+    const key = `${dispatchId}:${productId}`
+    setConfirmBusyId(key)
     try {
-      await confirmDispatch(db, orderId, dispatchId)
+      await confirmDispatchItem(db, orderId, dispatchId, productId)
       await refresh()
     } catch {
-      // silent — order will refresh
+      // silent
     } finally {
       setConfirmBusyId(null)
     }
@@ -395,32 +396,43 @@ export function ShopOrderHistoryPage() {
                                 Dispatches
                               </p>
                               {(o.dispatches ?? []).map((d, i) => (
-                                <div key={d.id} className="rounded-lg border border-slate-200 bg-white p-3 space-y-1.5">
+                                <div key={d.id} className="rounded-lg border border-slate-200 bg-white p-3 space-y-2">
                                   <div className="flex items-center justify-between text-xs">
                                     <span className="font-semibold text-slate-700">
                                       Dispatch {i + 1} · {format(d.dispatchedAt, 'dd MMM yyyy')}
                                     </span>
                                     {d.receivedAt
-                                      ? <span className="text-emerald-600 font-medium">✓ Received {format(d.receivedAt, 'dd MMM')}</span>
-                                      : <span className="text-amber-600 font-medium">Awaiting your confirmation</span>
+                                      ? <span className="text-emerald-600 font-medium">✓ All received</span>
+                                      : <span className="text-amber-600 font-medium">Confirm items below</span>
                                     }
                                   </div>
-                                  {d.items.map(it => (
-                                    <div key={it.productId} className="flex justify-between text-xs text-slate-600">
-                                      <span>{it.name}{it.size ? ` · ${it.size}` : ''}</span>
-                                      <span className="font-semibold tabular-nums">×{it.qty}</span>
-                                    </div>
-                                  ))}
-                                  {!d.receivedAt && (
-                                    <Button
-                                      variant="secondary"
-                                      className="!py-1.5 !text-xs mt-2"
-                                      disabled={confirmBusyId === d.id}
-                                      onClick={() => void handleConfirmDispatch(o.id, d.id)}
-                                    >
-                                      {confirmBusyId === d.id ? 'Confirming…' : 'Confirm receipt'}
-                                    </Button>
-                                  )}
+                                  {d.items.map(it => {
+                                    const key = `${d.id}:${it.productId}`
+                                    return (
+                                      <div key={it.productId} className="flex items-center justify-between gap-3 text-xs">
+                                        <div className="min-w-0">
+                                          <span className="font-medium text-slate-800">
+                                            {it.name}{it.size ? ` · ${it.size}` : ''}
+                                          </span>
+                                          <span className="ml-2 font-semibold tabular-nums text-slate-600">×{it.qty}</span>
+                                        </div>
+                                        {it.confirmedAt ? (
+                                          <span className="shrink-0 text-emerald-600 font-medium">
+                                            ✓ Received {format(it.confirmedAt, 'dd MMM')}
+                                          </span>
+                                        ) : (
+                                          <Button
+                                            variant="secondary"
+                                            className="!py-1 !text-xs shrink-0"
+                                            disabled={confirmBusyId === key}
+                                            onClick={() => void handleConfirmDispatch(o.id, d.id, it.productId)}
+                                          >
+                                            {confirmBusyId === key ? 'Confirming…' : 'Confirm receipt'}
+                                          </Button>
+                                        )}
+                                      </div>
+                                    )
+                                  })}
                                 </div>
                               ))}
                             </div>
@@ -471,7 +483,7 @@ export function ShopOrderHistoryPage() {
                               disabled={pdfBusyId === o.id}
                             >
                               <Printer className="h-4 w-4" />
-                              {pdfBusyId === o.id ? 'Preparing PDF…' : 'Print / PDF'}
+                              {pdfBusyId === o.id ? 'Preparing…' : 'Print'}
                             </Button>
 
                             {o.status === 'pending' && (
