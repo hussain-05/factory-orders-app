@@ -111,6 +111,11 @@ function PendingCard({
             )}
             <Badge tone="neutral">{o.orderKind === 'limited' ? 'Limited' : 'Standard'}</Badge>
             <Badge tone="warning">{currentStageLabel(o)}</Badge>
+            {o.requestorName && (
+              <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200">
+                {o.requestorName.split(' ')[0]}
+              </span>
+            )}
           </div>
           <p className="mt-1 text-xs text-slate-500">
             {formatDateTime(o.createdAt)} · {o.items.length} line{o.items.length === 1 ? '' : 's'} · {o.requestorName}
@@ -197,29 +202,35 @@ function PendingCard({
               label="Delivered"
               timestamp={undefined}
             >
-              <div className="mt-2 space-y-2">
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Actual delivery date (required to complete)</p>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="date"
-                      className="!py-1 !text-xs"
-                      value={actualDraft}
-                      onChange={(e) => onActualChange(e.target.value)}
-                      disabled={busy}
-                    />
-                    <Button
-                      className="!py-1.5 !text-xs shrink-0 bg-slate-900 hover:bg-slate-800 text-white"
-                      disabled={busy || !actualDraft}
-                      onClick={() =>
-                        onPatch({ status: 'completed', actualDeliveryDate: ymdToMillis(actualDraft) })
-                      }
-                    >
-                      {busy ? 'Saving…' : 'Complete'}
-                    </Button>
+              {o.milestones.receivedAt ? (
+                <div className="mt-2 space-y-2">
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Actual delivery date (required to complete)</p>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="date"
+                        className="!py-1 !text-xs"
+                        value={actualDraft}
+                        onChange={(e) => onActualChange(e.target.value)}
+                        disabled={busy}
+                      />
+                      <Button
+                        className="!py-1.5 !text-xs shrink-0 bg-slate-900 hover:bg-slate-800 text-white"
+                        disabled={busy || !actualDraft}
+                        onClick={() =>
+                          onPatch({ status: 'completed', actualDeliveryDate: ymdToMillis(actualDraft) })
+                        }
+                      >
+                        {busy ? 'Saving…' : 'Complete'}
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <p className="mt-2 text-xs text-slate-400 italic">
+                  Mark order as received first.
+                </p>
+              )}
             </TimelineStage>
           </div>
 

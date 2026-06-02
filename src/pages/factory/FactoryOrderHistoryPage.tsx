@@ -357,6 +357,11 @@ export function FactoryOrderHistoryPage() {
                             <Badge tone={o.status === 'completed' ? 'success' : 'warning'}>
                               {o.status === 'completed' ? 'Completed' : 'Pending'}
                             </Badge>
+                            {o.requestorName && (
+                              <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200">
+                                {o.requestorName.split(' ')[0]}
+                              </span>
+                            )}
                           </div>
                           <p className="mt-1 text-xs text-slate-500">
                             Placed {formatDateTime(o.createdAt)} · {o.items.length} lines
