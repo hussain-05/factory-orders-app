@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
-import { addDispatch, listPendingOrdersForFactory, updateOrderMilestones, markLineItemNotAvailable } from '../../lib/orderService'
+import { addDispatch, listPendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
 import { whatsappLink } from '../../utils/whatsapp'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -66,8 +66,7 @@ interface PendingCardProps {
   expectedDraft: string
   onExpectedChange: (v: string) => void
   onPatch: (patch: Parameters<typeof updateOrderMilestones>[2]) => void
-  onAddDispatch: (items: OrderDispatch['items']) => void
-  onMarkNotAvailable: (productId: string, notAvailable: boolean) => void
+  onAddDispatch: (items: OrderDispatch['items'], naUpdates?: Record<string, boolean>) => void
   dispatchFormOpen: boolean
   onToggleDispatchForm: (open: boolean) => void
 }
@@ -105,18 +104,20 @@ function DispatchForm({
   busy,
   onSubmit,
   onCancel,
-  onMarkNotAvailable,
+  showNaToggle,
 }: {
   order: Order
   dispatchedQty: Record<string, number>
   busy: boolean
-  onSubmit: (items: OrderDispatch['items']) => void
+  onSubmit: (items: OrderDispatch['items'], naUpdates?: Record<string, boolean>) => void
   onCancel: () => void
-  onMarkNotAvailable?: (productId: string, notAvailable: boolean) => void
+  showNaToggle?: boolean
 }) {
   const remainingItems = order.items.filter(
     it => (it.quantity - (dispatchedQty[it.productId] ?? 0)) > 0,
   )
+
+  const [localNa, setLocalNa] = useState<Record<string, boolean>>({})
 
   const [draft, setDraft] = useState<Record<string, number>>(() => {
     const r: Record<string, number> = {}
@@ -128,15 +129,22 @@ function DispatchForm({
 
   const handleSubmit = () => {
     const items: OrderDispatch['items'] = remainingItems
-      .filter(it => !it.notAvailable && (draft[it.productId] ?? 0) > 0)
+      .filter(it => {
+        const isNa = localNa[it.productId] ?? it.notAvailable
+        return !isNa && (draft[it.productId] ?? 0) > 0
+      })
       .map(it => ({
         productId: it.productId,
         name: it.name,
         size: it.size,
         qty: draft[it.productId] ?? 0,
       }))
-    if (items.length === 0) return
-    onSubmit(items)
+
+    // Check if there are any NA updates or items to dispatch
+    const hasNaUpdates = Object.keys(localNa).length > 0
+    if (items.length === 0 && !hasNaUpdates) return
+
+    onSubmit(items, Object.keys(localNa).length > 0 ? localNa : undefined)
   }
 
   return (
@@ -145,6 +153,7 @@ function DispatchForm({
       <div className="space-y-2">
         {remainingItems.map(it => {
           const remaining = it.quantity - (dispatchedQty[it.productId] ?? 0)
+          const isNa = localNa[it.productId] ?? it.notAvailable
           return (
             <div key={it.productId} className="flex items-center justify-between gap-3 text-xs">
               <div className="min-w-0">
@@ -156,32 +165,32 @@ function DispatchForm({
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                {onMarkNotAvailable && (
+                {showNaToggle && (
                   <button
                     type="button"
-                    onClick={() => onMarkNotAvailable(it.productId, !it.notAvailable)}
+                    onClick={() => setLocalNa(prev => ({ ...prev, [it.productId]: !isNa }))}
                     disabled={busy || order.status === 'completed'}
                     className={`flex h-7 w-7 items-center justify-center rounded border ${
-                      it.notAvailable
+                      isNa
                         ? 'border-emerald-600 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                         : 'border-rose-600 bg-rose-50 text-rose-700 hover:bg-rose-100'
                     } disabled:opacity-50`}
-                    title={it.notAvailable ? 'Mark Available' : 'Mark Not Available'}
+                    title={isNa ? 'Mark Available' : 'Mark Not Available'}
                   >
-                    <span className="text-[10px] font-bold">{it.notAvailable ? 'A' : 'NA'}</span>
+                    <span className="text-[10px] font-bold">{isNa ? 'A' : 'NA'}</span>
                   </button>
                 )}
                 <Input
                   type="number"
                   min={0}
                   max={remaining}
-                  value={it.notAvailable ? 0 : (draft[it.productId] ?? 0)}
+                  value={isNa ? 0 : (draft[it.productId] ?? 0)}
                   onChange={e => setDraft(prev => ({
                     ...prev,
                     [it.productId]: Math.min(remaining, Math.max(0, Number(e.target.value))),
                   }))}
                   onFocus={e => e.target.select()}
-                  disabled={busy || it.notAvailable}
+                  disabled={busy || isNa}
                   className="!w-20 !py-1 !text-xs"
                 />
               </div>
@@ -201,7 +210,7 @@ function DispatchForm({
         <Button
           className="!py-1.5 !text-xs bg-slate-900 hover:bg-slate-800 text-white"
           onClick={handleSubmit}
-          disabled={busy || remainingItems.every(it => it.notAvailable || (draft[it.productId] ?? 0) === 0)}
+          disabled={busy || (remainingItems.every(it => (localNa[it.productId] ?? it.notAvailable) || (draft[it.productId] ?? 0) === 0) && Object.keys(localNa).length === 0)}
         >
           {busy ? 'Saving…' : 'Dispatch'}
         </Button>
@@ -220,7 +229,6 @@ function PendingCard({
   onExpectedChange,
   onPatch,
   onAddDispatch,
-  onMarkNotAvailable,
   dispatchFormOpen,
   onToggleDispatchForm,
 }: PendingCardProps) {
@@ -400,12 +408,12 @@ function PendingCard({
                         order={o}
                         dispatchedQty={dispatchedQty}
                         busy={busy}
-                        onSubmit={(items) => {
+                        onSubmit={(items, naUpdates) => {
                           onToggleDispatchForm(false)
-                          onAddDispatch(items)
+                          onAddDispatch(items, naUpdates)
                         }}
                         onCancel={() => onToggleDispatchForm(false)}
-                        onMarkNotAvailable={o.orderKind === 'unlimited' ? onMarkNotAvailable : undefined}
+                        showNaToggle={o.orderKind === 'unlimited'}
                       />
                     ) : (
                       <Button
@@ -633,26 +641,12 @@ export function FactoryPendingPage() {
   }
 
 
-  async function handleMarkNotAvailable(order: Order, productId: string, notAvailable: boolean) {
+  async function handleAddDispatch(order: Order, items: OrderDispatch['items'], naUpdates?: Record<string, boolean>) {
     if (!db) return
     setBusyId(order.id)
     setError(null)
     try {
-      await markLineItemNotAvailable(db, order.id, productId, notAvailable)
-      await refresh()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Update failed.')
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  async function handleAddDispatch(order: Order, items: OrderDispatch['items']) {
-    if (!db) return
-    setBusyId(order.id)
-    setError(null)
-    try {
-      await addDispatch(db, order.id, items)
+      await addDispatch(db, order.id, items, naUpdates)
       if (order.shopWhatsappNumber) {
         setNotifyBanner({
           number: order.shopWhatsappNumber,
@@ -855,8 +849,7 @@ export function FactoryPendingPage() {
                     expectedDraft={expectedDraft[o.id] ?? ''}
                     onExpectedChange={(v) => setExpectedDraft((p) => ({ ...p, [o.id]: v }))}
                     onPatch={(p) => void patch(o, p)}
-                    onAddDispatch={(items) => void handleAddDispatch(o, items)}
-                    onMarkNotAvailable={(productId, notAvailable) => void handleMarkNotAvailable(o, productId, notAvailable)}
+                    onAddDispatch={(items, naUpdates) => void handleAddDispatch(o, items, naUpdates)}
                     dispatchFormOpen={dispatchFormOpenId === o.id}
                     onToggleDispatchForm={(open) => setDispatchFormOpenId(open ? o.id : null)}
                   />
