@@ -207,18 +207,18 @@ export function FactoryOrderHistoryPage() {
       </div>
 
       {/* ── Search + Filter bar ── */}
-      <div className="rounded-xl border border-slate-200 bg-slate-50">
+      <div className="rounded-xl border-2 border-slate-300 bg-slate-50/80 shadow-sm">
         <div className="flex divide-x divide-slate-200">
 
           {/* Filter toggle — wider */}
           <button
             type="button"
-            onClick={() => setFilterOpen(o => !o)}
+            onClick={() => setFilterOpen(!filterOpen)}
             className="flex flex-[2] items-center justify-between px-4 py-3 text-left"
           >
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-400" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Filters</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-700">Filters</span>
               {hasActiveFilters && (
                 <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-xs font-semibold text-white leading-none">
                   {[filterShop !== 'all', filterRequestor !== 'all', filterKind !== 'all', filterStartDate !== '', filterEndDate !== ''].filter(Boolean).length}
