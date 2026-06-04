@@ -60,7 +60,7 @@ export function SignUpPage() {
           />
           <h1 className="mt-2 font-display text-2xl font-semibold text-slate-900">Create account</h1>
           <p className="mt-2 text-sm text-slate-600">
-            Choose whether you are signing up as a shop owner or a factory owner.
+            Choose whether you are signing up as a agent or a factory agent.
           </p>
 
           <form className="mt-8 space-y-4" onSubmit={onSubmit}>
