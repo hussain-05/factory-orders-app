@@ -103,12 +103,14 @@ function DispatchForm({
   busy,
   onSubmit,
   onCancel,
+  onMarkNotAvailable,
 }: {
   order: Order
   dispatchedQty: Record<string, number>
   busy: boolean
   onSubmit: (items: OrderDispatch['items']) => void
   onCancel: () => void
+  onMarkNotAvailable?: (productId: string, notAvailable: boolean) => void
 }) {
   const remainingItems = order.items.filter(
     it => (it.quantity - (dispatchedQty[it.productId] ?? 0)) > 0,
@@ -124,7 +126,7 @@ function DispatchForm({
 
   const handleSubmit = () => {
     const items: OrderDispatch['items'] = remainingItems
-      .filter(it => (draft[it.productId] ?? 0) > 0)
+      .filter(it => !it.notAvailable && (draft[it.productId] ?? 0) > 0)
       .map(it => ({
         productId: it.productId,
         name: it.name,
@@ -151,19 +153,36 @@ function DispatchForm({
                   Ordered {it.quantity} · {dispatchedQty[it.productId] ?? 0} already sent · {remaining} remaining
                 </p>
               </div>
-              <Input
-                type="number"
-                min={0}
-                max={remaining}
-                value={draft[it.productId] ?? 0}
-                onChange={e => setDraft(prev => ({
-                  ...prev,
-                  [it.productId]: Math.min(remaining, Math.max(0, Number(e.target.value))),
-                }))}
-                onFocus={e => e.target.select()}
-                disabled={busy}
-                className="!w-20 !py-1 !text-xs shrink-0"
-              />
+              <div className="flex items-center gap-2 shrink-0">
+                {onMarkNotAvailable && (
+                  <button
+                    type="button"
+                    onClick={() => onMarkNotAvailable(it.productId, !it.notAvailable)}
+                    disabled={busy || order.status === 'completed'}
+                    className={`flex h-7 w-7 items-center justify-center rounded border ${
+                      it.notAvailable
+                        ? 'border-emerald-600 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                        : 'border-rose-600 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                    } disabled:opacity-50`}
+                    title={it.notAvailable ? 'Mark Available' : 'Mark Not Available'}
+                  >
+                    <span className="text-[10px] font-bold">{it.notAvailable ? 'A' : 'NA'}</span>
+                  </button>
+                )}
+                <Input
+                  type="number"
+                  min={0}
+                  max={remaining}
+                  value={it.notAvailable ? 0 : (draft[it.productId] ?? 0)}
+                  onChange={e => setDraft(prev => ({
+                    ...prev,
+                    [it.productId]: Math.min(remaining, Math.max(0, Number(e.target.value))),
+                  }))}
+                  onFocus={e => e.target.select()}
+                  disabled={busy || it.notAvailable}
+                  className="!w-20 !py-1 !text-xs"
+                />
+              </div>
             </div>
           )
         })}
@@ -180,7 +199,7 @@ function DispatchForm({
         <Button
           className="!py-1.5 !text-xs bg-slate-900 hover:bg-slate-800 text-white"
           onClick={handleSubmit}
-          disabled={busy || remainingItems.every(it => (draft[it.productId] ?? 0) === 0)}
+          disabled={busy || remainingItems.every(it => it.notAvailable || (draft[it.productId] ?? 0) === 0)}
         >
           {busy ? 'Saving…' : 'Dispatch'}
         </Button>
@@ -383,6 +402,7 @@ function PendingCard({
                           onAddDispatch(items)
                         }}
                         onCancel={() => setShowDispatchForm(false)}
+                        onMarkNotAvailable={o.orderKind === 'unlimited' ? onMarkNotAvailable : undefined}
                       />
                     ) : (
                       <Button
@@ -423,15 +443,6 @@ function PendingCard({
                     )}
                   </div>
                   <div className="flex items-center gap-4 shrink-0">
-                    {o.orderKind === 'unlimited' && (
-                      <button
-                        onClick={() => onMarkNotAvailable(it.productId, !it.notAvailable)}
-                        disabled={busy}
-                        className="text-xs text-rose-600 hover:text-rose-700 font-medium disabled:opacity-50"
-                      >
-                        {it.notAvailable ? 'Mark Available' : 'Mark Not Available'}
-                      </button>
-                    )}
                     <span className="font-semibold tabular-nums text-slate-900">
                       ×{it.quantity}
                     </span>
