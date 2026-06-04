@@ -68,6 +68,8 @@ interface PendingCardProps {
   onPatch: (patch: Parameters<typeof updateOrderMilestones>[2]) => void
   onAddDispatch: (items: OrderDispatch['items']) => void
   onMarkNotAvailable: (productId: string, notAvailable: boolean) => void
+  dispatchFormOpen: boolean
+  onToggleDispatchForm: (open: boolean) => void
 }
 
 const WhatsAppIcon = () => (
@@ -219,8 +221,9 @@ function PendingCard({
   onPatch,
   onAddDispatch,
   onMarkNotAvailable,
+  dispatchFormOpen,
+  onToggleDispatchForm,
 }: PendingCardProps) {
-  const [showDispatchForm, setShowDispatchForm] = useState(false)
   const dispatches = o.dispatches ?? []
   const dispatchedQty = dispatchedQtyByProduct(dispatches)
   const allDispatched = o.items.every(it => it.notAvailable || (dispatchedQty[it.productId] ?? 0) >= it.quantity)
@@ -392,23 +395,23 @@ function PendingCard({
 
                   {/* Add dispatch form */}
                   {!allDispatched && (
-                    showDispatchForm ? (
+                    dispatchFormOpen ? (
                       <DispatchForm
                         order={o}
                         dispatchedQty={dispatchedQty}
                         busy={busy}
                         onSubmit={(items) => {
-                          setShowDispatchForm(false)
+                          onToggleDispatchForm(false)
                           onAddDispatch(items)
                         }}
-                        onCancel={() => setShowDispatchForm(false)}
+                        onCancel={() => onToggleDispatchForm(false)}
                         onMarkNotAvailable={o.orderKind === 'unlimited' ? onMarkNotAvailable : undefined}
                       />
                     ) : (
                       <Button
                         variant="secondary"
                         className="!py-1.5 !text-xs"
-                        onClick={() => setShowDispatchForm(true)}
+                        onClick={() => onToggleDispatchForm(true)}
                         disabled={busy}
                       >
                         + Add dispatch
@@ -530,6 +533,7 @@ export function FactoryPendingPage() {
     return () => clearTimeout(t)
   }, [loading, loc.state?.openId])
   const [expectedDraft, setExpectedDraft] = useState<Record<string, string>>({})
+  const [dispatchFormOpenId, setDispatchFormOpenId] = useState<string | null>(null)
   const [notifyBanner, setNotifyBanner] = useState<{ message: string; number: string } | null>(null)
   const [filterShop, setFilterShop] = useState<string>('all')
   const [filterRequestor, setFilterRequestor] = useState<string>('all')
@@ -853,6 +857,8 @@ export function FactoryPendingPage() {
                     onPatch={(p) => void patch(o, p)}
                     onAddDispatch={(items) => void handleAddDispatch(o, items)}
                     onMarkNotAvailable={(productId, notAvailable) => void handleMarkNotAvailable(o, productId, notAvailable)}
+                    dispatchFormOpen={dispatchFormOpenId === o.id}
+                    onToggleDispatchForm={(open) => setDispatchFormOpenId(open ? o.id : null)}
                   />
                 ))}
               </div>

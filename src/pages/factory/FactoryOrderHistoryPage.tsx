@@ -449,9 +449,14 @@ export function FactoryOrderHistoryPage() {
                             <ul className="mt-2 divide-y divide-slate-200 rounded-xl border border-slate-200">
                               {o.items.map((it, idx) => (
                                 <li key={`${it.productId}-${idx}`} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                                  <span className="min-w-0 truncate text-slate-900">
-                                    {it.name}{it.size ? ` · ${it.size}` : ''}
-                                  </span>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className={`truncate text-slate-900 ${it.notAvailable ? 'line-through text-slate-400' : ''}`}>
+                                      {it.name}{it.size ? ` · ${it.size}` : ''}
+                                    </span>
+                                    {it.notAvailable && (
+                                      <Badge tone="neutral">Not Available</Badge>
+                                    )}
+                                  </div>
                                   <span className="shrink-0 font-semibold tabular-nums text-slate-900">
                                     ×{it.quantity}
                                   </span>

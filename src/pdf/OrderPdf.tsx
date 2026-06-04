@@ -148,23 +148,26 @@ export function OrderPdfDocument({ order }: { order: Order }) {
             : <View style={styles.cellCheck}><Text>✓</Text></View>
           }
         </View>
-        {order.items.map((it, idx) => (
+        {order.items.map((it, idx) => {
+          const dispatched = dispQty[it.productId] ?? 0
+          const unavailableQty = it.quantity - dispatched
+          return (
           <View key={`${it.productId}-${idx}`} style={styles.rowItem} wrap={false}>
             <View style={styles.cellName}>
               <Text style={it.notAvailable ? { textDecoration: 'line-through', color: '#94a3b8' } : {}}>{it.name}</Text>
               {it.notAvailable && (
-                <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>Not Available</Text>
+                <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>Not Available: {unavailableQty} qty</Text>
               )}
             </View>
             <Text style={styles.cellSize}>{it.size ?? '—'}</Text>
             <Text style={styles.cellUnit}>{it.unit ?? '—'}</Text>
             <Text style={styles.cellQty}>{String(it.quantity)}</Text>
             {hasDispatches
-              ? <Text style={styles.cellDispatched}>{String(dispQty[it.productId] ?? 0)}</Text>
+              ? <Text style={styles.cellDispatched}>{String(dispatched)}</Text>
               : <View style={styles.cellCheck}><View style={styles.checkbox} /></View>
             }
           </View>
-        ))}
+        )})}
 
         {/* Dispatches */}
         {hasDispatches && (
@@ -207,7 +210,7 @@ export function OrderPdfDocument({ order }: { order: Order }) {
                   <View style={styles.cellName}>
                     <Text style={it.notAvailable ? { textDecoration: 'line-through', color: '#94a3b8' } : {}}>{it.name}{it.size ? ` · ${it.size}` : ''}</Text>
                     {it.notAvailable && (
-                      <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>Not Available</Text>
+                      <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>Not Available: {it.quantity - dispatched} qty</Text>
                     )}
                   </View>
                   <Text style={styles.cellQty}>{String(it.quantity)}</Text>
