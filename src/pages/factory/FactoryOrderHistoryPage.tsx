@@ -140,6 +140,7 @@ export function FactoryOrderHistoryPage() {
   const [filterKind, setFilterKind] = useState<string>('all')
   const [filterStartDate, setFilterStartDate] = useState<string>('')
   const [filterEndDate, setFilterEndDate] = useState<string>('')
+  const [filterAwaiting, setFilterAwaiting] = useState<boolean>(false)
   const [filterOpen, setFilterOpen] = useState(false)
   const [orderSearch, setOrderSearch] = useState('')
 
@@ -178,6 +179,14 @@ export function FactoryOrderHistoryPage() {
         const [y, m, d] = filterStartDate.split('-').map(Number); const start = new Date(y, m - 1, d, 0, 0, 0, 0).getTime()
         if ((o.createdAt ?? 0) < start) return false
       }
+      if (filterAwaiting) {
+        const dispatched = (o.dispatches ?? []).reduce((acc, d) => {
+          for (const it of d.items) acc[it.productId] = (acc[it.productId] ?? 0) + it.qty
+          return acc
+        }, {} as Record<string, number>)
+        const allSent = o.items.every(it => (dispatched[it.productId] ?? 0) >= it.quantity)
+        if (!(allSent && !(o.dispatches ?? []).every(d => d.receivedAt))) return false
+      }
       if (filterEndDate) {
         const [ey, em, ed] = filterEndDate.split('-').map(Number); const end = new Date(ey, em - 1, ed, 23, 59, 59, 999).getTime(); if ((o.createdAt ?? 0) > end) return false
       }
@@ -185,9 +194,9 @@ export function FactoryOrderHistoryPage() {
     })
     const sorted = filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     return groupByMonth(sorted)
-  }, [orders, orderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate])
+  }, [orders, orderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate, filterAwaiting])
 
-  const hasActiveFilters = filterShop !== 'all' || filterRequestor !== 'all' || filterKind !== 'all' || filterStartDate !== '' || filterEndDate !== ''
+  const hasActiveFilters = filterShop !== 'all' || filterRequestor !== 'all' || filterKind !== 'all' || filterStartDate !== '' || filterEndDate !== '' || filterAwaiting
 
   return (
     <div className="space-y-6">
@@ -220,7 +229,7 @@ export function FactoryOrderHistoryPage() {
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Filters</span>
               {hasActiveFilters && (
                 <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-xs font-semibold text-white leading-none">
-                  {[filterShop !== 'all', filterRequestor !== 'all', filterKind !== 'all', filterStartDate !== '', filterEndDate !== ''].filter(Boolean).length}
+                  {[filterShop !== 'all', filterRequestor !== 'all', filterKind !== 'all', filterStartDate !== '', filterEndDate !== '', filterAwaiting].filter(Boolean).length}
                 </span>
               )}
             </div>
@@ -299,6 +308,19 @@ export function FactoryOrderHistoryPage() {
             </div>
 
             <div className="flex items-center gap-3">
+              <span className="w-24 shrink-0 text-xs font-medium text-slate-500">Status</span>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={filterAwaiting}
+                  onChange={e => setFilterAwaiting(e.target.checked)}
+                  className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                />
+                Awaiting confirmation
+              </label>
+            </div>
+
+            <div className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-xs font-medium text-slate-500">Date Range</span>
               <div className="flex items-center gap-2">
                 <input
@@ -321,7 +343,7 @@ export function FactoryOrderHistoryPage() {
               <div className="flex justify-end pt-1">
                 <button
                   type="button"
-                  onClick={() => { setFilterShop('all'); setFilterRequestor('all'); setFilterKind('all'); setFilterStartDate(''); setFilterEndDate('') }}
+                  onClick={() => { setFilterShop('all'); setFilterRequestor('all'); setFilterKind('all'); setFilterStartDate(''); setFilterEndDate(''); setFilterAwaiting(false) }}
                   className="text-xs font-medium text-rose-600 hover:text-rose-700"
                 >
                   Clear all
