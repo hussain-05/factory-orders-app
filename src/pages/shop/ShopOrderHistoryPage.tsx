@@ -181,7 +181,7 @@ export function ShopOrderHistoryPage() {
             if (it.confirmedAt) confirmedQty[it.productId] = (confirmedQty[it.productId] ?? 0) + it.qty
           }
         }
-        const allFulfilled = o.items.every(it => (confirmedQty[it.productId] ?? 0) >= it.quantity)
+        const allFulfilled = o.items.every(it => it.notAvailable || (confirmedQty[it.productId] ?? 0) >= it.quantity)
         return { ...o, dispatches: updatedDispatches, status: allFulfilled ? 'completed' : o.status }
       }))
     } catch {

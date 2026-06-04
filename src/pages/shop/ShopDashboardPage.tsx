@@ -80,7 +80,7 @@ function orderDispatchStage(o: Order): DispatchStage {
   const dispatches = o.dispatches ?? []
   if (dispatches.length === 0) return 'new'
   const dispatched = dispQtyByProduct(dispatches)
-  const allSent = o.items.every(it => (dispatched[it.productId] ?? 0) >= it.quantity)
+  const allSent = o.items.every(it => it.notAvailable || (dispatched[it.productId] ?? 0) >= it.quantity)
   return allSent ? 'awaiting' : 'partial'
 }
 

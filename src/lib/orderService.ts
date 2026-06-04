@@ -394,7 +394,7 @@ export async function confirmDispatchItem(
     }
 
     const allFulfilled = order.items.every(
-      it => (confirmedQty[it.productId] ?? 0) >= it.quantity,
+      it => it.notAvailable || (confirmedQty[it.productId] ?? 0) >= it.quantity,
     )
 
     const update: Record<string, unknown> = {
@@ -431,9 +431,33 @@ export async function markLineItemNotAvailable(
       return it
     })
 
-    tx.update(ref, {
+    const updates: Record<string, unknown> = {
       items: updatedItems,
       updatedAt: serverTimestamp(),
-    })
+    }
+
+    if (notAvailable) {
+      // Check if this new "notAvailable" status allows the order to be completed
+      const confirmedQty: Record<string, number> = {}
+      for (const d of order.dispatches ?? []) {
+        for (const it of d.items) {
+          if (it.confirmedAt) {
+            confirmedQty[it.productId] = (confirmedQty[it.productId] ?? 0) + it.qty
+          }
+        }
+      }
+
+      const allFulfilled = updatedItems.every(
+        it => it.notAvailable || (confirmedQty[it.productId] ?? 0) >= it.quantity,
+      )
+
+      if (allFulfilled) {
+        updates.status = 'completed'
+        updates.completedAt = serverTimestamp()
+        updates.actualDeliveryDate = Timestamp.fromMillis(Date.now())
+      }
+    }
+
+    tx.update(ref, updates)
   })
 }

@@ -223,7 +223,7 @@ function PendingCard({
   const [showDispatchForm, setShowDispatchForm] = useState(false)
   const dispatches = o.dispatches ?? []
   const dispatchedQty = dispatchedQtyByProduct(dispatches)
-  const allDispatched = o.items.every(it => (dispatchedQty[it.productId] ?? 0) >= it.quantity)
+  const allDispatched = o.items.every(it => it.notAvailable || (dispatchedQty[it.productId] ?? 0) >= it.quantity)
   const allReceived = dispatches.length > 0 && dispatches.every(d => d.items.every(it => it.confirmedAt))
   return (
     <Card id={id} className="p-0">
