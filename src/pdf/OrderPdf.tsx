@@ -150,7 +150,12 @@ export function OrderPdfDocument({ order }: { order: Order }) {
         </View>
         {order.items.map((it, idx) => (
           <View key={`${it.productId}-${idx}`} style={styles.rowItem} wrap={false}>
-            <Text style={styles.cellName}>{it.name}</Text>
+            <View style={styles.cellName}>
+              <Text style={it.notAvailable ? { textDecoration: 'line-through', color: '#94a3b8' } : {}}>{it.name}</Text>
+              {it.notAvailable && (
+                <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>Not Available</Text>
+              )}
+            </View>
             <Text style={styles.cellSize}>{it.size ?? '—'}</Text>
             <Text style={styles.cellUnit}>{it.unit ?? '—'}</Text>
             <Text style={styles.cellQty}>{String(it.quantity)}</Text>
@@ -199,7 +204,12 @@ export function OrderPdfDocument({ order }: { order: Order }) {
               const confirmed = confQty[it.productId] ?? 0
               return (
                 <View key={`sum-${it.productId}-${idx}`} style={styles.rowItem} wrap={false}>
-                  <Text style={styles.cellName}>{it.name}{it.size ? ` · ${it.size}` : ''}</Text>
+                  <View style={styles.cellName}>
+                    <Text style={it.notAvailable ? { textDecoration: 'line-through', color: '#94a3b8' } : {}}>{it.name}{it.size ? ` · ${it.size}` : ''}</Text>
+                    {it.notAvailable && (
+                      <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>Not Available</Text>
+                    )}
+                  </View>
                   <Text style={styles.cellQty}>{String(it.quantity)}</Text>
                   <Text style={{ ...styles.cellDispatched, color: dispatched >= it.quantity ? '#16a34a' : '#d97706' }}>
                     {String(dispatched)}

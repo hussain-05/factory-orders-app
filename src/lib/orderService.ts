@@ -409,3 +409,31 @@ export async function confirmDispatchItem(
     tx.update(ref, update)
   })
 }
+export async function markLineItemNotAvailable(
+  firestore: Firestore,
+  orderId: string,
+  productId: string,
+  notAvailable: boolean
+): Promise<void> {
+  const ref = doc(firestore, ordersCol, orderId)
+
+  await runTransaction(firestore, async (tx) => {
+    const snap = await tx.get(ref)
+    if (!snap.exists()) throw new Error('Order not found.')
+
+    const order = snap.data() as Order
+    if (!order.items) return
+
+    const updatedItems = order.items.map(it => {
+      if (it.productId === productId) {
+        return { ...it, notAvailable }
+      }
+      return it
+    })
+
+    tx.update(ref, {
+      items: updatedItems,
+      updatedAt: serverTimestamp(),
+    })
+  })
+}

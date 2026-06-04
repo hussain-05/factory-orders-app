@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
-import { addDispatch, listPendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
+import { addDispatch, listPendingOrdersForFactory, updateOrderMilestones, markLineItemNotAvailable } from '../../lib/orderService'
 import { whatsappLink } from '../../utils/whatsapp'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -67,6 +67,7 @@ interface PendingCardProps {
   onExpectedChange: (v: string) => void
   onPatch: (patch: Parameters<typeof updateOrderMilestones>[2]) => void
   onAddDispatch: (items: OrderDispatch['items']) => void
+  onMarkNotAvailable: (productId: string, notAvailable: boolean) => void
 }
 
 const WhatsAppIcon = () => (
@@ -198,6 +199,7 @@ function PendingCard({
   onExpectedChange,
   onPatch,
   onAddDispatch,
+  onMarkNotAvailable,
 }: PendingCardProps) {
   const [showDispatchForm, setShowDispatchForm] = useState(false)
   const dispatches = o.dispatches ?? []
@@ -412,12 +414,28 @@ function PendingCard({
                   key={`${it.productId}-${idx}`}
                   className="flex items-center justify-between gap-3 py-2 text-sm"
                 >
-                  <span className="min-w-0 truncate text-slate-900">
-                    {it.name}{it.size ? ` · ${it.size}` : ''}
-                  </span>
-                  <span className="shrink-0 font-semibold tabular-nums text-slate-900">
-                    ×{it.quantity}
-                  </span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`truncate text-slate-900 ${it.notAvailable ? 'line-through text-slate-400' : ''}`}>
+                      {it.name}{it.size ? ` · ${it.size}` : ''}
+                    </span>
+                    {it.notAvailable && (
+                      <Badge tone="neutral">Not Available</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0">
+                    {o.orderKind === 'unlimited' && (
+                      <button
+                        onClick={() => onMarkNotAvailable(it.productId, !it.notAvailable)}
+                        disabled={busy}
+                        className="text-xs text-rose-600 hover:text-rose-700 font-medium disabled:opacity-50"
+                      >
+                        {it.notAvailable ? 'Mark Available' : 'Mark Not Available'}
+                      </button>
+                    )}
+                    <span className="font-semibold tabular-nums text-slate-900">
+                      ×{it.quantity}
+                    </span>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -591,6 +609,21 @@ export function FactoryPendingPage() {
         }
       }
 
+      await refresh()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Update failed.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+
+  async function handleMarkNotAvailable(order: Order, productId: string, notAvailable: boolean) {
+    if (!db) return
+    setBusyId(order.id)
+    setError(null)
+    try {
+      await markLineItemNotAvailable(db, order.id, productId, notAvailable)
       await refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Update failed.')
@@ -808,6 +841,7 @@ export function FactoryPendingPage() {
                     onExpectedChange={(v) => setExpectedDraft((p) => ({ ...p, [o.id]: v }))}
                     onPatch={(p) => void patch(o, p)}
                     onAddDispatch={(items) => void handleAddDispatch(o, items)}
+                    onMarkNotAvailable={(productId, notAvailable) => void handleMarkNotAvailable(o, productId, notAvailable)}
                   />
                 ))}
               </div>
