@@ -505,6 +505,8 @@ export function FactoryPendingPage() {
   const [filterShop, setFilterShop] = useState<string>('all')
   const [filterRequestor, setFilterRequestor] = useState<string>('all')
   const [filterKind, setFilterKind] = useState<string>('all')
+  const [filterStartDate, setFilterStartDate] = useState<string>('')
+  const [filterEndDate, setFilterEndDate] = useState<string>('')
   const [filterOpen, setFilterOpen] = useState(false)
   const [orderSearch, setOrderSearch] = useState('')
   const refresh = useCallback(async () => {
@@ -548,14 +550,22 @@ export function FactoryPendingPage() {
       if (filterShop !== 'all' && o.shopName !== filterShop) return false
       if (filterRequestor !== 'all' && o.requestorName !== filterRequestor) return false
       if (filterKind !== 'all' && o.orderKind !== filterKind) return false
+      if (filterStartDate) {
+        const [y, m, d] = filterStartDate.split('-').map(Number); const start = new Date(y, m - 1, d, 0, 0, 0, 0).getTime()
+        if ((o.createdAt ?? 0) < start) return false
+      }
+
+      if (filterEndDate) {
+        const [ey, em, ed] = filterEndDate.split('-').map(Number); const end = new Date(ey, em - 1, ed, 23, 59, 59, 999).getTime(); if ((o.createdAt ?? 0) > end) return false
+      }
       return true
     })
     const sorted = filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     return groupByMonth(sorted)
-  }, [orders, orderSearch, filterShop, filterRequestor, filterKind])
+  }, [orders, orderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate])
 
   const totalOrders = grouped.reduce((s, g) => s + g.orders.length, 0)
-  const hasActiveFilters = filterShop !== 'all' || filterRequestor !== 'all' || filterKind !== 'all'
+  const hasActiveFilters = filterShop !== 'all' || filterRequestor !== 'all' || filterKind !== 'all' || filterStartDate !== '' || filterEndDate !== ''
 
   async function patch(order: Order, p: Parameters<typeof updateOrderMilestones>[2]) {
     if (!db) return
@@ -640,7 +650,7 @@ export function FactoryPendingPage() {
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Filters</span>
               {hasActiveFilters && (
                 <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-xs font-semibold text-white leading-none">
-                  {[filterShop !== 'all', filterRequestor !== 'all', filterKind !== 'all'].filter(Boolean).length}
+                  {[filterShop !== 'all', filterRequestor !== 'all', filterKind !== 'all', filterStartDate !== '', filterEndDate !== ''].filter(Boolean).length}
                 </span>
               )}
             </div>
@@ -718,11 +728,30 @@ export function FactoryPendingPage() {
               </div>
             </div>
 
+            <div className="flex items-center gap-3">
+              <span className="w-24 shrink-0 text-xs font-medium text-slate-500">Date Range</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={filterStartDate}
+                  onChange={e => setFilterStartDate(e.target.value)}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                />
+                <span className="text-slate-400">to</span>
+                <input
+                  type="date"
+                  value={filterEndDate}
+                  onChange={e => setFilterEndDate(e.target.value)}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                />
+              </div>
+            </div>
+
             {hasActiveFilters && (
               <div className="flex justify-end pt-1">
                 <button
                   type="button"
-                  onClick={() => { setFilterShop('all'); setFilterRequestor('all'); setFilterKind('all') }}
+                  onClick={() => { setFilterShop('all'); setFilterRequestor('all'); setFilterKind('all'); setFilterStartDate(''); setFilterEndDate('') }}
                   className="text-xs font-medium text-rose-600 hover:text-rose-700"
                 >
                   Clear all
