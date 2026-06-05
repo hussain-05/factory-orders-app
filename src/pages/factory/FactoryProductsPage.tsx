@@ -227,7 +227,7 @@ export function FactoryProductsPage() {
         </p>
       </div>
 
-      <div className="inline-flex rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 shadow-sm transition-colors duration-200">
+      <div className="inline-flex rounded-xl border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 p-1 shadow-sm">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -253,8 +253,8 @@ export function FactoryProductsPage() {
             <form className="mt-4 space-y-3" onSubmit={addLimited}>
               <div>
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Photo</label>
-                <label className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 hover:bg-slate-100 transition-colors">
-                  <span className="shrink-0 rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 ring-1 ring-slate-200 shadow-sm transition-colors duration-200">
+                <label className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 hover:bg-slate-100 transition-colors">
+                  <span className="shrink-0 rounded-lg bg-white dark:bg-slate-900 transition-colors duration-200 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 ring-1 ring-slate-200 shadow-sm">
                     Choose photo
                   </span>
                   <span className="truncate text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
@@ -381,7 +381,7 @@ export function FactoryProductsPage() {
               <div>
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Default unit</label>
                 <select
-                  className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-slate-100 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-200"
+                  className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-3 py-2.5 text-sm text-slate-900 dark:text-slate-100 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                   value={cUnit}
                   onChange={(e) => setCUnit(e.target.value as 'box' | 'bag' | 'pcs')}
                 >
@@ -393,7 +393,7 @@ export function FactoryProductsPage() {
               <Button className="w-full" type="submit" disabled={busy}>
                 {busy ? 'Saving…' : 'Add to catalogue'}
               </Button>
-              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-3 transition-colors duration-200">
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 p-3 transition-colors duration-200">
                 <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Replace from Excel</p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
                   Upload an Excel file with columns PRODUCT NAME, SIZE, DEFAULT UNIT. This fully
@@ -427,13 +427,13 @@ export function FactoryProductsPage() {
           </Card>
 
           <Card className="p-0">
-            <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 px-5 py-4 transition-colors duration-200">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/50 px-5 py-4 transition-colors duration-200">
               <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">Lines</h2>
               <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
                 Refresh
               </Button>
             </div>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800 transition-colors duration-200">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800/50 transition-colors duration-200">
               {catalog.map((p) => (
                 <div key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
                   <div className="min-w-0 flex-1">
@@ -482,8 +482,8 @@ export function FactoryProductsPage() {
             <form className="mt-4 space-y-3" onSubmit={saveEdit}>
               <div>
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Replace photo (optional)</label>
-                <label className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 hover:bg-slate-100 transition-colors">
-                  <span className="shrink-0 rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 ring-1 ring-slate-200 shadow-sm transition-colors duration-200">
+                <label className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 hover:bg-slate-100 transition-colors">
+                  <span className="shrink-0 rounded-lg bg-white dark:bg-slate-900 transition-colors duration-200 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 ring-1 ring-slate-200 shadow-sm">
                     Choose photo
                   </span>
                   <span className="truncate text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">

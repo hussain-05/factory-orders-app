@@ -463,7 +463,7 @@ export function ShopDashboardPage() {
           {recentOrders.length === 0 ? (
             <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">No orders yet.</p>
           ) : (
-            <ul className="divide-y divide-slate-100 dark:divide-slate-800 transition-colors duration-200">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800/50 transition-colors duration-200">
               {recentOrders.map(o => {
                 const { label, tone } = orderStatusLabel(o)
                 return (

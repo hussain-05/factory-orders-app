@@ -210,7 +210,7 @@ export function ShopNewOrderPage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         {/* ── Catalogue list ── */}
         <Card className="p-0">
-          <div className="border-b border-slate-100 dark:border-slate-800 p-4 sm:p-5 transition-colors duration-200">
+          <div className="border-b border-slate-100 dark:border-slate-800/50 p-4 sm:p-5 transition-colors duration-200">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500 transition-colors duration-200" />
               <Input
@@ -236,7 +236,7 @@ export function ShopNewOrderPage() {
             </div>
           </div>
 
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 transition-colors duration-200">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800/50 transition-colors duration-200">
             {loading ? (
               <div className="flex items-center gap-3 px-5 py-10 text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
@@ -261,7 +261,7 @@ export function ShopNewOrderPage() {
                     return (
                       <div
                         key={v.id}
-                        className={`flex items-center justify-between gap-4 px-5 py-3 transition-colors ${ active ? 'bg-emerald-50/60' : 'hover:bg-slate-50/60' }`}
+                        className={`flex items-center justify-between gap-4 px-5 py-3 transition-colors ${ active ? 'bg-emerald-50/60 dark:bg-emerald-900/40' : 'hover:bg-slate-50/60' }`}
                       >
                         <div className="min-w-0">
                           <span className="text-sm font-medium text-slate-900 dark:text-slate-100 transition-colors duration-200">
@@ -272,7 +272,7 @@ export function ShopNewOrderPage() {
                           </span>
                         </div>
 
-                        <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-0.5 shadow-sm transition-colors duration-200">
+                        <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 p-0.5 shadow-sm">
                           <button
                             type="button"
                             className="rounded-lg p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 disabled:opacity-30 transition-colors duration-200"
@@ -368,7 +368,7 @@ export function ShopNewOrderPage() {
 
       {/* ── Mobile sticky bar ── */}
       {hasItems ? (
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-4 backdrop-blur lg:hidden transition-colors duration-200">
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 dark:border-slate-800/50 bg-white/90 dark:bg-slate-900/90 p-4 backdrop-blur lg:hidden transition-colors duration-200">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white">
@@ -411,7 +411,7 @@ export function ShopNewOrderPage() {
           {validLines.map((l) => (
             <div
               key={l.productId}
-              className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 transition-colors duration-200"
+              className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 transition-colors duration-200"
             >
               <p className="min-w-0 truncate text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">
                 {l.name} · {l.size || 'Standard'} · {l.unit}

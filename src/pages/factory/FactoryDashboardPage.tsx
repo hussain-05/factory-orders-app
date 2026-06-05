@@ -464,7 +464,7 @@ export function FactoryDashboardPage() {
           {recentActivity.length === 0 ? (
             <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">No orders yet.</p>
           ) : (
-            <ul className="divide-y divide-slate-100 dark:divide-slate-800 transition-colors duration-200">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800/50 transition-colors duration-200">
               {recentActivity.map(o => {
                 const { label, tone } = lastActivityLabel(o)
                 const dest = o.status === 'completed' ? '/factory/history' : '/factory/pending'
@@ -511,7 +511,7 @@ export function FactoryDashboardPage() {
               All limited products are well-stocked.
             </div>
           ) : (
-            <ul className="divide-y divide-slate-100 dark:divide-slate-800 transition-colors duration-200">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800/50 transition-colors duration-200">
               {lowStock.map(p => (
                 <li key={p.id}>
                   <button

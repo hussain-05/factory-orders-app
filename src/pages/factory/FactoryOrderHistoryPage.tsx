@@ -54,7 +54,7 @@ function OrderTimeline({ order }: { order: Order }) {
   ]
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-4 transition-colors duration-200">
+    <div className="rounded-xl border border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 p-4 transition-colors duration-200">
       <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
         Order progress
       </p>
@@ -204,8 +204,8 @@ export function FactoryOrderHistoryPage() {
       </div>
 
       {/* ── Search + Filter bar ── */}
-      <div className="rounded-xl border-2 border-slate-300 bg-slate-50/80 shadow-sm">
-        <div className="flex divide-x divide-slate-200 dark:divide-slate-800 transition-colors duration-200">
+      <div className="rounded-xl border-2 border-slate-300 dark:border-slate-700/50 bg-slate-50/80 dark:bg-slate-900/80 transition-colors duration-200 shadow-sm">
+        <div className="flex divide-x divide-slate-200 dark:divide-slate-800/50 transition-colors duration-200">
 
           {/* Filter toggle — wider */}
           <button
@@ -227,7 +227,7 @@ export function FactoryOrderHistoryPage() {
 
           {/* Order number search — narrower */}
           <div className="relative flex flex-1 items-center px-3">
-            {loading ? <div className="pointer-events-none absolute left-6 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" /> : <Search className="pointer-events-none absolute left-6 h-4 w-4 text-slate-400 dark:text-slate-500 transition-colors duration-200" />}
+            {loading ? <div className="pointer-events-none absolute left-6 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 dark:border-slate-700/50 border-t-slate-600" /> : <Search className="pointer-events-none absolute left-6 h-4 w-4 text-slate-400 dark:text-slate-500 transition-colors duration-200" />}
             <input
               type="text"
               inputMode="numeric"
@@ -241,7 +241,7 @@ export function FactoryOrderHistoryPage() {
         </div>
 
         {filterOpen && (
-          <div className="border-t border-slate-200 dark:border-slate-800 px-4 pb-4 pt-3 space-y-3 transition-colors duration-200">
+          <div className="border-t border-slate-200 dark:border-slate-800/50 px-4 pb-4 pt-3 space-y-3 transition-colors duration-200">
             <div className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors duration-200">Shop</span>
               <div className="flex flex-wrap gap-1.5">
@@ -250,7 +250,7 @@ export function FactoryOrderHistoryPage() {
                     key={s}
                     type="button"
                     onClick={() => setFilterShop(s)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${ filterShop === s ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 dark:text-slate-400 ring-1 ring-slate-200 hover:bg-slate-100' }`}
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${ filterShop === s ? 'bg-slate-900 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 ring-1 ring-slate-200 hover:bg-slate-100' }`}
                   >
                     {s === 'all' ? 'All' : s}
                   </button>
@@ -263,7 +263,7 @@ export function FactoryOrderHistoryPage() {
               <select
                 value={filterRequestor}
                 onChange={e => setFilterRequestor(e.target.value)}
-                className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-colors duration-200"
+                className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
               >
                 <option value="all">All</option>
                 {requestorOptions.map(name => (
@@ -280,7 +280,7 @@ export function FactoryOrderHistoryPage() {
                     key={val}
                     type="button"
                     onClick={() => setFilterKind(val)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${ filterKind === val ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 dark:text-slate-400 ring-1 ring-slate-200 hover:bg-slate-100' }`}
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${ filterKind === val ? 'bg-slate-900 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 ring-1 ring-slate-200 hover:bg-slate-100' }`}
                   >
                     {label}
                   </button>
@@ -295,14 +295,14 @@ export function FactoryOrderHistoryPage() {
                   type="date"
                   value={filterStartDate}
                   onChange={e => setFilterStartDate(e.target.value)}
-                  className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-colors duration-200"
+                  className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
                 <span className="text-slate-400 dark:text-slate-500 transition-colors duration-200">to</span>
                 <input
                   type="date"
                   value={filterEndDate}
                   onChange={e => setFilterEndDate(e.target.value)}
-                  className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-colors duration-200"
+                  className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
               </div>
             </div>
@@ -389,7 +389,7 @@ export function FactoryOrderHistoryPage() {
                       </button>
 
                       {open ? (
-                        <div className="space-y-4 border-t border-slate-100 dark:border-slate-800 px-4 py-3 transition-colors duration-200">
+                        <div className="space-y-4 border-t border-slate-100 dark:border-slate-800/50 px-4 py-3 transition-colors duration-200">
 
                           {/* Timeline */}
                           <OrderTimeline order={o} />
@@ -444,7 +444,7 @@ export function FactoryOrderHistoryPage() {
                           {/* Line items */}
                           <div>
                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">Lines</p>
-                            <ul className="mt-2 divide-y divide-slate-200 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 transition-colors duration-200">
+                            <ul className="mt-2 divide-y divide-slate-200 dark:divide-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800/50 transition-colors duration-200">
                               {o.items.map((it, idx) => (
                                 <li key={`${it.productId}-${idx}`} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
                                   <div className="flex items-center gap-2 min-w-0">

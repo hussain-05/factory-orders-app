@@ -210,7 +210,7 @@ function DispatchForm({
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-3 space-y-3 transition-colors duration-200">
+    <div className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 p-3 space-y-3 transition-colors duration-200">
       <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">New dispatch</p>
       <div className="space-y-2">
         {remainingItems.map(it => {
@@ -328,7 +328,7 @@ function PendingCard({
 
       {/* ── Expanded body ── */}
       {open && (
-        <div className="border-t border-slate-100 dark:border-slate-800 px-4 py-4 space-y-4 transition-colors duration-200">
+        <div className="border-t border-slate-100 dark:border-slate-800/50 px-4 py-4 space-y-4 transition-colors duration-200">
 
           {/* Interactive timeline */}
           <div>
@@ -408,7 +408,7 @@ function PendingCard({
 
                   {/* Existing dispatches */}
                   {dispatches.map((d, i) => (
-                    <div key={d.id} className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 text-xs space-y-1.5 transition-colors duration-200">
+                    <div key={d.id} className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 p-3 text-xs space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">
                           Dispatch {i + 1} · {format(d.dispatchedAt, 'dd MMM yyyy')}
@@ -435,7 +435,7 @@ function PendingCard({
 
                   {/* Fulfillment progress */}
                   {dispatches.length > 0 && (
-                    <div className="rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-3 space-y-1.5 transition-colors duration-200">
+                    <div className="rounded-lg border border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 p-3 space-y-1.5 transition-colors duration-200">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-2 transition-colors duration-200">Fulfillment</p>
                       {o.items.map(it => {
                         const sent = dispatchedQty[it.productId] ?? 0
@@ -493,11 +493,11 @@ function PendingCard({
           <OrderActions order={o} onRefresh={() => window.location.reload()} />
 
           {/* Line items */}
-          <details className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 transition-colors duration-200">
+          <details className="rounded-xl border border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 transition-colors duration-200">
             <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">
               Line items ({o.items.length})
             </summary>
-            <ul className="divide-y divide-slate-200 dark:divide-slate-800 px-4 pb-3 transition-colors duration-200">
+            <ul className="divide-y divide-slate-200 dark:divide-slate-800/50 px-4 pb-3 transition-colors duration-200">
               {o.items.map((it, idx) => (
                 <li
                   key={`${it.productId}-${idx}`}
@@ -734,8 +734,8 @@ export function FactoryPendingPage() {
       </div>
 
       {/* ── Search + Filter bar ── */}
-      <div className="rounded-xl border-2 border-slate-300 bg-slate-50/80 shadow-sm">
-        <div className="flex divide-x divide-slate-200 dark:divide-slate-800 transition-colors duration-200">
+      <div className="rounded-xl border-2 border-slate-300 dark:border-slate-700/50 bg-slate-50/80 dark:bg-slate-900/80 transition-colors duration-200 shadow-sm">
+        <div className="flex divide-x divide-slate-200 dark:divide-slate-800/50 transition-colors duration-200">
 
           {/* Filter toggle — wider */}
           <button
@@ -757,7 +757,7 @@ export function FactoryPendingPage() {
 
           {/* Order number search — narrower */}
           <div className="relative flex flex-1 items-center px-3">
-            {loading ? <div className="pointer-events-none absolute left-6 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" /> : <Search className="pointer-events-none absolute left-6 h-4 w-4 text-slate-400 dark:text-slate-500 transition-colors duration-200" />}
+            {loading ? <div className="pointer-events-none absolute left-6 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 dark:border-slate-700/50 border-t-slate-600" /> : <Search className="pointer-events-none absolute left-6 h-4 w-4 text-slate-400 dark:text-slate-500 transition-colors duration-200" />}
             <input
               type="text"
               inputMode="numeric"
@@ -771,7 +771,7 @@ export function FactoryPendingPage() {
         </div>
 
         {filterOpen && (
-          <div className="border-t border-slate-200 dark:border-slate-800 px-4 pb-4 pt-3 space-y-3 transition-colors duration-200">
+          <div className="border-t border-slate-200 dark:border-slate-800/50 px-4 pb-4 pt-3 space-y-3 transition-colors duration-200">
             <div className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors duration-200">Shop</span>
               <div className="flex flex-wrap gap-1.5">
@@ -780,7 +780,7 @@ export function FactoryPendingPage() {
                     key={s}
                     type="button"
                     onClick={() => setFilterShop(s)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${ filterShop === s ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 dark:text-slate-400 ring-1 ring-slate-200 hover:bg-slate-100' }`}
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${ filterShop === s ? 'bg-slate-900 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 ring-1 ring-slate-200 hover:bg-slate-100' }`}
                   >
                     {s === 'all' ? 'All' : s}
                   </button>
@@ -793,7 +793,7 @@ export function FactoryPendingPage() {
               <select
                 value={filterRequestor}
                 onChange={e => setFilterRequestor(e.target.value)}
-                className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-colors duration-200"
+                className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
               >
                 <option value="all">All</option>
                 {requestorOptions.map(name => (
@@ -810,7 +810,7 @@ export function FactoryPendingPage() {
                     key={val}
                     type="button"
                     onClick={() => setFilterKind(val)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${ filterKind === val ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 dark:text-slate-400 ring-1 ring-slate-200 hover:bg-slate-100' }`}
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${ filterKind === val ? 'bg-slate-900 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 ring-1 ring-slate-200 hover:bg-slate-100' }`}
                   >
                     {label}
                   </button>
@@ -825,14 +825,14 @@ export function FactoryPendingPage() {
                   type="date"
                   value={filterStartDate}
                   onChange={e => setFilterStartDate(e.target.value)}
-                  className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-colors duration-200"
+                  className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
                 <span className="text-slate-400 dark:text-slate-500 transition-colors duration-200">to</span>
                 <input
                   type="date"
                   value={filterEndDate}
                   onChange={e => setFilterEndDate(e.target.value)}
-                  className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-colors duration-200"
+                  className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
               </div>
             </div>

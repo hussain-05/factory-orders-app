@@ -203,7 +203,7 @@ export function ShopAvailablePage() {
                   <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">₹{p.rate.toFixed(2)}</p>
 
                   <div className="flex items-center justify-between gap-3">
-                    <div className="inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-1 transition-colors duration-200">
+                    <div className="inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 p-1 transition-colors duration-200">
                       <button
                         type="button"
                         className="rounded-lg p-2 text-slate-700 dark:text-slate-300 hover:bg-white disabled:opacity-40 transition-colors duration-200"
@@ -251,8 +251,8 @@ export function ShopAvailablePage() {
       )}
 
       {lines.length > 0 ? (
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-4 backdrop-blur lg:static lg:z-0 lg:border-0 lg:bg-transparent lg:p-0 transition-colors duration-200">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-lg shadow-slate-200/40 sm:flex-row sm:items-center sm:justify-between transition-colors duration-200">
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 dark:border-slate-800/50 bg-white/90 dark:bg-slate-900/90 p-4 backdrop-blur lg:static lg:z-0 lg:border-0 lg:bg-transparent lg:p-0 transition-colors duration-200">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 rounded-2xl border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 p-4 shadow-lg shadow-slate-200/40 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300 transition-colors duration-200">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
                 <ShoppingBag className="h-5 w-5" />
@@ -293,7 +293,7 @@ export function ShopAvailablePage() {
           {lines.map((l) => (
             <div
               key={l.product.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 transition-colors duration-200"
+              className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 transition-colors duration-200"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{l.product.name}</p>
