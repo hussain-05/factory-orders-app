@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:is(.dark *));
+
 @theme {
   --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
@@ -22,7 +24,7 @@
     @apply antialiased;
   }
   body {
-    @apply m-0 min-h-dvh bg-slate-50 text-slate-900;
+    @apply m-0 min-h-dvh bg-slate-50 text-slate-900 transition-colors duration-200 dark:bg-slate-950 dark:text-slate-100;
   }
   #root {
     @apply min-h-dvh;
