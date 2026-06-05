@@ -181,7 +181,21 @@ export function ShopOrderHistoryPage() {
             if (it.confirmedAt) confirmedQty[it.productId] = (confirmedQty[it.productId] ?? 0) + it.qty
           }
         }
-        const allFulfilled = o.items.every(it => (confirmedQty[it.productId] ?? 0) >= it.quantity)
+        const dispatchedQty: Record<string, number> = {}
+        for (const d of updatedDispatches) {
+          for (const it of d.items) {
+            dispatchedQty[it.productId] = (dispatchedQty[it.productId] ?? 0) + it.qty
+          }
+        }
+
+        const allFulfilled = o.items.every(it => {
+          const conf = confirmedQty[it.productId] ?? 0
+          if (it.notAvailable) {
+            const disp = dispatchedQty[it.productId] ?? 0
+            return conf >= disp
+          }
+          return conf >= it.quantity
+        })
         return { ...o, dispatches: updatedDispatches, status: allFulfilled ? 'completed' : o.status }
       }))
     } catch {
@@ -553,13 +567,13 @@ export function ShopOrderHistoryPage() {
                               {pdfBusyId === o.id ? 'Preparing…' : 'Print'}
                             </Button>
 
-                            {o.status === 'pending' && (
+                            {(o.status === 'pending' || profile?.isAdmin) && (
                               <Button
                                 variant="danger"
                                 onClick={() => setDeleteTarget(o)}
                               >
                                 <Trash2 className="h-4 w-4" />
-                                Delete order
+                                {o.status === 'pending' && !profile?.isAdmin ? 'Cancel order' : 'Delete order'}
                               </Button>
                             )}
                           </div>
@@ -569,9 +583,14 @@ export function ShopOrderHistoryPage() {
                             <ul className="mt-2 divide-y divide-slate-200 rounded-xl border border-slate-200">
                               {o.items.map((it, idx) => (
                                 <li key={`${it.productId}-${idx}`} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                                  <span className="min-w-0 truncate text-slate-900">
-                                    {it.name}{it.size ? ` · ${it.size}` : ''}
-                                  </span>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className={`truncate text-slate-900 ${it.notAvailable ? 'line-through text-slate-400' : ''}`}>
+                                      {it.name}{it.size ? ` · ${it.size}` : ''}
+                                    </span>
+                                    {it.notAvailable && (
+                                      <Badge tone="neutral">Not Available</Badge>
+                                    )}
+                                  </div>
                                   <span className="shrink-0 font-semibold tabular-nums text-slate-900">
                                     ×{it.quantity}
                                   </span>

@@ -80,7 +80,7 @@ function orderDispatchStage(o: Order): DispatchStage {
   const dispatches = o.dispatches ?? []
   if (dispatches.length === 0) return 'new'
   const dispatched = dispQtyByProduct(dispatches)
-  const allSent = o.items.every(it => (dispatched[it.productId] ?? 0) >= it.quantity)
+  const allSent = o.items.every(it => it.notAvailable || (dispatched[it.productId] ?? 0) >= it.quantity)
   return allSent ? 'awaiting' : 'partial'
 }
 
@@ -294,6 +294,21 @@ export function ShopDashboardPage() {
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5 items-stretch">
         <StatCard
+          label="Last order"
+          value={lastOrder ? format(new Date(lastOrder.createdAt), 'dd MMM') : '—'}
+          sub={lastOrder ? format(new Date(lastOrder.createdAt), 'yyyy') : 'No orders yet'}
+          icon={<BarChart3 className="h-5 w-5" />}
+          onClick={lastOrder ? () => nav('/shop/history', { state: { openId: lastOrder.id } }) : undefined}
+        />
+        <StatCard
+          label="Awaiting confirmation"
+          value={ordersAwaitingConfirmation}
+          sub="Orders needing receipt"
+          icon={<PackageCheck className="h-5 w-5" />}
+          tone={ordersAwaitingConfirmation > 0 ? 'warning' : 'default'}
+          onClick={() => nav('/shop/history', { state: { filterAwaiting: true } })}
+        />
+        <StatCard
           label="Active orders"
           value={pending.length}
           sub={pending.length === 0 ? 'All clear' : [
@@ -308,33 +323,18 @@ export function ShopDashboardPage() {
           onClick={() => nav('/shop/history')}
         />
         <StatCard
+          label="Avg delivery time"
+          value={avgLead != null ? `${avgLead}d` : '—'}
+          sub="order placed → delivered"
+          icon={<Clock className="h-5 w-5" />}
+        />
+        <StatCard
           label="Placed this month"
           value={placedThisMonth}
           sub={`${orders.length} all time`}
           icon={<TrendingUp className="h-5 w-5" />}
           tone="success"
           onClick={() => nav('/shop/history')}
-        />
-        <StatCard
-          label="Last order"
-          value={lastOrder ? format(new Date(lastOrder.createdAt), 'dd MMM') : '—'}
-          sub={lastOrder ? format(new Date(lastOrder.createdAt), 'yyyy') : 'No orders yet'}
-          icon={<BarChart3 className="h-5 w-5" />}
-          onClick={lastOrder ? () => nav('/shop/history', { state: { openId: lastOrder.id } }) : undefined}
-        />
-                <StatCard
-          label="Awaiting confirmation"
-          value={ordersAwaitingConfirmation}
-          sub="Orders needing receipt"
-          icon={<PackageCheck className="h-5 w-5" />}
-          tone={ordersAwaitingConfirmation > 0 ? 'warning' : 'default'}
-          onClick={() => nav('/shop/history', { state: { filterAwaiting: true } })}
-        />
-        <StatCard
-          label="Avg delivery time"
-          value={avgLead != null ? `${avgLead}d` : '—'}
-          sub="order placed → delivered"
-          icon={<Clock className="h-5 w-5" />}
         />
       </div>
 

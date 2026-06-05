@@ -1,10 +1,12 @@
-import { ChevronDown, ChevronRight, Filter, Printer, Search } from 'lucide-react'
+import { ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
+import { Modal } from '../../components/ui/Modal'
 import { useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
+import { useAuth } from '../../contexts/AuthContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
-import { addDispatch, listPendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
+import { addDispatch, deleteOrder, listPendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
 import { whatsappLink } from '../../utils/whatsapp'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -66,7 +68,9 @@ interface PendingCardProps {
   expectedDraft: string
   onExpectedChange: (v: string) => void
   onPatch: (patch: Parameters<typeof updateOrderMilestones>[2]) => void
-  onAddDispatch: (items: OrderDispatch['items']) => void
+  onAddDispatch: (items: OrderDispatch['items'], naUpdates?: Record<string, boolean>) => void
+  dispatchFormOpen: boolean
+  onToggleDispatchForm: (open: boolean) => void
 }
 
 const WhatsAppIcon = () => (
@@ -75,22 +79,82 @@ const WhatsAppIcon = () => (
   </svg>
 )
 
-function OrderActions({ order }: { order: Order }) {
+function OrderActions({ order, onRefresh }: { order: Order, onRefresh?: () => void }) {
   const [busy, setBusy] = useState(false)
+  const { profile } = useAuth()
+  const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
+
   return (
-    <div className="flex flex-wrap gap-2">
-      <Button
-        variant="secondary"
-        disabled={busy}
-        onClick={async () => {
-          setBusy(true)
-          try { await previewOrderPdf(order) } finally { setBusy(false) }
-        }}
+    <>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="secondary"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true)
+            try { await previewOrderPdf(order) } finally { setBusy(false) }
+          }}
+        >
+          <Printer className="h-4 w-4" />
+          {busy ? 'Preparing…' : 'Print'}
+        </Button>
+        {profile?.isAdmin && (
+          <Button
+            variant="danger"
+            disabled={busy}
+            onClick={() => setDeleteTarget(order)}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete order
+          </Button>
+        )}
+      </div>
+
+      <Modal
+        open={Boolean(deleteTarget)}
+        title="Delete order?"
+        onClose={() => { if (!busy) setDeleteTarget(null) }}
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Keep order
+            </Button>
+            <Button
+              variant="danger"
+              disabled={busy}
+              onClick={async () => {
+                if (!db || !deleteTarget) return
+                setBusy(true)
+                try {
+                  await deleteOrder(db, deleteTarget.id)
+                  setDeleteTarget(null)
+                  onRefresh?.()
+                } catch (e) {
+                  alert('Failed to delete order.')
+                  setDeleteTarget(null)
+                } finally {
+                  setBusy(false)
+                }
+              }}
+            >
+              {busy ? 'Deleting…' : 'Yes, delete'}
+            </Button>
+          </div>
+        }
       >
-        <Printer className="h-4 w-4" />
-        {busy ? 'Preparing…' : 'Print'}
-      </Button>
-    </div>
+        <p className="text-sm text-slate-700">
+          This will permanently remove the order placed on{' '}
+          <span className="font-semibold">
+            {formatDateTime(deleteTarget?.createdAt)}
+          </span>{' '}
+          with {deleteTarget?.items.length} line{deleteTarget?.items.length === 1 ? '' : 's'}.
+        </p>
+      </Modal>
+    </>
   )
 }
 
@@ -102,16 +166,20 @@ function DispatchForm({
   busy,
   onSubmit,
   onCancel,
+  showNaToggle,
 }: {
   order: Order
   dispatchedQty: Record<string, number>
   busy: boolean
-  onSubmit: (items: OrderDispatch['items']) => void
+  onSubmit: (items: OrderDispatch['items'], naUpdates?: Record<string, boolean>) => void
   onCancel: () => void
+  showNaToggle?: boolean
 }) {
   const remainingItems = order.items.filter(
     it => (it.quantity - (dispatchedQty[it.productId] ?? 0)) > 0,
   )
+
+  const [localNa, setLocalNa] = useState<Record<string, boolean>>({})
 
   const [draft, setDraft] = useState<Record<string, number>>(() => {
     const r: Record<string, number> = {}
@@ -123,15 +191,22 @@ function DispatchForm({
 
   const handleSubmit = () => {
     const items: OrderDispatch['items'] = remainingItems
-      .filter(it => (draft[it.productId] ?? 0) > 0)
+      .filter(it => {
+        const isNa = localNa[it.productId] ?? it.notAvailable
+        return !isNa && (draft[it.productId] ?? 0) > 0
+      })
       .map(it => ({
         productId: it.productId,
         name: it.name,
         size: it.size,
         qty: draft[it.productId] ?? 0,
       }))
-    if (items.length === 0) return
-    onSubmit(items)
+
+    // Check if there are any NA updates or items to dispatch
+    const hasNaUpdates = Object.keys(localNa).length > 0
+    if (items.length === 0 && !hasNaUpdates) return
+
+    onSubmit(items, Object.keys(localNa).length > 0 ? localNa : undefined)
   }
 
   return (
@@ -140,29 +215,47 @@ function DispatchForm({
       <div className="space-y-2">
         {remainingItems.map(it => {
           const remaining = it.quantity - (dispatchedQty[it.productId] ?? 0)
+          const isNa = localNa[it.productId] ?? it.notAvailable
           return (
             <div key={it.productId} className="flex items-center justify-between gap-3 text-xs">
               <div className="min-w-0">
-                <p className="font-medium text-slate-800 truncate">
+                <p className={`font-medium truncate ${isNa ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
                   {it.name}{it.size ? ` · ${it.size}` : ''}
                 </p>
                 <p className="text-slate-400">
                   Ordered {it.quantity} · {dispatchedQty[it.productId] ?? 0} already sent · {remaining} remaining
                 </p>
               </div>
-              <Input
-                type="number"
-                min={0}
-                max={remaining}
-                value={draft[it.productId] ?? 0}
-                onChange={e => setDraft(prev => ({
-                  ...prev,
-                  [it.productId]: Math.min(remaining, Math.max(0, Number(e.target.value))),
-                }))}
-                onFocus={e => e.target.select()}
-                disabled={busy}
-                className="!w-20 !py-1 !text-xs shrink-0"
-              />
+              <div className="flex items-center gap-2 shrink-0">
+                {showNaToggle && (
+                  <button
+                    type="button"
+                    onClick={() => setLocalNa(prev => ({ ...prev, [it.productId]: !isNa }))}
+                    disabled={busy || order.status === 'completed'}
+                    className={`flex h-7 w-7 items-center justify-center rounded border ${
+                      isNa
+                        ? 'border-emerald-600 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                        : 'border-rose-600 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                    } disabled:opacity-50`}
+                    title={isNa ? 'Mark Available' : 'Mark Not Available'}
+                  >
+                    <span className="text-[10px] font-bold">{isNa ? 'A' : 'NA'}</span>
+                  </button>
+                )}
+                <Input
+                  type="number"
+                  min={0}
+                  max={remaining}
+                  value={isNa ? 0 : (draft[it.productId] ?? 0)}
+                  onChange={e => setDraft(prev => ({
+                    ...prev,
+                    [it.productId]: Math.min(remaining, Math.max(0, Number(e.target.value))),
+                  }))}
+                  onFocus={e => e.target.select()}
+                  disabled={busy || isNa}
+                  className="!w-20 !py-1 !text-xs"
+                />
+              </div>
             </div>
           )
         })}
@@ -179,7 +272,7 @@ function DispatchForm({
         <Button
           className="!py-1.5 !text-xs bg-slate-900 hover:bg-slate-800 text-white"
           onClick={handleSubmit}
-          disabled={busy || remainingItems.every(it => (draft[it.productId] ?? 0) === 0)}
+          disabled={busy || (remainingItems.every(it => (localNa[it.productId] ?? it.notAvailable) || (draft[it.productId] ?? 0) === 0) && Object.keys(localNa).length === 0)}
         >
           {busy ? 'Saving…' : 'Dispatch'}
         </Button>
@@ -198,8 +291,9 @@ function PendingCard({
   onExpectedChange,
   onPatch,
   onAddDispatch,
+  dispatchFormOpen,
+  onToggleDispatchForm,
 }: PendingCardProps) {
-  const [showDispatchForm, setShowDispatchForm] = useState(false)
   const dispatches = o.dispatches ?? []
   const dispatchedQty = dispatchedQtyByProduct(dispatches)
   const allDispatched = o.items.every(it => (dispatchedQty[it.productId] ?? 0) >= it.quantity)
@@ -371,22 +465,23 @@ function PendingCard({
 
                   {/* Add dispatch form */}
                   {!allDispatched && (
-                    showDispatchForm ? (
+                    dispatchFormOpen ? (
                       <DispatchForm
                         order={o}
                         dispatchedQty={dispatchedQty}
                         busy={busy}
-                        onSubmit={(items) => {
-                          setShowDispatchForm(false)
-                          onAddDispatch(items)
+                        onSubmit={(items, naUpdates) => {
+                          onToggleDispatchForm(false)
+                          onAddDispatch(items, naUpdates)
                         }}
-                        onCancel={() => setShowDispatchForm(false)}
+                        onCancel={() => onToggleDispatchForm(false)}
+                        showNaToggle={o.orderKind === 'unlimited'}
                       />
                     ) : (
                       <Button
                         variant="secondary"
                         className="!py-1.5 !text-xs"
-                        onClick={() => setShowDispatchForm(true)}
+                        onClick={() => onToggleDispatchForm(true)}
                         disabled={busy}
                       >
                         + Add dispatch
@@ -399,7 +494,7 @@ function PendingCard({
           </div>
 
           {/* Actions */}
-          <OrderActions order={o} />
+          <OrderActions order={o} onRefresh={() => window.location.reload()} />
 
           {/* Line items */}
           <details className="rounded-xl border border-slate-100 bg-slate-50">
@@ -412,12 +507,19 @@ function PendingCard({
                   key={`${it.productId}-${idx}`}
                   className="flex items-center justify-between gap-3 py-2 text-sm"
                 >
-                  <span className="min-w-0 truncate text-slate-900">
-                    {it.name}{it.size ? ` · ${it.size}` : ''}
-                  </span>
-                  <span className="shrink-0 font-semibold tabular-nums text-slate-900">
-                    ×{it.quantity}
-                  </span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`truncate text-slate-900 ${it.notAvailable ? 'line-through text-slate-400' : ''}`}>
+                      {it.name}{it.size ? ` · ${it.size}` : ''}
+                    </span>
+                    {it.notAvailable && (
+                      <Badge tone="neutral">Not Available</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0">
+                    <span className="font-semibold tabular-nums text-slate-900">
+                      ×{it.quantity}
+                    </span>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -501,6 +603,7 @@ export function FactoryPendingPage() {
     return () => clearTimeout(t)
   }, [loading, loc.state?.openId])
   const [expectedDraft, setExpectedDraft] = useState<Record<string, string>>({})
+  const [dispatchFormOpenId, setDispatchFormOpenId] = useState<string | null>(null)
   const [notifyBanner, setNotifyBanner] = useState<{ message: string; number: string } | null>(null)
   const [filterShop, setFilterShop] = useState<string>('all')
   const [filterRequestor, setFilterRequestor] = useState<string>('all')
@@ -599,12 +702,13 @@ export function FactoryPendingPage() {
     }
   }
 
-  async function handleAddDispatch(order: Order, items: OrderDispatch['items']) {
+
+  async function handleAddDispatch(order: Order, items: OrderDispatch['items'], naUpdates?: Record<string, boolean>) {
     if (!db) return
     setBusyId(order.id)
     setError(null)
     try {
-      await addDispatch(db, order.id, items)
+      await addDispatch(db, order.id, items, naUpdates)
       if (order.shopWhatsappNumber) {
         setNotifyBanner({
           number: order.shopWhatsappNumber,
@@ -807,7 +911,9 @@ export function FactoryPendingPage() {
                     expectedDraft={expectedDraft[o.id] ?? ''}
                     onExpectedChange={(v) => setExpectedDraft((p) => ({ ...p, [o.id]: v }))}
                     onPatch={(p) => void patch(o, p)}
-                    onAddDispatch={(items) => void handleAddDispatch(o, items)}
+                    onAddDispatch={(items, naUpdates) => void handleAddDispatch(o, items, naUpdates)}
+                    dispatchFormOpen={dispatchFormOpenId === o.id}
+                    onToggleDispatchForm={(open) => setDispatchFormOpenId(open ? o.id : null)}
                   />
                 ))}
               </div>

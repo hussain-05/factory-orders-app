@@ -1,13 +1,15 @@
-import { ChevronDown, ChevronRight, Filter, Printer, Search } from 'lucide-react'
+import { ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
-import { listAllOrdersForFactory } from '../../lib/orderService'
+import { useAuth } from '../../contexts/AuthContext'
+import { listAllOrdersForFactory, deleteOrder } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { Modal } from '../../components/ui/Modal'
 import type { Order } from '../../types/models'
 import { formatDate, formatDateTime, fulfillmentSummary } from '../../utils/format'
 
@@ -135,6 +137,9 @@ export function FactoryOrderHistoryPage() {
     return () => clearTimeout(t)
   }, [loading, loc.state?.openId])
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const { profile } = useAuth()
   const [filterShop, setFilterShop] = useState<string>('all')
   const [filterRequestor, setFilterRequestor] = useState<string>('all')
   const [filterKind, setFilterKind] = useState<string>('all')
@@ -441,6 +446,15 @@ export function FactoryOrderHistoryPage() {
                               <Printer className="h-4 w-4" />
                               {pdfBusyId === o.id ? 'Preparing…' : 'Print'}
                             </Button>
+                            {profile?.isAdmin && (
+                              <Button
+                                variant="danger"
+                                onClick={() => setDeleteTarget(o)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Delete order
+                              </Button>
+                            )}
                           </div>
 
                           {/* Line items */}
@@ -449,9 +463,14 @@ export function FactoryOrderHistoryPage() {
                             <ul className="mt-2 divide-y divide-slate-200 rounded-xl border border-slate-200">
                               {o.items.map((it, idx) => (
                                 <li key={`${it.productId}-${idx}`} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                                  <span className="min-w-0 truncate text-slate-900">
-                                    {it.name}{it.size ? ` · ${it.size}` : ''}
-                                  </span>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className={`truncate text-slate-900 ${it.notAvailable ? 'line-through text-slate-400' : ''}`}>
+                                      {it.name}{it.size ? ` · ${it.size}` : ''}
+                                    </span>
+                                    {it.notAvailable && (
+                                      <Badge tone="neutral">Not Available</Badge>
+                                    )}
+                                  </div>
                                   <span className="shrink-0 font-semibold tabular-nums text-slate-900">
                                     ×{it.quantity}
                                   </span>
@@ -469,6 +488,51 @@ export function FactoryOrderHistoryPage() {
           ))}
         </div>
       )}
+
+      <Modal
+        open={Boolean(deleteTarget)}
+        title="Delete order?"
+        onClose={() => { if (!deleteBusy) setDeleteTarget(null) }}
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              variant="secondary"
+              disabled={deleteBusy}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Keep order
+            </Button>
+            <Button
+              variant="danger"
+              disabled={deleteBusy}
+              onClick={async () => {
+                if (!db || !deleteTarget) return
+                setDeleteBusy(true)
+                try {
+                  await deleteOrder(db, deleteTarget.id)
+                  setDeleteTarget(null)
+                  window.location.reload()
+                } catch (e) {
+                  alert('Failed to delete order.')
+                  setDeleteTarget(null)
+                } finally {
+                  setDeleteBusy(false)
+                }
+              }}
+            >
+              {deleteBusy ? 'Deleting…' : 'Yes, delete'}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm text-slate-700">
+          This will permanently remove the order placed on{' '}
+          <span className="font-semibold">
+            {formatDateTime(deleteTarget?.createdAt)}
+          </span>{' '}
+          with {deleteTarget?.items.length} line{deleteTarget?.items.length === 1 ? '' : 's'}.
+        </p>
+      </Modal>
     </div>
   )
 }

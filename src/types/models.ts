@@ -58,6 +58,7 @@ export interface OrderLineItem {
   quantity: number
   unit?: Unit
   rate?: number
+  notAvailable?: boolean
 }
 
 export interface OrderMilestones {

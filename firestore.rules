@@ -76,9 +76,9 @@ service cloud.firestore {
         && request.resource.data.status == 'pending';
       allow update: if isFactory() || isAdmin()
         || (isShop() && resource.data.shopName == userDoc().shopName && resource.data.status == 'pending');
-      allow delete: if isShop()
+      allow delete: if isAdmin() || (isShop()
         && resource.data.shopUserId == request.auth.uid
-        && resource.data.status == 'pending';
+        && resource.data.status == 'pending');
     }
 
     match /settings/{doc} {
