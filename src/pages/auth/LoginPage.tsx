@@ -61,23 +61,23 @@ export function LoginPage() {
         </div>
 
         <div className="flex items-center justify-center px-6 py-14">
-          <Card className="w-full max-w-md border-white/10 bg-white/95 p-8 shadow-2xl shadow-emerald-900/20 backdrop-blur">
+          <Card className="w-full max-w-md border-white/10 dark:border-slate-800/50 bg-white/95 dark:bg-slate-900/95 transition-colors duration-200 p-8 shadow-2xl shadow-emerald-900/20 dark:shadow-none backdrop-blur">
             <div className="lg:hidden">
               <img
                 src="/seva-logo.png"
                 alt="Seva"
                 className="mb-3 block h-10 w-auto mx-auto"
               />
-              <h2 className="mt-2 font-display text-2xl font-semibold text-slate-900">Sign in</h2>
+              <h2 className="mt-2 font-display text-2xl font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">Sign in</h2>
             </div>
             <div className="hidden lg:block">
-              <h2 className="font-display text-2xl font-semibold text-slate-900">Sign in</h2>
-              <p className="mt-2 text-sm text-slate-600">Use the account created for your shop or factory role.</p>
+              <h2 className="font-display text-2xl font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">Sign in</h2>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">Use the account created for your shop or factory role.</p>
             </div>
 
             <form className="mt-8 space-y-4" onSubmit={onSubmit}>
               <div>
-                <label className="text-xs font-semibold text-slate-700" htmlFor="email">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200" htmlFor="email">
                   Email
                 </label>
                 <Input
@@ -91,7 +91,7 @@ export function LoginPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700" htmlFor="password">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200" htmlFor="password">
                   Password
                 </label>
                 <Input
@@ -116,7 +116,7 @@ export function LoginPage() {
               </Button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-slate-600">
+            <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
               New here?{' '}
               <Link className="font-semibold text-emerald-700 hover:text-emerald-800" to="/signup">
                 Create an account
