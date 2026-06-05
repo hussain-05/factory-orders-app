@@ -9,6 +9,7 @@ import { listAllOrdersForFactory, deleteOrder } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { Modal } from '../../components/ui/Modal'
 import type { Order } from '../../types/models'
 import { formatDate, formatDateTime, fulfillmentSummary } from '../../utils/format'
 
@@ -136,6 +137,8 @@ export function FactoryOrderHistoryPage() {
     return () => clearTimeout(t)
   }, [loading, loc.state?.openId])
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
   const { profile } = useAuth()
   const [filterShop, setFilterShop] = useState<string>('all')
   const [filterRequestor, setFilterRequestor] = useState<string>('all')
@@ -445,21 +448,11 @@ export function FactoryOrderHistoryPage() {
                             </Button>
                             {profile?.isAdmin && (
                               <Button
-                                variant="secondary"
-                                className="!text-rose-600 hover:!bg-rose-50"
-                                onClick={async () => {
-                                  if (!db) return
-                                  if (!confirm('Are you sure you want to permanently delete this order?')) return
-                                  try {
-                                    await deleteOrder(db, o.id)
-                                    window.location.reload()
-                                  } catch (e) {
-                                    alert('Failed to delete order')
-                                  }
-                                }}
+                                variant="danger"
+                                onClick={() => setDeleteTarget(o)}
                               >
                                 <Trash2 className="h-4 w-4" />
-                                Delete
+                                Delete order
                               </Button>
                             )}
                           </div>
@@ -495,6 +488,51 @@ export function FactoryOrderHistoryPage() {
           ))}
         </div>
       )}
+
+      <Modal
+        open={Boolean(deleteTarget)}
+        title="Delete order?"
+        onClose={() => { if (!deleteBusy) setDeleteTarget(null) }}
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              variant="secondary"
+              disabled={deleteBusy}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Keep order
+            </Button>
+            <Button
+              variant="danger"
+              disabled={deleteBusy}
+              onClick={async () => {
+                if (!db || !deleteTarget) return
+                setDeleteBusy(true)
+                try {
+                  await deleteOrder(db, deleteTarget.id)
+                  setDeleteTarget(null)
+                  window.location.reload()
+                } catch (e) {
+                  alert('Failed to delete order.')
+                  setDeleteTarget(null)
+                } finally {
+                  setDeleteBusy(false)
+                }
+              }}
+            >
+              {deleteBusy ? 'Deleting…' : 'Yes, delete'}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm text-slate-700">
+          This will permanently remove the order placed on{' '}
+          <span className="font-semibold">
+            {formatDateTime(deleteTarget?.createdAt)}
+          </span>{' '}
+          with {deleteTarget?.items.length} line{deleteTarget?.items.length === 1 ? '' : 's'}.
+        </p>
+      </Modal>
     </div>
   )
 }

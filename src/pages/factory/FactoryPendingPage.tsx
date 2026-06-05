@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
+import { Modal } from '../../components/ui/Modal'
 import { useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
@@ -81,43 +82,79 @@ const WhatsAppIcon = () => (
 function OrderActions({ order, onRefresh }: { order: Order, onRefresh?: () => void }) {
   const [busy, setBusy] = useState(false)
   const { profile } = useAuth()
+  const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
+
   return (
-    <div className="flex flex-wrap gap-2">
-      <Button
-        variant="secondary"
-        disabled={busy}
-        onClick={async () => {
-          setBusy(true)
-          try { await previewOrderPdf(order) } finally { setBusy(false) }
-        }}
-      >
-        <Printer className="h-4 w-4" />
-        {busy ? 'Preparing…' : 'Print'}
-      </Button>
-      {profile?.isAdmin && (
+    <>
+      <div className="flex flex-wrap gap-2">
         <Button
           variant="secondary"
-          className="!text-rose-600 hover:!bg-rose-50"
           disabled={busy}
           onClick={async () => {
-            if (!db) return
-            if (!confirm('Are you sure you want to permanently delete this order?')) return
             setBusy(true)
-            try {
-              await deleteOrder(db, order.id)
-              onRefresh?.()
-            } catch(e) {
-              alert('Failed to delete order')
-            } finally {
-              setBusy(false)
-            }
+            try { await previewOrderPdf(order) } finally { setBusy(false) }
           }}
         >
-          <Trash2 className="h-4 w-4" />
-          Delete
+          <Printer className="h-4 w-4" />
+          {busy ? 'Preparing…' : 'Print'}
         </Button>
-      )}
-    </div>
+        {profile?.isAdmin && (
+          <Button
+            variant="danger"
+            disabled={busy}
+            onClick={() => setDeleteTarget(order)}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete order
+          </Button>
+        )}
+      </div>
+
+      <Modal
+        open={Boolean(deleteTarget)}
+        title="Delete order?"
+        onClose={() => { if (!busy) setDeleteTarget(null) }}
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Keep order
+            </Button>
+            <Button
+              variant="danger"
+              disabled={busy}
+              onClick={async () => {
+                if (!db || !deleteTarget) return
+                setBusy(true)
+                try {
+                  await deleteOrder(db, deleteTarget.id)
+                  setDeleteTarget(null)
+                  onRefresh?.()
+                } catch (e) {
+                  alert('Failed to delete order.')
+                  setDeleteTarget(null)
+                } finally {
+                  setBusy(false)
+                }
+              }}
+            >
+              {busy ? 'Deleting…' : 'Yes, delete'}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm text-slate-700">
+          This will permanently remove the order placed on{' '}
+          <span className="font-semibold">
+            {formatDateTime(deleteTarget?.createdAt)}
+          </span>{' '}
+          with {deleteTarget?.items.length} line{deleteTarget?.items.length === 1 ? '' : 's'}.
+        </p>
+      </Modal>
+    </>
   )
 }
 
@@ -259,7 +296,7 @@ function PendingCard({
 }: PendingCardProps) {
   const dispatches = o.dispatches ?? []
   const dispatchedQty = dispatchedQtyByProduct(dispatches)
-  const allDispatched = o.items.every(it => it.notAvailable || (dispatchedQty[it.productId] ?? 0) >= it.quantity)
+  const allDispatched = o.items.every(it => (dispatchedQty[it.productId] ?? 0) >= it.quantity)
   const allReceived = dispatches.length > 0 && dispatches.every(d => d.items.every(it => it.confirmedAt))
   return (
     <Card id={id} className="p-0">
