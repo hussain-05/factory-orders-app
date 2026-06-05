@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, LogOut, User, Loader2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthProfile } from '../hooks/useAuthProfile'
 import { Button } from './ui/Button'
@@ -13,6 +14,7 @@ type UserProfileDrawerProps = {
 export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
   const { profile, logout } = useAuth()
   const { updateProfileDetails, changePassword, loading } = useAuthProfile()
+  const navigate = useNavigate()
 
   // Editable Profile fields
   const [displayName, setDisplayName] = useState(profile?.displayName || '')
@@ -92,6 +94,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
   const handleLogout = async () => {
     onClose()
     await logout()
+    navigate('/login')
   }
 
   return (

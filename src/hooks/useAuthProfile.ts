@@ -5,7 +5,7 @@ import { saveUserProfile } from '../lib/userService'
 import { useAuth } from '../contexts/AuthContext'
 
 export function useAuthProfile() {
-  const { user, profile } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
   const [loading, setLoading] = useState(false)
 
   const updateProfileDetails = async (displayName: string, whatsappNumber: string) => {
@@ -17,6 +17,7 @@ export function useAuthProfile() {
         displayName,
         whatsappNumber,
       })
+      await refreshProfile()
     } finally {
       setLoading(false)
     }

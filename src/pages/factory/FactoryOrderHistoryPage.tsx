@@ -171,7 +171,7 @@ export function FactoryOrderHistoryPage() {
 
   const requestorOptions = useMemo(
     () => [...new Set(orders.map(o => usersMap[o.shopUserId]?.displayName || o.requestorName).filter(Boolean))].sort(),
-    [orders]
+    [orders, usersMap]
   )
 
   const grouped = useMemo(() => {
