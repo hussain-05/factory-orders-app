@@ -567,13 +567,13 @@ export function ShopOrderHistoryPage() {
                               {pdfBusyId === o.id ? 'Preparing…' : 'Print'}
                             </Button>
 
-                            {o.status === 'pending' && (
+                            {(o.status === 'pending' || profile?.isAdmin) && (
                               <Button
                                 variant="danger"
                                 onClick={() => setDeleteTarget(o)}
                               >
                                 <Trash2 className="h-4 w-4" />
-                                Delete order
+                                {o.status === 'pending' && !profile?.isAdmin ? 'Cancel order' : 'Delete order'}
                               </Button>
                             )}
                           </div>
