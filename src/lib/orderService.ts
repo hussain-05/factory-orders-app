@@ -322,34 +322,89 @@ export async function addDispatch(
   firestore: Firestore,
   orderId: string,
   items: OrderDispatch['items'],
+  naUpdates?: Record<string, boolean>,
 ): Promise<void> {
   const ref = doc(firestore, ordersCol, orderId)
   const now = Date.now()
-  const dispatch: OrderDispatch = {
-    id: `d_${now}_${Math.random().toString(36).slice(2, 6)}`,
-    dispatchedAt: now,
-    items,
-    receivedAt: null,
-  }
 
   await runTransaction(firestore, async (tx) => {
     const snap = await tx.get(ref)
     if (!snap.exists()) throw new Error('Order not found')
-    const data = snap.data() as Record<string, unknown>
-    const existing: OrderDispatch[] = Array.isArray(data.dispatches)
-      ? (data.dispatches as OrderDispatch[])
-      : []
-    const milestones = (data.milestones ?? {}) as Record<string, unknown>
-    const isFirst = !milestones.dispatchedAt
+
+    // We parse the entire order to get item definitions easily
+    const order = mapOrder(orderId, snap.data() as Record<string, unknown>)
+    const existing: OrderDispatch[] = order.dispatches ?? []
 
     const update: Record<string, unknown> = {
-      dispatches: [...existing, dispatch],
       updatedAt: serverTimestamp(),
     }
-    if (isFirst) {
-      update['milestones.dispatchedAt'] = Timestamp.fromMillis(now)
+
+    if (items.length > 0) {
+      const dispatch: OrderDispatch = {
+        id: `d_${now}_${Math.random().toString(36).slice(2, 6)}`,
+        dispatchedAt: now,
+        items,
+        receivedAt: null,
+      }
+      update.dispatches = [...existing, dispatch]
+
+      const isFirst = !order.milestones.dispatchedAt
+      if (isFirst) {
+        update['milestones.dispatchedAt'] = Timestamp.fromMillis(now)
+      }
     }
-    tx.update(ref, update)
+
+    if (naUpdates && Object.keys(naUpdates).length > 0) {
+      const updatedItems = order.items.map(it => {
+        if (naUpdates[it.productId] !== undefined) {
+          return { ...it, notAvailable: naUpdates[it.productId] }
+        }
+        return it
+      })
+      update.items = updatedItems
+
+      // Check for completion
+      const confirmedQty: Record<string, number> = {}
+      for (const d of existing) {
+        for (const it of d.items) {
+          if (it.confirmedAt) {
+            confirmedQty[it.productId] = (confirmedQty[it.productId] ?? 0) + it.qty
+          }
+        }
+      }
+
+      // If an item is marked notAvailable, we only consider it "fulfilled"
+      // if all of its ALREADY DISPATCHED quantity has been confirmed.
+      // E.g., if ordered 4, dispatched 2, marked NA -> remaining 2 are cancelled.
+      // But the 2 dispatched MUST still be confirmed before the order is complete.
+      const dispatchedQty: Record<string, number> = {}
+      const dispatchesToCheck = update.dispatches ? (update.dispatches as OrderDispatch[]) : existing
+      for (const d of dispatchesToCheck) {
+        for (const it of d.items) {
+          dispatchedQty[it.productId] = (dispatchedQty[it.productId] ?? 0) + it.qty
+        }
+      }
+
+      const allFulfilled = updatedItems.every(it => {
+        const conf = confirmedQty[it.productId] ?? 0
+        if (it.notAvailable) {
+          const disp = dispatchedQty[it.productId] ?? 0
+          return conf >= disp // NA items only need their dispatched parts confirmed
+        }
+        return conf >= it.quantity
+      })
+
+      if (allFulfilled) {
+        update.status = 'completed'
+        update.completedAt = serverTimestamp()
+        update.actualDeliveryDate = Timestamp.fromMillis(now)
+      }
+    }
+
+    // Only update if there are changes beyond updatedAt
+    if (Object.keys(update).length > 1) {
+      tx.update(ref, update)
+    }
   })
 }
 
@@ -393,9 +448,21 @@ export async function confirmDispatchItem(
       }
     }
 
-    const allFulfilled = order.items.every(
-      it => (confirmedQty[it.productId] ?? 0) >= it.quantity,
-    )
+    const dispatchedQty: Record<string, number> = {}
+    for (const d of dispatches) {
+      for (const it of d.items) {
+        dispatchedQty[it.productId] = (dispatchedQty[it.productId] ?? 0) + it.qty
+      }
+    }
+
+    const allFulfilled = order.items.every(it => {
+      const conf = confirmedQty[it.productId] ?? 0
+      if (it.notAvailable) {
+        const disp = dispatchedQty[it.productId] ?? 0
+        return conf >= disp
+      }
+      return conf >= it.quantity
+    })
 
     const update: Record<string, unknown> = {
       dispatches,
@@ -407,5 +474,57 @@ export async function confirmDispatchItem(
       update.actualDeliveryDate = Timestamp.fromMillis(now)
     }
     tx.update(ref, update)
+  })
+}
+export async function markLineItemNotAvailable(
+  firestore: Firestore,
+  orderId: string,
+  productId: string,
+  notAvailable: boolean
+): Promise<void> {
+  const ref = doc(firestore, ordersCol, orderId)
+
+  await runTransaction(firestore, async (tx) => {
+    const snap = await tx.get(ref)
+    if (!snap.exists()) throw new Error('Order not found.')
+
+    const order = snap.data() as Order
+    if (!order.items) return
+
+    const updatedItems = order.items.map(it => {
+      if (it.productId === productId) {
+        return { ...it, notAvailable }
+      }
+      return it
+    })
+
+    const updates: Record<string, unknown> = {
+      items: updatedItems,
+      updatedAt: serverTimestamp(),
+    }
+
+    if (notAvailable) {
+      // Check if this new "notAvailable" status allows the order to be completed
+      const confirmedQty: Record<string, number> = {}
+      for (const d of order.dispatches ?? []) {
+        for (const it of d.items) {
+          if (it.confirmedAt) {
+            confirmedQty[it.productId] = (confirmedQty[it.productId] ?? 0) + it.qty
+          }
+        }
+      }
+
+      const allFulfilled = updatedItems.every(
+        it => it.notAvailable || (confirmedQty[it.productId] ?? 0) >= it.quantity,
+      )
+
+      if (allFulfilled) {
+        updates.status = 'completed'
+        updates.completedAt = serverTimestamp()
+        updates.actualDeliveryDate = Timestamp.fromMillis(Date.now())
+      }
+    }
+
+    tx.update(ref, updates)
   })
 }

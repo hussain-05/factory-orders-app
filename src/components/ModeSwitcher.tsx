@@ -1,9 +1,17 @@
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAdminMode } from '../contexts/AdminModeContext'
 
 export function ModeSwitcher() {
-  const { mode, shopView, shops, setMode, setShopView } = useAdminMode()
+  const { mode: contextMode, shopView, shops, setMode, setShopView } = useAdminMode()
   const nav = useNavigate()
+  const location = useLocation()
+
+  // Use the URL to determine the true active mode, fallback to context mode
+  const mode = location.pathname.startsWith('/shop')
+    ? 'shop'
+    : location.pathname.startsWith('/factory')
+      ? 'factory'
+      : contextMode
 
   const switchTo = (next: 'factory' | 'shop') => {
     setMode(next)

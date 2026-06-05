@@ -151,7 +151,10 @@ export function ShopOrderHistoryPage() {
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [filterRequestor, setFilterRequestor] = useState<string>('all')
   const [filterKind, setFilterKind] = useState<string>('all')
-  const [filterOpen, setFilterOpen] = useState(false)
+  const [filterAwaiting, setFilterAwaiting] = useState<boolean>((loc.state as any)?.filterAwaiting ?? false)
+  const [filterStartDate, setFilterStartDate] = useState<string>('')
+  const [filterEndDate, setFilterEndDate] = useState<string>('')
+  const [filterOpen, setFilterOpen] = useState((loc.state as any)?.filterAwaiting ?? false)
   const [orderSearch, setOrderSearch] = useState('')
 
   async function handleConfirmDispatch(orderId: string, dispatchId: string, productId: string) {
@@ -178,7 +181,21 @@ export function ShopOrderHistoryPage() {
             if (it.confirmedAt) confirmedQty[it.productId] = (confirmedQty[it.productId] ?? 0) + it.qty
           }
         }
-        const allFulfilled = o.items.every(it => (confirmedQty[it.productId] ?? 0) >= it.quantity)
+        const dispatchedQty: Record<string, number> = {}
+        for (const d of updatedDispatches) {
+          for (const it of d.items) {
+            dispatchedQty[it.productId] = (dispatchedQty[it.productId] ?? 0) + it.qty
+          }
+        }
+
+        const allFulfilled = o.items.every(it => {
+          const conf = confirmedQty[it.productId] ?? 0
+          if (it.notAvailable) {
+            const disp = dispatchedQty[it.productId] ?? 0
+            return conf >= disp
+          }
+          return conf >= it.quantity
+        })
         return { ...o, dispatches: updatedDispatches, status: allFulfilled ? 'completed' : o.status }
       }))
     } catch {
@@ -224,13 +241,21 @@ export function ShopOrderHistoryPage() {
       if (needle && !(o.orderNumber ?? '').includes(needle)) return false
       if (filterRequestor !== 'all' && o.requestorName !== filterRequestor) return false
       if (filterKind !== 'all' && o.orderKind !== filterKind) return false
+      if (filterAwaiting && !(o.status === 'pending' && (o.dispatches ?? []).some(d => d.items.some(it => !it.confirmedAt)))) return false
+      if (filterStartDate) {
+        const [y, m, d] = filterStartDate.split('-').map(Number); const start = new Date(y, m - 1, d, 0, 0, 0, 0).getTime()
+        if ((o.createdAt ?? 0) < start) return false
+      }
+      if (filterEndDate) {
+        const [ey, em, ed] = filterEndDate.split('-').map(Number); const end = new Date(ey, em - 1, ed, 23, 59, 59, 999).getTime(); if ((o.createdAt ?? 0) > end) return false
+      }
       return true
     })
     const sorted = filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     return groupByMonth(sorted)
-  }, [orders, orderSearch, filterRequestor, filterKind])
+  }, [orders, orderSearch, filterRequestor, filterKind, filterAwaiting, filterStartDate, filterEndDate])
 
-  const hasActiveFilters = filterRequestor !== 'all' || filterKind !== 'all'
+  const hasActiveFilters = filterRequestor !== 'all' || filterKind !== 'all' || filterAwaiting || filterStartDate !== '' || filterEndDate !== ''
 
   return (
     <div className="space-y-6">
@@ -250,21 +275,21 @@ export function ShopOrderHistoryPage() {
       </div>
 
       {/* ── Search + Filter bar ── */}
-      <div className="rounded-xl border border-slate-200 bg-slate-50">
+      <div className="rounded-xl border-2 border-slate-300 bg-slate-50/80 shadow-sm">
         <div className="flex divide-x divide-slate-200">
 
           {/* Filter toggle — wider */}
           <button
             type="button"
-            onClick={() => setFilterOpen(o => !o)}
+            onClick={() => setFilterOpen(!filterOpen)}
             className="flex flex-[2] items-center justify-between px-4 py-3 text-left"
           >
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-400" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Filters</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-700">Filters</span>
               {hasActiveFilters && (
                 <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-xs font-semibold text-white leading-none">
-                  {[filterRequestor !== 'all', filterKind !== 'all'].filter(Boolean).length}
+                  {[filterRequestor !== 'all', filterKind !== 'all', filterAwaiting, filterStartDate !== '', filterEndDate !== ''].filter(Boolean).length}
                 </span>
               )}
             </div>
@@ -322,11 +347,43 @@ export function ShopOrderHistoryPage() {
               </div>
             </div>
 
+            <div className="flex items-center gap-3">
+              <span className="w-24 shrink-0 text-xs font-medium text-slate-500">Status</span>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={filterAwaiting}
+                  onChange={e => setFilterAwaiting(e.target.checked)}
+                  className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                />
+                Awaiting confirmation
+              </label>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="w-24 shrink-0 text-xs font-medium text-slate-500">Date Range</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={filterStartDate}
+                  onChange={e => setFilterStartDate(e.target.value)}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                />
+                <span className="text-slate-400">to</span>
+                <input
+                  type="date"
+                  value={filterEndDate}
+                  onChange={e => setFilterEndDate(e.target.value)}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                />
+              </div>
+            </div>
+
             {hasActiveFilters && (
               <div className="flex justify-end pt-1">
                 <button
                   type="button"
-                  onClick={() => { setFilterRequestor('all'); setFilterKind('all') }}
+                  onClick={() => { setFilterRequestor('all'); setFilterKind('all'); setFilterAwaiting(false); setFilterStartDate(''); setFilterEndDate('') }}
                   className="text-xs font-medium text-rose-600 hover:text-rose-700"
                 >
                   Clear all
@@ -510,13 +567,13 @@ export function ShopOrderHistoryPage() {
                               {pdfBusyId === o.id ? 'Preparing…' : 'Print'}
                             </Button>
 
-                            {o.status === 'pending' && (
+                            {(o.status === 'pending' || profile?.isAdmin) && (
                               <Button
                                 variant="danger"
                                 onClick={() => setDeleteTarget(o)}
                               >
                                 <Trash2 className="h-4 w-4" />
-                                Delete order
+                                {o.status === 'pending' && !profile?.isAdmin ? 'Cancel order' : 'Delete order'}
                               </Button>
                             )}
                           </div>
@@ -526,9 +583,14 @@ export function ShopOrderHistoryPage() {
                             <ul className="mt-2 divide-y divide-slate-200 rounded-xl border border-slate-200">
                               {o.items.map((it, idx) => (
                                 <li key={`${it.productId}-${idx}`} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                                  <span className="min-w-0 truncate text-slate-900">
-                                    {it.name}{it.size ? ` · ${it.size}` : ''}
-                                  </span>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className={`truncate text-slate-900 ${it.notAvailable ? 'line-through text-slate-400' : ''}`}>
+                                      {it.name}{it.size ? ` · ${it.size}` : ''}
+                                    </span>
+                                    {it.notAvailable && (
+                                      <Badge tone="neutral">Not Available</Badge>
+                                    )}
+                                  </div>
                                   <span className="shrink-0 font-semibold tabular-nums text-slate-900">
                                     ×{it.quantity}
                                   </span>
