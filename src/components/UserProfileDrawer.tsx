@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, LogOut, Moon, Sun, User, Loader2 } from 'lucide-react'
+import { X, LogOut, User, Loader2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthProfile } from '../hooks/useAuthProfile'
 import { Button } from './ui/Button'
@@ -13,11 +13,6 @@ type UserProfileDrawerProps = {
 export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
   const { profile, logout } = useAuth()
   const { updateProfileDetails, changePassword, loading } = useAuthProfile()
-
-  // Initialize theme from localStorage or default to light
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark'
-  })
 
   // Editable Profile fields
   const [displayName, setDisplayName] = useState(profile?.displayName || '')
@@ -32,17 +27,6 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
 
   // Local notification state for the drawer since useNotifications toast might be hidden or generic
   const [localMessage, setLocalMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null)
-
-  // Theme toggle effect
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('theme', 'dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('theme', 'light')
-    }
-  }, [isDarkMode])
 
   // Sync profile data when drawer opens or profile changes
   useEffect(() => {
@@ -244,25 +228,6 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
                     </div>
                   </div>
                 )}
-              </div>
-
-              <div className="my-8 h-px bg-slate-100 dark:bg-slate-800" />
-
-              {/* Preferences */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Preferences</h3>
-                <div className="flex items-center justify-between rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-                  <div className="flex items-center gap-3">
-                    {isDarkMode ? <Moon className="h-5 w-5 text-indigo-400" /> : <Sun className="h-5 w-5 text-amber-500" />}
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Dark Mode</span>
-                  </div>
-                  <button
-                    onClick={() => setIsDarkMode(!isDarkMode)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isDarkMode ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-6' : 'translate-x-1'}`} />
-                  </button>
-                </div>
               </div>
 
             </div>
