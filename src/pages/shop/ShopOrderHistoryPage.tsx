@@ -56,8 +56,8 @@ function OrderTimeline({ order }: { order: Order }) {
   ]
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-      <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="rounded-xl border border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 p-4 transition-colors duration-200">
+      <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
         Order progress
       </p>
       <div className="flex flex-col gap-0">
@@ -70,11 +70,7 @@ function OrderTimeline({ order }: { order: Order }) {
               {/* Column: dot + connector line */}
               <div className="flex flex-col items-center">
                 <div
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-                    stage.done
-                      ? 'border-emerald-500 bg-emerald-500'
-                      : 'border-slate-300 bg-white'
-                  }`}
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${ stage.done ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 bg-white' }`}
                 >
                   {stage.done ? (
                     <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 12 12" fill="none">
@@ -92,9 +88,7 @@ function OrderTimeline({ order }: { order: Order }) {
                 </div>
                 {!isLast && (
                   <div
-                    className={`w-0.5 flex-1 my-1 min-h-[20px] ${
-                      nextDone ? 'bg-emerald-400' : 'bg-slate-200'
-                    }`}
+                    className={`w-0.5 flex-1 my-1 min-h-[20px] ${ nextDone ? 'bg-emerald-400' : 'bg-slate-200' }`}
                   />
                 )}
               </div>
@@ -102,21 +96,19 @@ function OrderTimeline({ order }: { order: Order }) {
               {/* Content */}
               <div className={`pb-4 ${isLast ? 'pb-0' : ''}`}>
                 <p
-                  className={`text-sm font-semibold leading-7 ${
-                    stage.done ? 'text-slate-900' : 'text-slate-400'
-                  }`}
+                  className={`text-sm font-semibold leading-7 ${ stage.done ? 'text-slate-900' : 'text-slate-400' }`}
                 >
                   {stage.label}
                 </p>
                 {stage.done && stage.ts ? (
                   <p className="text-xs text-emerald-600">{formatDateTime(stage.ts)}</p>
                 ) : !stage.done ? (
-                  <p className="text-xs text-slate-400">Pending</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">Pending</p>
                 ) : null}
                 {stage.sublabel && !stage.ts ? (
-                  <p className="text-xs text-slate-400">{stage.sublabel}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">{stage.sublabel}</p>
                 ) : stage.sublabel && stage.done ? (
-                  <p className="text-xs text-slate-500">{stage.sublabel}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{stage.sublabel}</p>
                 ) : null}
               </div>
             </div>
@@ -268,10 +260,10 @@ export function ShopOrderHistoryPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 transition-colors duration-200">
             Order history
           </h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+          <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
             Track pending and completed orders, compare expected versus actual delivery, and print an
             A4-ready PDF for your records.
           </p>
@@ -282,8 +274,8 @@ export function ShopOrderHistoryPage() {
       </div>
 
       {/* ── Search + Filter bar ── */}
-      <div className="rounded-xl border-2 border-slate-300 bg-slate-50/80 shadow-sm">
-        <div className="flex divide-x divide-slate-200">
+      <div className="rounded-xl border-2 border-slate-300 dark:border-slate-700/50 bg-slate-50/80 dark:bg-slate-900/80 transition-colors duration-200 shadow-sm">
+        <div className="flex divide-x divide-slate-200 dark:divide-slate-800/50 transition-colors duration-200">
 
           {/* Filter toggle — wider */}
           <button
@@ -292,20 +284,20 @@ export function ShopOrderHistoryPage() {
             className="flex flex-[2] items-center justify-between px-4 py-3 text-left"
           >
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-700">Filters</span>
+              <Filter className="h-4 w-4 text-slate-400 dark:text-slate-500 transition-colors duration-200" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-300 transition-colors duration-200">Filters</span>
               {hasActiveFilters && (
                 <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-xs font-semibold text-white leading-none">
                   {[filterRequestor !== 'all', filterKind !== 'all', filterAwaiting, filterStartDate !== '', filterEndDate !== ''].filter(Boolean).length}
                 </span>
               )}
             </div>
-            <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`h-4 w-4 text-slate-400 dark:text-slate-500 transition-transform ${filterOpen ? 'rotate-180' : ''} transition-colors duration-200`} />
           </button>
 
           {/* Order number search — narrower */}
           <div className="relative flex flex-1 items-center px-3">
-            {loading ? <div className="pointer-events-none absolute left-6 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" /> : <Search className="pointer-events-none absolute left-6 h-4 w-4 text-slate-400" />}
+            {loading ? <div className="pointer-events-none absolute left-6 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 dark:border-slate-700/50 border-t-slate-600" /> : <Search className="pointer-events-none absolute left-6 h-4 w-4 text-slate-400 dark:text-slate-500 transition-colors duration-200" />}
             <input
               type="text"
               inputMode="numeric"
@@ -313,19 +305,19 @@ export function ShopOrderHistoryPage() {
               placeholder="Order #…"
               value={orderSearch}
               onChange={e => setOrderSearch(e.target.value.replace(/\D/g, ''))}
-              className="w-full bg-transparent py-3 pl-7 text-sm text-slate-700 placeholder-slate-400 focus:outline-none"
+              className="w-full bg-transparent py-3 pl-7 text-sm text-slate-700 dark:text-slate-300 placeholder-slate-400 focus:outline-none transition-colors duration-200"
             />
           </div>
         </div>
 
         {filterOpen && (
-          <div className="border-t border-slate-200 px-4 pb-4 pt-3 space-y-3">
+          <div className="border-t border-slate-200 dark:border-slate-800/50 px-4 pb-4 pt-3 space-y-3 transition-colors duration-200">
             <div className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-xs font-medium text-slate-500">Requestor</span>
+              <span className="w-24 shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors duration-200">Requestor</span>
               <select
                 value={filterRequestor}
                 onChange={e => setFilterRequestor(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
               >
                 <option value="all">All</option>
                 {requestorOptions.map(name => (
@@ -335,18 +327,14 @@ export function ShopOrderHistoryPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-xs font-medium text-slate-500">Type</span>
+              <span className="w-24 shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors duration-200">Type</span>
               <div className="flex gap-1.5">
                 {([['all', 'All'], ['unlimited', 'Standard'], ['limited', 'Limited']] as [string, string][]).map(([val, label]) => (
                   <button
                     key={val}
                     type="button"
                     onClick={() => setFilterKind(val)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                      filterKind === val
-                        ? 'bg-slate-900 text-white'
-                        : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100'
-                    }`}
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${ filterKind === val ? 'bg-slate-900 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 ring-1 ring-slate-200 hover:bg-slate-100' }`}
                   >
                     {label}
                   </button>
@@ -355,33 +343,33 @@ export function ShopOrderHistoryPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-xs font-medium text-slate-500">Status</span>
-              <label className="flex items-center gap-2 text-sm text-slate-700">
+              <span className="w-24 shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors duration-200">Status</span>
+              <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 transition-colors duration-200">
                 <input
                   type="checkbox"
                   checked={filterAwaiting}
                   onChange={e => setFilterAwaiting(e.target.checked)}
-                  className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                  className="rounded border-slate-300 dark:border-slate-700/50 text-slate-900 dark:text-slate-100 focus:ring-slate-900 transition-colors duration-200"
                 />
                 Awaiting confirmation
               </label>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-xs font-medium text-slate-500">Date Range</span>
+              <span className="w-24 shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors duration-200">Date Range</span>
               <div className="flex items-center gap-2">
                 <input
                   type="date"
                   value={filterStartDate}
                   onChange={e => setFilterStartDate(e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
-                <span className="text-slate-400">to</span>
+                <span className="text-slate-400 dark:text-slate-500 transition-colors duration-200">to</span>
                 <input
                   type="date"
                   value={filterEndDate}
                   onChange={e => setFilterEndDate(e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
               </div>
             </div>
@@ -408,27 +396,27 @@ export function ShopOrderHistoryPage() {
       ) : null}
 
       {loading ? (
-        <div className="flex items-center gap-3 text-sm text-slate-600">
+        <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
           Loading…
         </div>
       ) : orders.length === 0 ? (
         <Card>
-          <p className="text-sm text-slate-600">No orders yet.</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">No orders yet.</p>
         </Card>
       ) : grouped.length === 0 ? (
         <Card>
-          <p className="text-sm text-slate-600">No orders match the current filters.</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">No orders match the current filters.</p>
         </Card>
       ) : (
         <div className="space-y-8">
           {grouped.map(({ label, orders: groupOrders }) => (
             <div key={label}>
               <div className="mb-3 flex items-center gap-3">
-                <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">
+                <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 transition-colors duration-200">
                   {label}
                 </h2>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
+                <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400 transition-colors duration-200">
                   {groupOrders.length}
                 </span>
                 <div className="h-px flex-1 bg-slate-200" />
@@ -438,11 +426,7 @@ export function ShopOrderHistoryPage() {
                 {groupOrders.map((o) => {
                   const open = openId === o.id
                   return (
-                    <Card key={o.id} id={o.id} className={`p-0 ${
-                      o.status === 'pending' && (o.dispatches ?? []).some(d => d.items.some(it => !it.confirmedAt))
-                        ? 'border-l-4 border-l-rose-400'
-                        : ''
-                    }`}>
+                    <Card key={o.id} id={o.id} className={`p-0 ${ o.status === 'pending' && (o.dispatches ?? []).some(d => d.items.some(it => !it.confirmedAt)) ? 'border-l-4 border-l-rose-400' : '' }`}>
                       <button
                         type="button"
                         className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
@@ -450,11 +434,11 @@ export function ShopOrderHistoryPage() {
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="truncate font-semibold text-slate-900">
+                            <p className="truncate font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">
                               {o.orderKind === 'limited' ? 'Limited stock' : 'Standard catalogue'}
                             </p>
                             {o.orderNumber && (
-                              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-mono font-semibold text-slate-600">#{o.orderNumber}</span>
+                              <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-mono font-semibold text-slate-600 dark:text-slate-400 transition-colors duration-200">#{o.orderNumber}</span>
                             )}
                             <Badge tone={o.status === 'completed' ? 'success' : 'warning'}>
                               {o.status === 'completed' ? 'Completed' : 'Pending'}
@@ -465,7 +449,7 @@ export function ShopOrderHistoryPage() {
                               </span>
                             )}
                           </div>
-                          <p className="mt-1 text-xs text-slate-500">
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
                             Placed {formatDateTime(o.createdAt)} · {o.items.length} lines
                           </p>
                         </div>
@@ -473,20 +457,20 @@ export function ShopOrderHistoryPage() {
                       </button>
 
                       {open ? (
-                        <div className="space-y-4 border-t border-slate-100 px-4 py-3">
+                        <div className="space-y-4 border-t border-slate-100 dark:border-slate-800/50 px-4 py-3 transition-colors duration-200">
                           {/* Timeline */}
                           <OrderTimeline order={o} />
 
                           {/* Dispatches */}
                           {(o.dispatches ?? []).length > 0 && (
-                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-3">
+                            <div className="rounded-xl border border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 p-4 space-y-2 transition-colors duration-200">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3 transition-colors duration-200">
                                 Dispatches
                               </p>
                               {(o.dispatches ?? []).map((d, i) => (
-                                <div key={d.id} className="rounded-lg border border-slate-200 bg-white p-3 space-y-2">
+                                <div key={d.id} className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 p-3 space-y-2">
                                   <div className="flex items-center justify-between text-xs">
-                                    <span className="font-semibold text-slate-700">
+                                    <span className="font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">
                                       Dispatch {i + 1} · {format(d.dispatchedAt, 'dd MMM yyyy')}
                                     </span>
                                     {d.receivedAt
@@ -499,10 +483,10 @@ export function ShopOrderHistoryPage() {
                                     return (
                                       <div key={it.productId} className="flex items-center justify-between gap-3 text-xs">
                                         <div className="min-w-0">
-                                          <span className="font-medium text-slate-800">
+                                          <span className="font-medium text-slate-800 dark:text-slate-200 transition-colors duration-200">
                                             {it.name}{it.size ? ` · ${it.size}` : ''}
                                           </span>
-                                          <span className="ml-2 font-semibold tabular-nums text-slate-600">×{it.qty}</span>
+                                          <span className="ml-2 font-semibold tabular-nums text-slate-600 dark:text-slate-400 transition-colors duration-200">×{it.qty}</span>
                                         </div>
                                         {it.confirmedAt ? (
                                           <span className="shrink-0 text-emerald-600 font-medium">
@@ -528,32 +512,32 @@ export function ShopOrderHistoryPage() {
 
                           {/* Delivery info */}
                           <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="rounded-xl bg-slate-50 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <div className="rounded-xl bg-slate-50 dark:bg-slate-900/50 p-3 transition-colors duration-200">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
                                 Requestor
                               </p>
-                              <p className="mt-1 text-sm font-semibold text-slate-900">{o.requestorName}</p>
-                              <p className="text-xs text-slate-600">{o.requestorEmail}</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{o.requestorName}</p>
+                              <p className="text-xs text-slate-600 dark:text-slate-400 transition-colors duration-200">{o.requestorEmail}</p>
                             </div>
-                            <div className="rounded-xl bg-slate-50 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <div className="rounded-xl bg-slate-50 dark:bg-slate-900/50 p-3 transition-colors duration-200">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
                                 Delivery
                               </p>
-                              <p className="mt-1 text-sm text-slate-900">
+                              <p className="mt-1 text-sm text-slate-900 dark:text-slate-100 transition-colors duration-200">
                                 Expected: <span className="font-semibold">{formatDate(o.expectedDeliveryDate)}</span>
                               </p>
-                              <p className="text-sm text-slate-900">
+                              <p className="text-sm text-slate-900 dark:text-slate-100 transition-colors duration-200">
                                 Actual: <span className="font-semibold">{formatDate(o.actualDeliveryDate)}</span>
                               </p>
                             </div>
                           </div>
 
                           {o.status === 'completed' && (
-                            <div className="rounded-xl bg-slate-50 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <div className="rounded-xl bg-slate-50 dark:bg-slate-900/50 p-3 transition-colors duration-200">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
                                 Lead time
                               </p>
-                              <p className="mt-1 text-sm font-semibold text-slate-900">{fulfillmentSummary(o)}</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{fulfillmentSummary(o)}</p>
                             </div>
                           )}
 
@@ -586,19 +570,19 @@ export function ShopOrderHistoryPage() {
                           </div>
 
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Lines</p>
-                            <ul className="mt-2 divide-y divide-slate-200 rounded-xl border border-slate-200">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">Lines</p>
+                            <ul className="mt-2 divide-y divide-slate-200 dark:divide-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800/50 transition-colors duration-200">
                               {o.items.map((it, idx) => (
                                 <li key={`${it.productId}-${idx}`} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
                                   <div className="flex items-center gap-2 min-w-0">
-                                    <span className={`truncate text-slate-900 ${it.notAvailable ? 'line-through text-slate-400' : ''}`}>
+                                    <span className={`truncate text-slate-900 dark:text-slate-100 ${it.notAvailable ? 'line-through text-slate-400' : ''} transition-colors duration-200`}>
                                       {it.name}{it.size ? ` · ${it.size}` : ''}
                                     </span>
                                     {it.notAvailable && (
                                       <Badge tone="neutral">Not Available</Badge>
                                     )}
                                   </div>
-                                  <span className="shrink-0 font-semibold tabular-nums text-slate-900">
+                                  <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">
                                     ×{it.quantity}
                                   </span>
                                 </li>
@@ -654,7 +638,7 @@ export function ShopOrderHistoryPage() {
           </div>
         }
       >
-        <p className="text-sm text-slate-700">
+        <p className="text-sm text-slate-700 dark:text-slate-300 transition-colors duration-200">
           This will permanently remove the order placed on{' '}
           <span className="font-semibold">
             {formatDateTime(deleteTarget?.createdAt)}

@@ -1,4 +1,4 @@
-import { Bell, BellOff, LayoutDashboard, LayoutGrid, LogOut, PackagePlus, ScrollText, Shield } from 'lucide-react'
+import { Bell, BellOff, LayoutDashboard, LayoutGrid, LogOut, PackagePlus, ScrollText, Shield, Moon, Sun } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
@@ -6,14 +6,15 @@ import { useNotifications } from '../hooks/useNotifications'
 import { Button } from '../components/ui/Button'
 import { ModeSwitcher } from '../components/ModeSwitcher'
 import { useAdminMode } from '../contexts/AdminModeContext'
+import { useTheme } from '../hooks/useTheme'
 import { db } from '../lib/firebase'
 import { listOrdersForShop } from '../lib/orderService'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all sm:gap-2 sm:px-3 ${
     isActive
-      ? 'bg-emerald-600/90 text-white shadow-sm'
-      : 'text-slate-600 hover:bg-white/70'
+      ? 'bg-emerald-600/90 text-white shadow-sm dark:bg-emerald-700/90 dark:text-slate-100'
+      : 'text-slate-600 hover:bg-white/70 dark:text-slate-400 dark:hover:bg-slate-800/50'
   }`
 
 export function ShopShell() {
@@ -21,6 +22,7 @@ export function ShopShell() {
   const { shopView } = useAdminMode()
   const displayShopName = profile?.isAdmin ? shopView : (profile?.shopName ?? 'Shop')
   const [awaitingCount, setAwaitingCount] = useState(0)
+  const { theme, toggleTheme } = useTheme()
 
   useEffect(() => {
     const shopName = profile?.isAdmin ? shopView : profile?.shopName
@@ -37,19 +39,19 @@ export function ShopShell() {
   const { status, toast, dismissToast, enable } = useNotifications()
 
   return (
-    <div className="min-h-dvh bg-slate-50">
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl">
+    <div className="min-h-dvh bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl transition-colors duration-200">
         {profile?.isAdmin && <ModeSwitcher />}
         {/* Row 1: identity + sign out */}
         <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-3 sm:px-6">
           <div className="min-w-0">
-            <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+            <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-500">
               Shop console
             </p>
-            <p className="truncate font-display text-lg font-semibold leading-tight text-slate-900">
+            <p className="truncate font-display text-lg font-semibold leading-tight text-slate-900 dark:text-slate-100 transition-colors duration-200">
               {displayShopName}
             </p>
-            <p className="truncate text-xs text-slate-500">{profile?.displayName}</p>
+            <p className="truncate text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{profile?.displayName}</p>
           </div>
 
           {/* Seva logo — absolutely centred so it's unaffected by unequal side widths */}
@@ -68,7 +70,7 @@ export function ShopShell() {
                 </Button>
               )}
               {status === 'denied' && (
-                <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">
                   <BellOff className="h-4 w-4" />
                   <span className="hidden sm:inline">Notifications blocked</span>
                 </span>
@@ -82,12 +84,27 @@ export function ShopShell() {
                 Sign out
               </Button>
             </div>
-            {profile?.isAdmin && (
-              <Button variant="secondary" className="shrink-0 !text-xs !py-1" onClick={() => nav('/admin')}>
-                <Shield className="h-3.5 w-3.5" />
-                Admin
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                className="shrink-0 !text-xs !py-1"
+                onClick={toggleTheme}
+                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+              >
+                {theme === 'light' ? (
+                  <Moon className="h-3.5 w-3.5" />
+                ) : (
+                  <Sun className="h-3.5 w-3.5" />
+                )}
+                <span className="hidden sm:inline">Theme</span>
               </Button>
-            )}
+              {profile?.isAdmin && (
+                <Button variant="secondary" className="shrink-0 !text-xs !py-1" onClick={() => nav('/admin')}>
+                  <Shield className="h-3.5 w-3.5" />
+                  Admin
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -95,7 +112,7 @@ export function ShopShell() {
         <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
           <nav
             aria-label="Main navigation"
-            className="inline-flex gap-0.5 rounded-2xl border border-white/50 bg-white/50 p-1 shadow-md shadow-slate-900/8 backdrop-blur-xl sm:gap-1 sm:p-1.5"
+            className="inline-flex gap-0.5 rounded-2xl border border-white/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 p-1 shadow-md shadow-slate-900/8 dark:shadow-none backdrop-blur-xl sm:gap-1 sm:p-1.5 transition-colors duration-200"
           >
             <NavLink className={linkClass} to="/shop/dashboard">
               <LayoutDashboard className="h-4 w-4 shrink-0" />
@@ -137,12 +154,12 @@ export function ShopShell() {
             <Bell className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
             <div>
               <p className="text-sm font-semibold text-white">{toast.title}</p>
-              {toast.body && <p className="text-xs text-slate-400">{toast.body}</p>}
+              {toast.body && <p className="text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">{toast.body}</p>}
             </div>
             <button
               type="button"
               onClick={dismissToast}
-              className="ml-2 shrink-0 text-slate-500 hover:text-white"
+              className="ml-2 shrink-0 text-slate-500 dark:text-slate-400 hover:text-white transition-colors duration-200"
             >
               ✕
             </button>
