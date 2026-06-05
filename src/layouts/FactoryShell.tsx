@@ -1,7 +1,8 @@
-import { Bell, BellOff, ClipboardList, LayoutDashboard, LogOut, ScrollText, Shield, Warehouse } from 'lucide-react'
+import { Bell, BellOff, ClipboardList, LayoutDashboard, ScrollText, Shield, User, Warehouse } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { UserProfileDrawer } from '../components/UserProfileDrawer'
 import { useNotifications } from '../hooks/useNotifications'
 import { Button } from '../components/ui/Button'
 import { ModeSwitcher } from '../components/ModeSwitcher'
@@ -27,13 +28,14 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
   }`
 
 export function FactoryShell() {
-  const { profile, logout } = useAuth()
+  const { profile } = useAuth()
   const nav = useNavigate()
   const { status, toast, dismissToast, enable } = useNotifications()
   const pendingCount = usePendingOrderCount()
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
   return (
-    <div className="min-h-dvh bg-slate-50">
+    <div className="min-h-dvh bg-slate-50 dark:bg-slate-900 transition-colors">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl">
         {profile?.isAdmin && <ModeSwitcher />}
         {/* Row 1: identity + sign out */}
@@ -72,10 +74,10 @@ export function FactoryShell() {
               <Button
                 variant="secondary"
                 className="shrink-0"
-                onClick={async () => { await logout(); nav('/login') }}
+                onClick={() => setIsDrawerOpen(true)}
               >
-                <LogOut className="h-4 w-4" />
-                Sign out
+                <User className="h-4 w-4" />
+                Profile
               </Button>
             </div>
             {profile?.isAdmin && (
@@ -145,6 +147,8 @@ export function FactoryShell() {
           </div>
         </div>
       )}
+
+      <UserProfileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
     </div>
   )
 }
