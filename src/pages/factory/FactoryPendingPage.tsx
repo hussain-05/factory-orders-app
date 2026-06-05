@@ -1,10 +1,11 @@
-import { ChevronDown, ChevronRight, Filter, Printer, Search } from 'lucide-react'
+import { ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
+import { useAuth } from '../../contexts/AuthContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
-import { addDispatch, listPendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
+import { addDispatch, deleteOrder, listPendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
 import { whatsappLink } from '../../utils/whatsapp'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -77,8 +78,9 @@ const WhatsAppIcon = () => (
   </svg>
 )
 
-function OrderActions({ order }: { order: Order }) {
+function OrderActions({ order, onRefresh }: { order: Order, onRefresh?: () => void }) {
   const [busy, setBusy] = useState(false)
+  const { profile } = useAuth()
   return (
     <div className="flex flex-wrap gap-2">
       <Button
@@ -92,6 +94,29 @@ function OrderActions({ order }: { order: Order }) {
         <Printer className="h-4 w-4" />
         {busy ? 'Preparing…' : 'Print'}
       </Button>
+      {profile?.isAdmin && (
+        <Button
+          variant="secondary"
+          className="!text-rose-600 hover:!bg-rose-50"
+          disabled={busy}
+          onClick={async () => {
+            if (!db) return
+            if (!confirm('Are you sure you want to permanently delete this order?')) return
+            setBusy(true)
+            try {
+              await deleteOrder(db, order.id)
+              onRefresh?.()
+            } catch(e) {
+              alert('Failed to delete order')
+            } finally {
+              setBusy(false)
+            }
+          }}
+        >
+          <Trash2 className="h-4 w-4" />
+          Delete
+        </Button>
+      )}
     </div>
   )
 }
@@ -432,7 +457,7 @@ function PendingCard({
           </div>
 
           {/* Actions */}
-          <OrderActions order={o} />
+          <OrderActions order={o} onRefresh={() => window.location.reload()} />
 
           {/* Line items */}
           <details className="rounded-xl border border-slate-100 bg-slate-50">

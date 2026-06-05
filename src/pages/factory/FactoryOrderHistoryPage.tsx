@@ -1,10 +1,11 @@
-import { ChevronDown, ChevronRight, Filter, Printer, Search } from 'lucide-react'
+import { ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
-import { listAllOrdersForFactory } from '../../lib/orderService'
+import { useAuth } from '../../contexts/AuthContext'
+import { listAllOrdersForFactory, deleteOrder } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -135,6 +136,7 @@ export function FactoryOrderHistoryPage() {
     return () => clearTimeout(t)
   }, [loading, loc.state?.openId])
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null)
+  const { profile } = useAuth()
   const [filterShop, setFilterShop] = useState<string>('all')
   const [filterRequestor, setFilterRequestor] = useState<string>('all')
   const [filterKind, setFilterKind] = useState<string>('all')
@@ -441,6 +443,25 @@ export function FactoryOrderHistoryPage() {
                               <Printer className="h-4 w-4" />
                               {pdfBusyId === o.id ? 'Preparing…' : 'Print'}
                             </Button>
+                            {profile?.isAdmin && (
+                              <Button
+                                variant="secondary"
+                                className="!text-rose-600 hover:!bg-rose-50"
+                                onClick={async () => {
+                                  if (!db) return
+                                  if (!confirm('Are you sure you want to permanently delete this order?')) return
+                                  try {
+                                    await deleteOrder(db, o.id)
+                                    window.location.reload()
+                                  } catch (e) {
+                                    alert('Failed to delete order')
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Delete
+                              </Button>
+                            )}
                           </div>
 
                           {/* Line items */}
