@@ -181,7 +181,21 @@ export function ShopOrderHistoryPage() {
             if (it.confirmedAt) confirmedQty[it.productId] = (confirmedQty[it.productId] ?? 0) + it.qty
           }
         }
-        const allFulfilled = o.items.every(it => it.notAvailable || (confirmedQty[it.productId] ?? 0) >= it.quantity)
+        const dispatchedQty: Record<string, number> = {}
+        for (const d of updatedDispatches) {
+          for (const it of d.items) {
+            dispatchedQty[it.productId] = (dispatchedQty[it.productId] ?? 0) + it.qty
+          }
+        }
+
+        const allFulfilled = o.items.every(it => {
+          const conf = confirmedQty[it.productId] ?? 0
+          if (it.notAvailable) {
+            const disp = dispatchedQty[it.productId] ?? 0
+            return conf >= disp
+          }
+          return conf >= it.quantity
+        })
         return { ...o, dispatches: updatedDispatches, status: allFulfilled ? 'completed' : o.status }
       }))
     } catch {

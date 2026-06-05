@@ -373,9 +373,26 @@ export async function addDispatch(
         }
       }
 
-      const allFulfilled = updatedItems.every(
-        it => it.notAvailable || (confirmedQty[it.productId] ?? 0) >= it.quantity,
-      )
+      // If an item is marked notAvailable, we only consider it "fulfilled"
+      // if all of its ALREADY DISPATCHED quantity has been confirmed.
+      // E.g., if ordered 4, dispatched 2, marked NA -> remaining 2 are cancelled.
+      // But the 2 dispatched MUST still be confirmed before the order is complete.
+      const dispatchedQty: Record<string, number> = {}
+      const dispatchesToCheck = update.dispatches ? (update.dispatches as OrderDispatch[]) : existing
+      for (const d of dispatchesToCheck) {
+        for (const it of d.items) {
+          dispatchedQty[it.productId] = (dispatchedQty[it.productId] ?? 0) + it.qty
+        }
+      }
+
+      const allFulfilled = updatedItems.every(it => {
+        const conf = confirmedQty[it.productId] ?? 0
+        if (it.notAvailable) {
+          const disp = dispatchedQty[it.productId] ?? 0
+          return conf >= disp // NA items only need their dispatched parts confirmed
+        }
+        return conf >= it.quantity
+      })
 
       if (allFulfilled) {
         update.status = 'completed'
@@ -431,9 +448,21 @@ export async function confirmDispatchItem(
       }
     }
 
-    const allFulfilled = order.items.every(
-      it => it.notAvailable || (confirmedQty[it.productId] ?? 0) >= it.quantity,
-    )
+    const dispatchedQty: Record<string, number> = {}
+    for (const d of dispatches) {
+      for (const it of d.items) {
+        dispatchedQty[it.productId] = (dispatchedQty[it.productId] ?? 0) + it.qty
+      }
+    }
+
+    const allFulfilled = order.items.every(it => {
+      const conf = confirmedQty[it.productId] ?? 0
+      if (it.notAvailable) {
+        const disp = dispatchedQty[it.productId] ?? 0
+        return conf >= disp
+      }
+      return conf >= it.quantity
+    })
 
     const update: Record<string, unknown> = {
       dispatches,

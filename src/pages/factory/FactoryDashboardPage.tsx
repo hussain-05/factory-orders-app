@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { addMonths, differenceInCalendarDays, format, formatDistanceToNow, startOfMonth } from 'date-fns'
-import { AlertTriangle, Clock, Package, RefreshCw, TrendingUp } from 'lucide-react'
+import { addMonths, differenceInCalendarDays, format, startOfMonth } from 'date-fns'
+import { AlertTriangle, BarChart3, Clock, Package, RefreshCw, TrendingUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../../lib/firebase'
 import { listAllOrdersForFactory } from '../../lib/orderService'
@@ -206,7 +206,7 @@ export function FactoryDashboardPage() {
   // ── derived metrics ──────────────────────────────────────────────────────
 
   const pending = useMemo(() => orders.filter(o => o.status === 'pending'), [orders])
-
+  const completed = useMemo(() => orders.filter(o => o.status === 'completed'), [orders])
 
   const stages = useMemo(() => ({
     placed:   pending.filter(o => !o.milestones.receivedAt).length,
@@ -217,20 +217,12 @@ export function FactoryDashboardPage() {
 
   const outstanding = useMemo(() => buildOutstandingItems(pending), [pending])
 
-
+  const completedThisMonth = useMemo(() => {
+    const start = startOfMonth(new Date()).getTime()
+    return completed.filter(o => (o.completedAt ?? 0) >= start).length
+  }, [completed])
 
   const avgLead = useMemo(() => calcAvgLeadDays(orders), [orders])
-
-  const placedThisMonth = useMemo(() => {
-    const start = startOfMonth(new Date()).getTime()
-    return orders.filter(o => o.createdAt >= start).length
-  }, [orders])
-
-  const lastOrderDate = useMemo(() => {
-    if (orders.length === 0) return null
-    const latest = [...orders].sort((a, b) => b.createdAt - a.createdAt)[0]
-    return latest.createdAt
-  }, [orders])
 
   const byShop = useMemo(() => {
     const maxTotal = Math.max(
@@ -299,29 +291,22 @@ export function FactoryDashboardPage() {
       )}
 
       {/* ── Stat cards ── */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5 items-stretch">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 items-stretch">
         <StatCard
-          label="Last order"
-          value={lastOrderDate ? formatDistanceToNow(lastOrderDate, { addSuffix: true }) : '—'}
-          sub={lastOrderDate ? format(lastOrderDate, 'MMM d, h:mm a') : ''}
-          icon={<Clock className="h-5 w-5" />}
-          onClick={() => nav('/factory/pending')}
-        />
-        <StatCard
-          label="Awaiting confirmation"
-          value={stages.awaiting}
-          sub="shop action needed"
-          icon={<AlertTriangle className="h-5 w-5" />}
-          tone={stages.awaiting > 0 ? 'warning' : 'default'}
-          onClick={() => nav('/factory/pending')}
-        />
-        <StatCard
-          label="Active orders"
+          label="Pending orders"
           value={pending.length}
-          sub={`${stages.placed} new · ${stages.inProduction} in prod · ${stages.partial} partial`}
+          sub={`${stages.placed} new · ${stages.inProduction} in prod · ${stages.partial} partial · ${stages.awaiting} awaiting`}
           icon={<Package className="h-5 w-5" />}
           tone={pending.length > 0 ? 'warning' : 'default'}
           onClick={() => nav('/factory/pending')}
+        />
+        <StatCard
+          label="Completed this month"
+          value={completedThisMonth}
+          sub={`${completed.length} all time`}
+          icon={<TrendingUp className="h-5 w-5" />}
+          tone="success"
+          onClick={() => nav('/factory/history')}
         />
         <StatCard
           label="Avg lead time"
@@ -330,11 +315,10 @@ export function FactoryDashboardPage() {
           icon={<Clock className="h-5 w-5" />}
         />
         <StatCard
-          label="Placed this month"
-          value={placedThisMonth}
-          sub="total incoming orders"
-          icon={<TrendingUp className="h-5 w-5" />}
-          tone="success"
+          label="Total orders"
+          value={orders.length}
+          sub="all time"
+          icon={<BarChart3 className="h-5 w-5" />}
           onClick={() => nav('/factory/history')}
         />
       </div>
