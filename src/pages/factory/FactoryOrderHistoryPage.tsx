@@ -194,7 +194,7 @@ export function FactoryOrderHistoryPage() {
     })
     const sorted = filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     return groupByMonth(sorted)
-  }, [orders, orderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate])
+  }, [orders, orderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate, usersMap])
 
   const hasActiveFilters = filterShop !== 'all' || filterRequestor !== 'all' || filterKind !== 'all' || filterStartDate !== '' || filterEndDate !== ''
 

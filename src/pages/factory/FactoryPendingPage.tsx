@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { useAuth } from '../../contexts/AuthContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
-import { db } from '../../lib/firebase';
+import { db } from '../../lib/firebase'
 import { useUsersMap } from '../../hooks/useUsersMap'
 import { addDispatch, deleteOrder, listPendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
 import { whatsappLink } from '../../utils/whatsapp'
@@ -61,7 +61,6 @@ function dispatchedQtyByProduct(dispatches: OrderDispatch[]): Record<string, num
 }
 
 interface PendingCardProps {
-  usersMap: any
   order: Order
   id: string
   open: boolean
@@ -81,7 +80,7 @@ const WhatsAppIcon = () => (
   </svg>
 )
 
-function OrderActions({ order, onRefresh, usersMap }: { order: Order, onRefresh?: () => void, usersMap: any }) {
+function OrderActions({ order, onRefresh }: { order: Order, onRefresh?: () => void }) {
   const [busy, setBusy] = useState(false)
   const { profile } = useAuth()
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
@@ -94,7 +93,7 @@ function OrderActions({ order, onRefresh, usersMap }: { order: Order, onRefresh?
           disabled={busy}
           onClick={async () => {
             setBusy(true)
-            try { await previewOrderPdf(order, usersMap[order.shopUserId]?.displayName) } finally { setBusy(false) }
+            try { await previewOrderPdf(order) } finally { setBusy(false) }
           }}
         >
           <Printer className="h-4 w-4" />
@@ -284,7 +283,6 @@ function DispatchForm({
 }
 
 function PendingCard({
-  usersMap,
   order: o,
   id,
   open,
@@ -317,14 +315,14 @@ function PendingCard({
             )}
             <Badge tone="neutral">{o.orderKind === 'limited' ? 'Limited' : 'Standard'}</Badge>
             <Badge tone="warning">{currentStageLabel(o)}</Badge>
-            {(usersMap[o.shopUserId]?.displayName || o.requestorName) && (
+            {o.requestorName && (
               <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200">
-                {(usersMap[o.shopUserId]?.displayName || o.requestorName).split(' ')[0]}
+                {o.requestorName.split(' ')[0]}
               </span>
             )}
           </div>
           <p className="mt-1 text-xs text-slate-500">
-            {formatDateTime(o.createdAt)} · {o.items.length} line{o.items.length === 1 ? '' : 's'} · {usersMap[o.shopUserId]?.displayName || o.requestorName}
+            {formatDateTime(o.createdAt)} · {o.items.length} line{o.items.length === 1 ? '' : 's'} · {o.requestorName}
           </p>
         </div>
         {open
@@ -351,7 +349,7 @@ function PendingCard({
               dot="check"
               label="Order placed"
               timestamp={formatDateTime(o.createdAt)}
-              sub={`${usersMap[o.shopUserId]?.displayName || o.requestorName} · ${o.requestorEmail}`}
+              sub={`${o.requestorName} · ${o.requestorEmail}`}
             />
 
             {/* Stage 2: Received */}
@@ -497,7 +495,7 @@ function PendingCard({
           </div>
 
           {/* Actions */}
-          <OrderActions order={o} onRefresh={() => window.location.reload()} usersMap={usersMap} />
+          <OrderActions order={o} onRefresh={() => window.location.reload()} />
 
           {/* Line items */}
           <details className="rounded-xl border border-slate-100 bg-slate-50">
@@ -670,7 +668,7 @@ export function FactoryPendingPage() {
     })
     const sorted = filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     return groupByMonth(sorted)
-  }, [orders, orderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate])
+  }, [orders, orderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate, usersMap])
 
   const totalOrders = grouped.reduce((s, g) => s + g.orders.length, 0)
   const hasActiveFilters = filterShop !== 'all' || filterRequestor !== 'all' || filterKind !== 'all' || filterStartDate !== '' || filterEndDate !== ''
@@ -682,20 +680,19 @@ export function FactoryPendingPage() {
     try {
       await updateOrderMilestones(db, order.id, p)
 
-      const waNumber = usersMap[order.shopUserId]?.whatsappNumber || order.shopWhatsappNumber
-      if (waNumber) {
+      if (order.shopWhatsappNumber) {
         if (p.milestones?.receivedAt) {
           const dateStr = p.expectedDeliveryDate
             ? formatDate(typeof p.expectedDeliveryDate === 'number' ? p.expectedDeliveryDate : null)
             : 'TBD'
           setNotifyBanner({
-            number: waNumber,
-            message: `Hi ${usersMap[order.shopUserId]?.displayName || order.requestorName}, your order ${order.orderNumber ? `#${order.orderNumber}` : ''} from ${order.shopName} has been received.\nExpected delivery: ${dateStr}.\nWe will notify you once dispatched.`,
+            number: order.shopWhatsappNumber,
+            message: `Hi ${order.requestorName}, your order ${order.orderNumber ? `#${order.orderNumber}` : ''} from ${order.shopName} has been received.\nExpected delivery: ${dateStr}.\nWe will notify you once dispatched.`,
           })
         } else if (p.status === 'completed') {
           setNotifyBanner({
-            number: waNumber,
-            message: `Hi ${usersMap[order.shopUserId]?.displayName || order.requestorName}, your order number: ${order.orderNumber ?? ''} has been dispatched and will reach you shortly.`,
+            number: order.shopWhatsappNumber,
+            message: `Hi ${order.requestorName}, your order number: ${order.orderNumber ?? ''} has been dispatched and will reach you shortly.`,
           })
         }
       }
@@ -715,11 +712,10 @@ export function FactoryPendingPage() {
     setError(null)
     try {
       await addDispatch(db, order.id, items, naUpdates)
-      const waNumber = usersMap[order.shopUserId]?.whatsappNumber || order.shopWhatsappNumber
-      if (waNumber) {
+      if (order.shopWhatsappNumber) {
         setNotifyBanner({
-          number: waNumber,
-          message: `Hi ${usersMap[order.shopUserId]?.displayName || order.requestorName}, a dispatch for your order ${order.orderNumber ? `#${order.orderNumber}` : ''} from ${order.shopName} is on its way. Please confirm receipt when delivered.`,
+          number: order.shopWhatsappNumber,
+          message: `Hi ${order.requestorName}, a dispatch for your order ${order.orderNumber ? `#${order.orderNumber}` : ''} from ${order.shopName} is on its way. Please confirm receipt when delivered.`,
         })
       }
       await refresh()
@@ -909,7 +905,6 @@ export function FactoryPendingPage() {
               <div className="space-y-3">
                 {groupOrders.map((o) => (
                   <PendingCard
-usersMap={usersMap}
                     key={o.id}
                     id={o.id}
                     order={o}

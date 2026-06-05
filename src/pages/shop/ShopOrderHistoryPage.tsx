@@ -245,10 +245,12 @@ export function ShopOrderHistoryPage() {
       if (filterRequestor !== 'all' && reqName !== filterRequestor) return false
       if (filterKind !== 'all' && o.orderKind !== filterKind) return false
       if (filterAwaiting && !(o.status === 'pending' && (o.dispatches ?? []).some(d => d.items.some(it => !it.confirmedAt)))) return false
+
       if (filterStartDate) {
         const [y, m, d] = filterStartDate.split('-').map(Number); const start = new Date(y, m - 1, d, 0, 0, 0, 0).getTime()
         if ((o.createdAt ?? 0) < start) return false
       }
+
       if (filterEndDate) {
         const [ey, em, ed] = filterEndDate.split('-').map(Number); const end = new Date(ey, em - 1, ed, 23, 59, 59, 999).getTime(); if ((o.createdAt ?? 0) > end) return false
       }
@@ -256,7 +258,7 @@ export function ShopOrderHistoryPage() {
     })
     const sorted = filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     return groupByMonth(sorted)
-  }, [orders, orderSearch, filterRequestor, filterKind, filterAwaiting, filterStartDate, filterEndDate])
+  }, [orders, orderSearch, filterRequestor, filterKind, filterAwaiting, filterStartDate, filterEndDate, usersMap])
 
   const hasActiveFilters = filterRequestor !== 'all' || filterKind !== 'all' || filterAwaiting || filterStartDate !== '' || filterEndDate !== ''
 
