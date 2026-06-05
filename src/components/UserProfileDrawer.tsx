@@ -25,6 +25,15 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isEditingPassword, setIsEditingPassword] = useState(false)
 
+  // Password strength validation
+  const isPasswordStrong = (pwd: string) => {
+    if (!pwd) return false
+    const hasMinLength = pwd.length >= 8
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(pwd)
+    const hasCapitalLetter = /[A-Z]/.test(pwd)
+    return hasMinLength && hasSpecialChar && hasCapitalLetter
+  }
+
   // Local notification state for the drawer since useNotifications toast might be hidden or generic
   const [localMessage, setLocalMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null)
 
@@ -207,6 +216,11 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
                         onChange={e => setNewPassword(e.target.value)}
                         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                       />
+                      {newPassword && (
+                        <p className={`mt-1 text-xs ${isPasswordStrong(newPassword) ? 'text-emerald-600' : 'text-amber-600'}`}>
+                          {isPasswordStrong(newPassword) ? '✓ Strong password' : 'Password must be at least 8 characters, contain 1 special character and 1 capital letter.'}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Confirm New Password</label>
@@ -221,7 +235,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
                       <Button variant="secondary" onClick={() => setIsEditingPassword(false)} disabled={loading}>
                         Cancel
                       </Button>
-                      <Button onClick={handleSavePassword} disabled={loading || !currentPassword || !newPassword || !confirmPassword}>
+                      <Button onClick={handleSavePassword} disabled={loading || !currentPassword || !newPassword || !confirmPassword || !isPasswordStrong(newPassword)}>
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Update Password
                       </Button>

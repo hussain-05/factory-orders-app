@@ -3,7 +3,6 @@ import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 
 import { db } from '../lib/firebase'
 import { saveUserProfile } from '../lib/userService'
 import { useAuth } from '../contexts/AuthContext'
-import { updateOrdersForUser } from '../lib/orderUpdater'
 
 export function useAuthProfile() {
   const { user, profile } = useAuth()
@@ -18,7 +17,6 @@ export function useAuthProfile() {
         displayName,
         whatsappNumber,
       })
-      await updateOrdersForUser(db, user.uid, displayName, whatsappNumber)
     } finally {
       setLoading(false)
     }

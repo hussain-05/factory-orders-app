@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useAdminMode } from '../../contexts/AdminModeContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
+import { useUsersMap } from '../../hooks/useUsersMap'
 import { confirmDispatchItem, deleteOrder, listOrdersForShop } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -32,11 +33,11 @@ interface TimelineStage {
   done: boolean
 }
 
-function OrderTimeline({ order }: { order: Order }) {
+function OrderTimeline({ order, usersMap }: { order: Order, usersMap: any }) {
   const stages: TimelineStage[] = [
     {
       label: 'Order placed',
-      sublabel: order.requestorName,
+      sublabel: usersMap[order.shopUserId]?.displayName || order.requestorName,
       ts: order.createdAt,
       done: true,
     },
@@ -128,6 +129,7 @@ function OrderTimeline({ order }: { order: Order }) {
 }
 
 export function ShopOrderHistoryPage() {
+  const usersMap = useUsersMap()
   const { user, profile } = useAuth()
   const { shopView } = useAdminMode()
   const effectiveShopName = profile?.isAdmin ? shopView : (profile?.shopName ?? '')
@@ -231,7 +233,7 @@ export function ShopOrderHistoryPage() {
   }, [refresh])
 
   const requestorOptions = useMemo(
-    () => [...new Set(orders.map(o => o.requestorName).filter(Boolean))].sort(),
+    () => [...new Set(orders.map(o => usersMap[o.shopUserId]?.displayName || o.requestorName).filter(Boolean))].sort(),
     [orders]
   )
 
@@ -239,7 +241,8 @@ export function ShopOrderHistoryPage() {
     const needle = orderSearch.trim()
     const filtered = orders.filter(o => {
       if (needle && !(o.orderNumber ?? '').includes(needle)) return false
-      if (filterRequestor !== 'all' && o.requestorName !== filterRequestor) return false
+      const reqName = usersMap[o.shopUserId]?.displayName || o.requestorName
+      if (filterRequestor !== 'all' && reqName !== filterRequestor) return false
       if (filterKind !== 'all' && o.orderKind !== filterKind) return false
       if (filterAwaiting && !(o.status === 'pending' && (o.dispatches ?? []).some(d => d.items.some(it => !it.confirmedAt)))) return false
       if (filterStartDate) {
@@ -452,9 +455,9 @@ export function ShopOrderHistoryPage() {
                             <Badge tone={o.status === 'completed' ? 'success' : 'warning'}>
                               {o.status === 'completed' ? 'Completed' : 'Pending'}
                             </Badge>
-                            {o.requestorName && (
+                            {(usersMap[o.shopUserId]?.displayName || o.requestorName) && (
                               <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200">
-                                {o.requestorName.split(' ')[0]}
+                                {(usersMap[o.shopUserId]?.displayName || o.requestorName).split(' ')[0]}
                               </span>
                             )}
                           </div>
@@ -468,7 +471,7 @@ export function ShopOrderHistoryPage() {
                       {open ? (
                         <div className="space-y-4 border-t border-slate-100 px-4 py-3">
                           {/* Timeline */}
-                          <OrderTimeline order={o} />
+                          <OrderTimeline order={o} usersMap={usersMap} />
 
                           {/* Dispatches */}
                           {(o.dispatches ?? []).length > 0 && (
@@ -525,7 +528,7 @@ export function ShopOrderHistoryPage() {
                               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 Requestor
                               </p>
-                              <p className="mt-1 text-sm font-semibold text-slate-900">{o.requestorName}</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-900">{usersMap[o.shopUserId]?.displayName || o.requestorName}</p>
                               <p className="text-xs text-slate-600">{o.requestorEmail}</p>
                             </div>
                             <div className="rounded-xl bg-slate-50 p-3">
@@ -556,7 +559,7 @@ export function ShopOrderHistoryPage() {
                               onClick={async () => {
                                 setPdfBusyId(o.id)
                                 try {
-                                  await previewOrderPdf(o)
+                                  await previewOrderPdf(o, usersMap[o.shopUserId]?.displayName)
                                 } finally {
                                   setPdfBusyId(null)
                                 }
