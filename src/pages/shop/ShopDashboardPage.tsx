@@ -508,7 +508,7 @@ export function ShopDashboardPage() {
               {frequentProducts.map((p, i) => (
                 <li key={i} className="text-sm">
                   <div className="mb-1 flex items-center justify-between">
-                    <span className="font-medium text-slate-800 truncate">
+                    <span className="font-medium text-slate-800 dark:text-slate-200 transition-colors duration-200 truncate">
                       {p.name}{p.size ? ` · ${p.size}` : ''}
                     </span>
                     <span className="ml-3 shrink-0 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">

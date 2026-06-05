@@ -476,7 +476,7 @@ export function ShopOrderHistoryPage() {
                                     return (
                                       <div key={it.productId} className="flex items-center justify-between gap-3 text-xs">
                                         <div className="min-w-0">
-                                          <span className="font-medium text-slate-800">
+                                          <span className="font-medium text-slate-800 dark:text-slate-200 transition-colors duration-200">
                                             {it.name}{it.size ? ` · ${it.size}` : ''}
                                           </span>
                                           <span className="ml-2 font-semibold tabular-nums text-slate-600 dark:text-slate-400 transition-colors duration-200">×{it.qty}</span>

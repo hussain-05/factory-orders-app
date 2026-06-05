@@ -219,7 +219,7 @@ function DispatchForm({
           return (
             <div key={it.productId} className="flex items-center justify-between gap-3 text-xs">
               <div className="min-w-0">
-                <p className={`font-medium truncate ${isNa ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                <p className={`font-medium truncate ${isNa ? 'text-slate-400 dark:text-slate-500 line-through transition-colors duration-200' : 'text-slate-800 dark:text-slate-200 transition-colors duration-200'}`}>
                   {it.name}{it.size ? ` · ${it.size}` : ''}
                 </p>
                 <p className="text-slate-400 dark:text-slate-500 transition-colors duration-200">
