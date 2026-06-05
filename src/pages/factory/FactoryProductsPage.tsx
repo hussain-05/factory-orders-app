@@ -220,21 +220,19 @@ export function FactoryProductsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900">Products</h1>
-        <p className="mt-2 max-w-2xl text-sm text-slate-600">
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 transition-colors duration-200">Products</h1>
+        <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
           Maintain limited-stock items with photography, and keep the always-available standard
           catalogue up to date for shopkeepers.
         </p>
       </div>
 
-      <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+      <div className="inline-flex rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 shadow-sm transition-colors duration-200">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
-            className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-              tab === t.id ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-700 hover:bg-slate-50'
-            }`}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${ tab === t.id ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-700 hover:bg-slate-50' }`}
             onClick={() => setTab(t.id)}
           >
             {t.label}
@@ -251,15 +249,15 @@ export function FactoryProductsPage() {
       {tab === 'limited' ? (
         <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
           <Card>
-            <h2 className="font-display text-lg font-semibold text-slate-900">Add limited item</h2>
+            <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">Add limited item</h2>
             <form className="mt-4 space-y-3" onSubmit={addLimited}>
               <div>
-                <label className="text-xs font-semibold text-slate-700">Photo</label>
-                <label className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 hover:bg-slate-100 transition-colors">
-                  <span className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 shadow-sm">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Photo</label>
+                <label className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 hover:bg-slate-100 transition-colors">
+                  <span className="shrink-0 rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 ring-1 ring-slate-200 shadow-sm transition-colors duration-200">
                     Choose photo
                   </span>
-                  <span className="truncate text-xs text-slate-500">
+                  <span className="truncate text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
                     {lFile ? lFile.name : 'No photo selected'}
                   </span>
                   <input
@@ -271,16 +269,16 @@ export function FactoryProductsPage() {
                 </label>
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700">Name</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Name</label>
                 <Input className="mt-1" value={lName} onChange={(e) => setLName(e.target.value)} required />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700">Size / pack</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Size / pack</label>
                 <Input className="mt-1" value={lSize} onChange={(e) => setLSize(e.target.value)} required />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700">Stock</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Stock</label>
                   <Input
                     className="mt-1 tabular-nums"
                     inputMode="numeric"
@@ -290,7 +288,7 @@ export function FactoryProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700">Rate (₹)</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Rate (₹)</label>
                   <Input
                     className="mt-1 tabular-nums"
                     inputMode="decimal"
@@ -308,21 +306,21 @@ export function FactoryProductsPage() {
 
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="font-display text-lg font-semibold text-slate-900">Inventory</h2>
+              <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">Inventory</h2>
               <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
                 Refresh
               </Button>
             </div>
             {loading ? (
-              <div className="flex items-center gap-3 text-sm text-slate-600">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-900 border-t-transparent" />
+              <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-900 dark:border-slate-100 border-t-transparent transition-colors duration-200" />
                 Loading…
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {limited.map((p) => (
                   <Card key={p.id} className="overflow-hidden p-0">
-                    <div className="aspect-[4/3] bg-slate-100">
+                    <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
                       {p.photoUrl ? (
                         <button
                           type="button"
@@ -341,12 +339,12 @@ export function FactoryProductsPage() {
                     <div className="space-y-2 p-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="truncate font-semibold text-slate-900">{p.name}</p>
-                          <p className="text-xs text-slate-500">{p.size}</p>
+                          <p className="truncate font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{p.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{p.size}</p>
                         </div>
                         <Badge tone="neutral">₹{p.rate.toFixed(2)}</Badge>
                       </div>
-                      <p className="text-xs text-slate-600">Stock: {p.stock}</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 transition-colors duration-200">Stock: {p.stock}</p>
                       <Button
                         variant="secondary"
                         className="w-full"
@@ -367,23 +365,23 @@ export function FactoryProductsPage() {
       ) : (
         <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
           <Card>
-            <h2 className="font-display text-lg font-semibold text-slate-900">Add catalogue line</h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">Add catalogue line</h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
               These items are treated as always available for the frequent “New order” workflow.
             </p>
             <form className="mt-4 space-y-3" onSubmit={addCatalogLine}>
               <div>
-                <label className="text-xs font-semibold text-slate-700">Product name</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Product name</label>
                 <Input className="mt-1" value={cName} onChange={(e) => setCName(e.target.value)} required />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700">Size</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Size</label>
                 <Input className="mt-1" value={cSize} onChange={(e) => setCSize(e.target.value)} />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700">Default unit</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Default unit</label>
                 <select
-                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                  className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-900 dark:text-slate-100 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-200"
                   value={cUnit}
                   onChange={(e) => setCUnit(e.target.value as 'box' | 'bag' | 'pcs')}
                 >
@@ -395,9 +393,9 @@ export function FactoryProductsPage() {
               <Button className="w-full" type="submit" disabled={busy}>
                 {busy ? 'Saving…' : 'Add to catalogue'}
               </Button>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs font-semibold text-slate-700">Replace from Excel</p>
-                <p className="mt-1 text-xs text-slate-500">
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-3 transition-colors duration-200">
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Replace from Excel</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
                   Upload an Excel file with columns PRODUCT NAME, SIZE, DEFAULT UNIT. This fully
                   replaces all existing standard catalogue products.
                 </p>
@@ -429,18 +427,18 @@ export function FactoryProductsPage() {
           </Card>
 
           <Card className="p-0">
-            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-              <h2 className="font-display text-lg font-semibold text-slate-900">Lines</h2>
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 px-5 py-4 transition-colors duration-200">
+              <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">Lines</h2>
               <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
                 Refresh
               </Button>
             </div>
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-slate-100 dark:divide-slate-800 transition-colors duration-200">
               {catalog.map((p) => (
                 <div key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-slate-900">{p.name}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{p.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
                       Size: {p.size || '—'} · Unit: {p.defaultUnit ?? 'pcs'}
                     </p>
                   </div>
@@ -470,7 +468,7 @@ export function FactoryProductsPage() {
                 </div>
               ))}
               {catalog.length === 0 ? (
-                <p className="px-5 py-10 text-sm text-slate-600">No catalogue lines yet.</p>
+                <p className="px-5 py-10 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">No catalogue lines yet.</p>
               ) : null}
             </div>
           </Card>
@@ -480,15 +478,15 @@ export function FactoryProductsPage() {
       {edit ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-4 sm:items-center">
           <Card className="max-h-[90vh] w-full max-w-lg overflow-y-auto p-6">
-            <h3 className="font-display text-lg font-semibold text-slate-900">Edit limited item</h3>
+            <h3 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">Edit limited item</h3>
             <form className="mt-4 space-y-3" onSubmit={saveEdit}>
               <div>
-                <label className="text-xs font-semibold text-slate-700">Replace photo (optional)</label>
-                <label className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 hover:bg-slate-100 transition-colors">
-                  <span className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 shadow-sm">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Replace photo (optional)</label>
+                <label className="mt-1 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 hover:bg-slate-100 transition-colors">
+                  <span className="shrink-0 rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 ring-1 ring-slate-200 shadow-sm transition-colors duration-200">
                     Choose photo
                   </span>
-                  <span className="truncate text-xs text-slate-500">
+                  <span className="truncate text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
                     {lFile ? lFile.name : 'No new photo selected'}
                   </span>
                   <input
@@ -500,7 +498,7 @@ export function FactoryProductsPage() {
                 </label>
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700">Name</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Name</label>
                 <Input
                   className="mt-1"
                   value={edit.name}
@@ -509,7 +507,7 @@ export function FactoryProductsPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700">Size / pack</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Size / pack</label>
                 <Input
                   className="mt-1"
                   value={edit.size}
@@ -519,7 +517,7 @@ export function FactoryProductsPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700">Stock</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Stock</label>
                   <Input
                     className="mt-1 tabular-nums"
                     inputMode="numeric"
@@ -529,7 +527,7 @@ export function FactoryProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700">Rate (₹)</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Rate (₹)</label>
                   <Input
                     className="mt-1 tabular-nums"
                     inputMode="decimal"

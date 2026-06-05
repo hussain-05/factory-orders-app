@@ -12,7 +12,7 @@ export function Card({
   return (
     <div
       id={id}
-      className={`rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-200/40 ${className}`}
+      className={`rounded-2xl border border-slate-200/80 bg-white dark:bg-slate-900 p-6 shadow-sm shadow-slate-200/40 ${className} transition-colors duration-200`}
     >
       {children}
     </div>

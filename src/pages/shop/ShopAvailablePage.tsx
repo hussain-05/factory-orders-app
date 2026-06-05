@@ -110,10 +110,10 @@ export function ShopAvailablePage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 transition-colors duration-200">
             Available products
           </h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+          <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
             Limited-stock items currently at the factory. Add quantities to your cart and submit a
             single multi-item order.
           </p>
@@ -159,7 +159,7 @@ export function ShopAvailablePage() {
       ) : null}
 
       {loading ? (
-        <div className="flex items-center gap-3 text-sm text-slate-600">
+        <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
           Loading catalogue…
         </div>
@@ -170,7 +170,7 @@ export function ShopAvailablePage() {
             const qty = line?.quantity ?? 0
             return (
               <Card key={p.id} className="overflow-hidden p-0">
-                <div className="aspect-[4/3] w-full bg-slate-100">
+                <div className="aspect-[4/3] w-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
                   {p.photoUrl ? (
                     <button
                       type="button"
@@ -185,7 +185,7 @@ export function ShopAvailablePage() {
                       />
                     </button>
                   ) : (
-                    <div className="flex h-full items-center justify-center text-xs text-slate-500">
+                    <div className="flex h-full items-center justify-center text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
                       No photo
                     </div>
                   )}
@@ -193,20 +193,20 @@ export function ShopAvailablePage() {
                 <div className="space-y-3 p-5">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate font-semibold text-slate-900">{p.name}</p>
-                      <p className="text-xs text-slate-500">Size: {p.size}</p>
+                      <p className="truncate font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{p.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">Size: {p.size}</p>
                     </div>
                     <Badge tone={p.stock > 5 ? 'success' : p.stock > 0 ? 'warning' : 'danger'}>
                       Stock {p.stock}
                     </Badge>
                   </div>
-                  <p className="text-sm font-semibold text-slate-900">₹{p.rate.toFixed(2)}</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">₹{p.rate.toFixed(2)}</p>
 
                   <div className="flex items-center justify-between gap-3">
-                    <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
+                    <div className="inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-1 transition-colors duration-200">
                       <button
                         type="button"
-                        className="rounded-lg p-2 text-slate-700 hover:bg-white disabled:opacity-40"
+                        className="rounded-lg p-2 text-slate-700 dark:text-slate-300 hover:bg-white disabled:opacity-40 transition-colors duration-200"
                         onClick={() => setQty(p, qty - 1)}
                         disabled={qty <= 0}
                         aria-label="Decrease quantity"
@@ -231,7 +231,7 @@ export function ShopAvailablePage() {
                       />
                       <button
                         type="button"
-                        className="rounded-lg p-2 text-slate-700 hover:bg-white disabled:opacity-40"
+                        className="rounded-lg p-2 text-slate-700 dark:text-slate-300 hover:bg-white disabled:opacity-40 transition-colors duration-200"
                         onClick={() => setQty(p, qty + 1)}
                         disabled={p.stock <= 0 || qty >= p.stock}
                         aria-label="Increase quantity"
@@ -251,15 +251,15 @@ export function ShopAvailablePage() {
       )}
 
       {lines.length > 0 ? (
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/90 p-4 backdrop-blur lg:static lg:z-0 lg:border-0 lg:bg-transparent lg:p-0">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-lg shadow-slate-200/40 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3 text-sm text-slate-700">
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-4 backdrop-blur lg:static lg:z-0 lg:border-0 lg:bg-transparent lg:p-0 transition-colors duration-200">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-lg shadow-slate-200/40 sm:flex-row sm:items-center sm:justify-between transition-colors duration-200">
+            <div className="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300 transition-colors duration-200">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
                 <ShoppingBag className="h-5 w-5" />
               </span>
               <div>
-                <p className="font-semibold text-slate-900">{lines.length} products selected</p>
-                <p className="text-xs text-slate-500">Review before sending to the factory.</p>
+                <p className="font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{lines.length} products selected</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">Review before sending to the factory.</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -293,11 +293,11 @@ export function ShopAvailablePage() {
           {lines.map((l) => (
             <div
               key={l.product.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
+              className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 transition-colors duration-200"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-900">{l.product.name}</p>
-                <p className="text-xs text-slate-500">
+                <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{l.product.name}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
                   {l.product.size} · qty {l.quantity}
                 </p>
               </div>
