@@ -134,7 +134,7 @@ function OrderActions({ order, onRefresh }: { order: Order, onRefresh?: () => vo
                   await deleteOrder(db, deleteTarget.id)
                   setDeleteTarget(null)
                   onRefresh?.()
-                } catch (e) {
+                } catch (_e) {
                   alert('Failed to delete order.')
                   setDeleteTarget(null)
                 } finally {
@@ -360,13 +360,18 @@ function PendingCard({
               {!o.milestones.receivedAt && (
                 <div className="mt-2 space-y-2">
                   <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 transition-colors duration-200">Expected delivery date (required)</p>
+                    <label htmlFor={`expected-delivery-date-${o.id}`} className="block cursor-pointer text-xs text-slate-500 dark:text-slate-400 mb-1 transition-colors duration-200">Expected delivery date (required)</label>
                     <div className="flex items-center gap-2">
                       <Input
+                        id={`expected-delivery-date-${o.id}`}
                         type="date"
-                        className="!py-1 !text-xs"
+                        className="!py-1 !text-xs [color-scheme:light] dark:[color-scheme:dark]"
                         value={expectedDraft}
                         onChange={(e) => onExpectedChange(e.target.value)}
+                        onClick={(e) => {
+                          const target = e.target as HTMLInputElement;
+                          if (target.showPicker) target.showPicker();
+                        }}
                         disabled={busy}
                       />
                     </div>
@@ -937,20 +942,20 @@ export function FactoryPendingPage() {
       {/* WhatsApp notify banner */}
       {notifyBanner && (
         <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 w-max max-w-[calc(100vw-2rem)]">
-          <div className="flex items-center gap-3 rounded-xl bg-slate-900 px-5 py-3 shadow-lg shadow-slate-900/20">
+          <div className="flex items-center gap-3 rounded-xl bg-emerald-600 px-5 py-3 shadow-lg shadow-emerald-900/20">
             <p className="text-sm font-semibold text-white">Notify the shop?</p>
             <a
               href={whatsappLink(notifyBanner.number, notifyBanner.message)}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1ebe5d]"
+              className="flex items-center gap-1.5 rounded-lg bg-[#25D366] dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1ebe5d] dark:hover:bg-slate-800 transition-colors duration-200"
             >
               <WhatsAppIcon />
               Send on WhatsApp
             </a>
             <button
               type="button"
-              className="shrink-0 text-slate-400 dark:text-slate-500 hover:text-white transition-colors duration-200"
+              className="shrink-0 text-emerald-200 hover:text-white transition-colors duration-200"
               onClick={() => setNotifyBanner(null)}
               aria-label="Dismiss"
             >
