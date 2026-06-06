@@ -2,11 +2,11 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 const variants = {
   primary:
-    'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-600/20',
+    'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-600/20 dark:bg-emerald-500 dark:hover:bg-emerald-600',
   secondary:
-    'bg-white text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50',
-  ghost: 'bg-transparent text-slate-700 hover:bg-slate-100',
-  danger: 'bg-rose-600 text-white hover:bg-rose-700 shadow-sm',
+    'bg-white text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-700',
+  ghost: 'bg-transparent text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',
+  danger: 'bg-rose-600 text-white hover:bg-rose-700 shadow-sm dark:bg-rose-500 dark:hover:bg-rose-600',
 } as const
 
 type Variant = keyof typeof variants

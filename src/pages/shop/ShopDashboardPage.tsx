@@ -113,9 +113,9 @@ function StatCard({
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-        <p className="mt-1 font-display text-2xl font-bold tabular-nums text-slate-900">{value}</p>
-        {sub && <p className="mt-0.5 text-xs text-slate-500">{sub}</p>}
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">{label}</p>
+        <p className="mt-1 font-display text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">{value}</p>
+        {sub && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{sub}</p>}
       </div>
     </>
   )
@@ -149,12 +149,12 @@ function PipelineStage({
   const pct = total > 0 ? Math.round((count / total) * 100) : 0
   const inner = (
     <>
-      <p className="font-display text-2xl font-bold tabular-nums text-slate-900">{count}</p>
-      <div className="mx-auto my-2 h-1.5 w-full rounded-full bg-slate-100">
+      <p className="font-display text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">{count}</p>
+      <div className="mx-auto my-2 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
         <div className={`h-1.5 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
       </div>
-      <p className="text-xs font-medium text-slate-700">{label}</p>
-      <p className="text-xs text-slate-400">{pct}%</p>
+      <p className="text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors duration-200">{label}</p>
+      <p className="text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">{pct}%</p>
     </>
   )
 
@@ -259,7 +259,7 @@ export function ShopDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 py-16 text-sm text-slate-600">
+      <div className="flex items-center gap-3 py-16 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
         Loading dashboard…
       </div>
@@ -272,10 +272,10 @@ export function ShopDashboardPage() {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 transition-colors duration-200">
             Dashboard
           </h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
             {effectiveShopName} orders at a glance.
           </p>
         </div>
@@ -343,11 +343,11 @@ export function ShopDashboardPage() {
 
         {/* My pending pipeline */}
         <Card className="p-5">
-          <p className="mb-5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="mb-5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
             My pending pipeline
           </p>
           {pending.length === 0 ? (
-            <p className="text-sm text-slate-500">No active orders right now.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">No active orders right now.</p>
           ) : (
             <div className="flex items-start gap-2">
               <PipelineStage
@@ -357,7 +357,7 @@ export function ShopDashboardPage() {
                 color="bg-blue-400"
                 onClick={() => nav('/shop/history')}
               />
-              <span className="mt-4 shrink-0 text-slate-300">→</span>
+              <span className="mt-4 shrink-0 text-slate-300 dark:text-slate-600 transition-colors duration-200">→</span>
               <PipelineStage
                 label="In production"
                 count={stages.inProduction}
@@ -365,7 +365,7 @@ export function ShopDashboardPage() {
                 color="bg-amber-400"
                 onClick={() => nav('/shop/history')}
               />
-              <span className="mt-4 shrink-0 text-slate-300">→</span>
+              <span className="mt-4 shrink-0 text-slate-300 dark:text-slate-600 transition-colors duration-200">→</span>
               <PipelineStage
                 label="Partially dispatched"
                 count={stages.partial}
@@ -373,7 +373,7 @@ export function ShopDashboardPage() {
                 color="bg-orange-400"
                 onClick={() => nav('/shop/history')}
               />
-              <span className="mt-4 shrink-0 text-slate-300">→</span>
+              <span className="mt-4 shrink-0 text-slate-300 dark:text-slate-600 transition-colors duration-200">→</span>
               <PipelineStage
                 label="Awaiting confirmation"
                 count={stages.awaiting}
@@ -387,21 +387,21 @@ export function ShopDashboardPage() {
 
         {/* Order type split */}
         <Card className="p-5">
-          <p className="mb-5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="mb-5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
             Order type split
           </p>
           {orders.length === 0 ? (
-            <p className="text-sm text-slate-500">No orders yet.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">No orders yet.</p>
           ) : (
             <div className="space-y-4">
               <div>
                 <div className="mb-1.5 flex items-center justify-between text-sm">
-                  <span className="font-medium text-slate-700">Standard catalogue</span>
-                  <span className="text-xs text-slate-500">
+                  <span className="font-medium text-slate-700 dark:text-slate-300 transition-colors duration-200">Standard catalogue</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
                     {orderTypeSplit.standard} orders · {orderTypeSplit.standardPct}%
                   </span>
                 </div>
-                <div className="h-2 w-full rounded-full bg-slate-100">
+                <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
                   <div
                     className="h-2 rounded-full bg-slate-700 transition-all"
                     style={{ width: `${orderTypeSplit.standardPct}%` }}
@@ -410,19 +410,19 @@ export function ShopDashboardPage() {
               </div>
               <div>
                 <div className="mb-1.5 flex items-center justify-between text-sm">
-                  <span className="font-medium text-slate-700">Limited stock</span>
-                  <span className="text-xs text-slate-500">
+                  <span className="font-medium text-slate-700 dark:text-slate-300 transition-colors duration-200">Limited stock</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
                     {orderTypeSplit.limited} orders · {orderTypeSplit.limitedPct}%
                   </span>
                 </div>
-                <div className="h-2 w-full rounded-full bg-slate-100">
+                <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
                   <div
                     className="h-2 rounded-full bg-emerald-500 transition-all"
                     style={{ width: `${orderTypeSplit.limitedPct}%` }}
                   />
                 </div>
               </div>
-              <p className="text-xs text-slate-400 pt-1">{orders.length} total orders</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 pt-1 transition-colors duration-200">{orders.length} total orders</p>
             </div>
           )}
         </Card>
@@ -430,13 +430,13 @@ export function ShopDashboardPage() {
 
       {/* ── Monthly trend ── */}
       <Card className="p-5">
-        <p className="mb-6 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <p className="mb-6 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
           My orders — last 6 months
         </p>
         <div className="flex h-36 items-end justify-between gap-2">
           {trend.map(({ label, count }) => (
             <div key={label} className="flex flex-1 flex-col items-center gap-1">
-              <span className="text-xs font-semibold text-slate-700">
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">
                 {count > 0 ? count : ''}
               </span>
               <div
@@ -446,7 +446,7 @@ export function ShopDashboardPage() {
                   minHeight: count > 0 ? '4px' : '0',
                 }}
               />
-              <span className="text-xs text-slate-500">{label}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{label}</span>
             </div>
           ))}
         </div>
@@ -457,13 +457,13 @@ export function ShopDashboardPage() {
 
         {/* Recent orders */}
         <Card className="p-5">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
             Recent orders
           </p>
           {recentOrders.length === 0 ? (
-            <p className="text-sm text-slate-500">No orders yet.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">No orders yet.</p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800/50 transition-colors duration-200">
               {recentOrders.map(o => {
                 const { label, tone } = orderStatusLabel(o)
                 return (
@@ -471,18 +471,18 @@ export function ShopDashboardPage() {
                     <button
                       type="button"
                       onClick={() => nav('/shop/history', { state: { openId: o.id } })}
-                      className="flex w-full items-center justify-between gap-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-50 rounded-lg px-1 -mx-1"
+                      className="flex w-full items-center justify-between gap-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg px-1 -mx-1"
                     >
                       <div className="min-w-0">
-                        <p className="truncate font-medium text-slate-900">
+                        <p className="truncate font-medium text-slate-900 dark:text-slate-100 transition-colors duration-200">
                           {o.orderKind === 'limited' ? 'Limited stock' : 'Standard catalogue'}
                           {o.orderNumber ? (
-                            <span className="ml-1.5 font-mono text-xs text-slate-500">
+                            <span className="ml-1.5 font-mono text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
                               #{o.orderNumber}
                             </span>
                           ) : null}
                         </p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
                           {formatDateTime(o.createdAt)} · {o.items.length} line{o.items.length === 1 ? '' : 's'}
                         </p>
                       </div>
@@ -497,25 +497,25 @@ export function ShopDashboardPage() {
 
         {/* Frequently ordered products */}
         <Card className="p-5">
-          <p className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
             <Repeat className="h-3.5 w-3.5" />
             Frequently ordered
           </p>
           {frequentProducts.length === 0 ? (
-            <p className="text-sm text-slate-500">No order history yet.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">No order history yet.</p>
           ) : (
             <ul className="space-y-3">
               {frequentProducts.map((p, i) => (
                 <li key={i} className="text-sm">
                   <div className="mb-1 flex items-center justify-between">
-                    <span className="font-medium text-slate-800 truncate">
+                    <span className="font-medium text-slate-800 dark:text-slate-200 transition-colors duration-200 truncate">
                       {p.name}{p.size ? ` · ${p.size}` : ''}
                     </span>
-                    <span className="ml-3 shrink-0 text-xs text-slate-500">
+                    <span className="ml-3 shrink-0 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
                       ×{p.totalQty} across {p.orderCount} order{p.orderCount === 1 ? '' : 's'}
                     </span>
                   </div>
-                  <div className="h-1.5 w-full rounded-full bg-slate-100">
+                  <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
                     <div
                       className="h-1.5 rounded-full bg-emerald-500 transition-all"
                       style={{ width: `${Math.round((p.totalQty / maxProductQty) * 100)}%` }}
