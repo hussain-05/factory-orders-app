@@ -50,7 +50,7 @@ export function SignUpPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-slate-50 px-6 py-14">
+    <div className="min-h-dvh bg-slate-50 dark:bg-slate-950 transition-colors duration-200 px-6 py-14">
       <div className="mx-auto w-full max-w-md">
         <Card className="p-8">
           <img
@@ -58,14 +58,14 @@ export function SignUpPage() {
             alt="Seva"
             className="mb-1 block h-10 w-auto mx-auto"
           />
-          <h1 className="mt-2 font-display text-2xl font-semibold text-slate-900">Create account</h1>
-          <p className="mt-2 text-sm text-slate-600">
+          <h1 className="mt-2 font-display text-2xl font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">Create account</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
             Choose whether you are signing up as a agent or a factory agent.
           </p>
 
           <form className="mt-8 space-y-4" onSubmit={onSubmit}>
             <div>
-              <label className="text-xs font-semibold text-slate-700" htmlFor="role">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200" htmlFor="role">
                 Role
               </label>
               <Select
@@ -77,12 +77,12 @@ export function SignUpPage() {
                 <option value="shop">Shop owner</option>
                 <option value="factory">Factory owner</option>
               </Select>
-              <p className="mt-2 text-xs text-slate-500">{title}</p>
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{title}</p>
             </div>
 
             {role === 'shop' ? (
               <div>
-                <label className="text-xs font-semibold text-slate-700" htmlFor="shop">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200" htmlFor="shop">
                   Shop
                 </label>
                 <Select
@@ -101,7 +101,7 @@ export function SignUpPage() {
             ) : null}
 
             <div>
-              <label className="text-xs font-semibold text-slate-700" htmlFor="name">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200" htmlFor="name">
                 Full name
               </label>
               <Input
@@ -115,7 +115,7 @@ export function SignUpPage() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-700" htmlFor="email">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200" htmlFor="email">
                 Email
               </label>
               <Input
@@ -130,7 +130,7 @@ export function SignUpPage() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-700" htmlFor="password">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200" htmlFor="password">
                 Password
               </label>
               <Input
@@ -143,11 +143,11 @@ export function SignUpPage() {
                 required
                 minLength={8}
               />
-              <p className="mt-2 text-xs text-slate-500">Minimum 8 characters.</p>
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">Minimum 8 characters.</p>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-700" htmlFor="whatsapp">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200" htmlFor="whatsapp">
                 WhatsApp number <span className="font-normal text-slate-400">(optional)</span>
               </label>
               <Input
@@ -159,7 +159,7 @@ export function SignUpPage() {
                 onChange={(e) => setWhatsappNumber(e.target.value)}
                 autoComplete="tel"
               />
-              <p className="mt-1 text-xs text-slate-500">Used to receive order updates on WhatsApp.</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">Used to receive order updates on WhatsApp.</p>
             </div>
 
             {(localError || error) && (
@@ -173,7 +173,7 @@ export function SignUpPage() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-600">
+          <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
             Already have access?{' '}
             <Link className="font-semibold text-emerald-700 hover:text-emerald-800" to="/login">
               Sign in
