@@ -152,7 +152,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  disabled
  value={displayName}
 
- className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400"
+ className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400"
  />
  </div>
  <div>
@@ -162,7 +162,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  disabled
  value={whatsappNumber}
 
- className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400"
+ className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400"
  />
  </div>
 
@@ -190,7 +190,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  type="password"
  value={currentPassword}
  onChange={e => setCurrentPassword(e.target.value)}
- className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+ className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
  />
  </div>
  <div>
@@ -199,7 +199,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  type="password"
  value={newPassword}
  onChange={e => setNewPassword(e.target.value)}
- className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+ className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
  />
  {newPassword && (
  <p className={`mt-1 text-xs ${isPasswordStrong(newPassword) ? 'text-emerald-600 dark:text-emerald-500' : 'text-amber-600 dark:text-amber-500'}`}>
@@ -213,7 +213,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  type="password"
  value={confirmPassword}
  onChange={e => setConfirmPassword(e.target.value)}
- className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+ className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
  />
  </div>
  <div className="flex justify-end gap-2 pt-2">

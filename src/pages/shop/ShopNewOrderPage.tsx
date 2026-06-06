@@ -284,7 +284,7 @@ export function ShopNewOrderPage() {
                             <Minus className="h-3.5 w-3.5" />
                           </button>
                           <input
-                            className="w-14 bg-transparent text-center text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100 outline-none transition-colors duration-200"
+                            className="w-14 bg-transparent text-center text-base sm:text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100 outline-none transition-colors duration-200"
                             inputMode="numeric"
                             value={qty === 0 ? '' : String(qty)}
                             placeholder="0"

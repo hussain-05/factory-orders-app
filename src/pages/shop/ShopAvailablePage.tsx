@@ -214,7 +214,7 @@ export function ShopAvailablePage() {
                         <Minus className="h-4 w-4" />
                       </button>
                       <input
-                        className="w-20 rounded-lg border border-transparent bg-transparent px-2 py-1 text-center text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100 outline-none focus:border-slate-300 focus:bg-white dark:focus:border-slate-700 dark:focus:bg-slate-800 transition-colors duration-200"
+                        className="w-20 rounded-lg border border-transparent bg-transparent px-2 py-1 text-center text-base sm:text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100 outline-none focus:border-slate-300 focus:bg-white dark:focus:border-slate-700 dark:focus:bg-slate-800 transition-colors duration-200"
                         inputMode="numeric"
                         value={qty === 0 ? '' : String(qty)}
                         placeholder="0"
