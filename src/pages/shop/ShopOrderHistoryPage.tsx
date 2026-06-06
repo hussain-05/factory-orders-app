@@ -303,6 +303,7 @@ export function ShopOrderHistoryPage() {
               inputMode="numeric"
               maxLength={6}
               placeholder="Order #…"
+              aria-label="Search by order number"
               value={orderSearch}
               onChange={e => setOrderSearch(e.target.value.replace(/\D/g, ''))}
               className="w-full bg-transparent py-3 pl-7 text-sm text-slate-700 dark:text-slate-300 placeholder-slate-400 focus:outline-none transition-colors duration-200"
@@ -317,6 +318,7 @@ export function ShopOrderHistoryPage() {
               <select
                 value={filterRequestor}
                 onChange={e => setFilterRequestor(e.target.value)}
+                aria-label="Filter by requestor"
                 className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
               >
                 <option value="all">All</option>
@@ -362,6 +364,7 @@ export function ShopOrderHistoryPage() {
                   type="date"
                   value={filterStartDate}
                   onChange={e => setFilterStartDate(e.target.value)}
+                  aria-label="Start date"
                   className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
                 <span className="text-slate-400 dark:text-slate-500 transition-colors duration-200">to</span>
@@ -369,6 +372,7 @@ export function ShopOrderHistoryPage() {
                   type="date"
                   value={filterEndDate}
                   onChange={e => setFilterEndDate(e.target.value)}
+                  aria-label="End date"
                   className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
               </div>
