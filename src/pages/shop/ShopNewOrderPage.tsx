@@ -216,6 +216,7 @@ export function ShopNewOrderPage() {
               <Input
                 className="pl-10"
                 placeholder="Search products…"
+                aria-label="Search products"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
