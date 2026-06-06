@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, LogOut, User, Loader2, Shield } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthProfile } from '../hooks/useAuthProfile'
 import { Button } from './ui/Button'
@@ -15,6 +15,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  const { profile, logout } = useAuth()
  const { changePassword, loading } = useAuthProfile()
  const navigate = useNavigate()
+ const location = useLocation()
 
  // Editable Profile fields
  const [displayName, setDisplayName] = useState(profile?.displayName || '')
@@ -236,7 +237,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  <Button
  variant="secondary"
  className="w-full justify-center"
- onClick={() => { onClose(); navigate('/admin'); }}
+ onClick={() => { onClose(); navigate('/admin', { state: { from: location.pathname } }); }}
  >
  <Shield className="mr-2 h-4 w-4" />
  Admin Console
