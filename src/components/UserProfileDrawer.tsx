@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, LogOut, User, Loader2 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { X, LogOut, User, Loader2, Shield } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthProfile } from '../hooks/useAuthProfile'
 import { Button } from './ui/Button'
@@ -15,6 +15,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  const { profile, logout } = useAuth()
  const { changePassword, loading } = useAuthProfile()
  const navigate = useNavigate()
+ const location = useLocation()
 
  // Editable Profile fields
  const [displayName, setDisplayName] = useState(profile?.displayName || '')
@@ -99,7 +100,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  animate={{ opacity: 1 }}
  exit={{ opacity: 0 }}
  onClick={onClose}
- className="fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-sm"
+ className="fixed inset-0 z-50 bg-slate-900/20 dark:bg-slate-900/40 backdrop-blur-sm"
  />
 
  {/* Drawer */}
@@ -108,17 +109,17 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  animate={{ x: 0 }}
  exit={{ x: '100%' }}
  transition={{ type: 'spring', damping: 25, stiffness: 200 }}
- className="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col border-l border-slate-200 bg-white shadow-2xl sm:max-w-md"
+ className="fixed inset-y-0 right-0 z-50 flex w-[85vw] sm:w-full max-w-sm flex-col border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xl sm:max-w-md"
  >
  {/* Header */}
- <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 ">
- <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 ">
- <User className="h-5 w-5 text-emerald-600 " />
+ <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 px-6 py-4">
+ <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+ <User className="h-5 w-5 text-emerald-600 dark:text-emerald-500" />
  User Profile
  </h2>
  <button
  onClick={onClose}
- className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+ className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200"
  >
  <X className="h-5 w-5" />
  </button>
@@ -140,42 +141,42 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  {/* Profile Details */}
  <div className="space-y-4">
  <div className="flex items-center justify-between">
- <h3 className="text-sm font-medium text-slate-500 ">Personal Information</h3>
+ <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Personal Information</h3>
  </div>
 
  <div className="space-y-3">
  <div>
- <label className="mb-1 block text-sm font-medium text-slate-700 ">Name</label>
+ <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Name</label>
  <input
  type="text"
  disabled
  value={displayName}
 
- className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50 disabled:text-slate-500"
+ className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400"
  />
  </div>
  <div>
- <label className="mb-1 block text-sm font-medium text-slate-700 ">Phone Number (WhatsApp)</label>
+ <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Phone Number (WhatsApp)</label>
  <input
  type="text"
  disabled
  value={whatsappNumber}
 
- className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50 disabled:text-slate-500"
+ className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400"
  />
  </div>
 
  </div>
  </div>
 
- <div className="my-8 h-px bg-slate-100 " />
+ <div className="my-8 h-px bg-slate-100 dark:bg-slate-800/50" />
 
  {/* Password Section */}
  <div className="space-y-4">
  <div className="flex items-center justify-between">
- <h3 className="text-sm font-medium text-slate-500 ">Security</h3>
+ <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Security</h3>
  {!isEditingPassword && (
- <button onClick={() => setIsEditingPassword(true)} className="text-sm font-medium text-emerald-600 hover:text-emerald-700">
+ <button onClick={() => setIsEditingPassword(true)} className="text-sm font-medium text-emerald-600 dark:text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400">
  Change Password
  </button>
  )}
@@ -184,35 +185,35 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  {isEditingPassword && (
  <div className="space-y-3">
  <div>
- <label className="mb-1 block text-sm font-medium text-slate-700 ">Current Password</label>
+ <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Current Password</label>
  <input
  type="password"
  value={currentPassword}
  onChange={e => setCurrentPassword(e.target.value)}
- className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 "
+ className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
  />
  </div>
  <div>
- <label className="mb-1 block text-sm font-medium text-slate-700 ">New Password</label>
+ <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">New Password</label>
  <input
  type="password"
  value={newPassword}
  onChange={e => setNewPassword(e.target.value)}
- className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 "
+ className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
  />
  {newPassword && (
- <p className={`mt-1 text-xs ${isPasswordStrong(newPassword) ? 'text-emerald-600' : 'text-amber-600'}`}>
+ <p className={`mt-1 text-xs ${isPasswordStrong(newPassword) ? 'text-emerald-600 dark:text-emerald-500' : 'text-amber-600 dark:text-amber-500'}`}>
  {isPasswordStrong(newPassword) ? '✓ Strong password' : 'Password must be at least 8 characters, contain 1 special character and 1 capital letter.'}
  </p>
  )}
  </div>
  <div>
- <label className="mb-1 block text-sm font-medium text-slate-700 ">Confirm New Password</label>
+ <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Confirm New Password</label>
  <input
  type="password"
  value={confirmPassword}
  onChange={e => setConfirmPassword(e.target.value)}
- className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 "
+ className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
  />
  </div>
  <div className="flex justify-end gap-2 pt-2">
@@ -231,10 +232,20 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  </div>
 
  {/* Footer */}
- <div className="border-t border-slate-100 bg-slate-50 p-6 ">
+ <div className="border-t border-slate-100 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-900/50 p-6 flex flex-col gap-3">
+ {profile?.isAdmin && (
  <Button
  variant="secondary"
- className="w-full justify-center text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+ className="w-full justify-center"
+ onClick={() => { onClose(); navigate('/admin', { state: { from: location.pathname } }); }}
+ >
+ <Shield className="mr-2 h-4 w-4" />
+ Admin Console
+ </Button>
+ )}
+ <Button
+ variant="secondary"
+ className="w-full justify-center text-rose-600 dark:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-700 dark:hover:text-rose-400"
  onClick={handleLogout}
  >
  <LogOut className="mr-2 h-4 w-4" />

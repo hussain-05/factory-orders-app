@@ -1,5 +1,5 @@
-import { Bell, BellOff, ClipboardList, LayoutDashboard, Moon, ScrollText, Shield, Sun, User, Warehouse } from 'lucide-react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Bell, BellOff, ClipboardList, LayoutDashboard, Moon, ScrollText, Sun, User, Warehouse } from 'lucide-react'
+import { NavLink, Outlet } from 'react-router-dom'
 import { UserProfileDrawer } from '../components/UserProfileDrawer'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
@@ -30,7 +30,6 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export function FactoryShell() {
   const { profile } = useAuth()
-  const nav = useNavigate()
   const { status, toast, dismissToast, enable } = useNotifications()
   const pendingCount = usePendingOrderCount()
   const { theme, toggleTheme } = useTheme()
@@ -60,50 +59,41 @@ export function FactoryShell() {
             className="absolute left-1/2 top-1/2 h-9 w-auto -translate-x-1/2 -translate-y-1/2 pointer-events-none"
           />
 
-          <div className="flex flex-col items-end gap-1">
-            <div className="flex items-center gap-2">
-              {status === 'unknown' && (
-                <Button variant="secondary" className="shrink-0 !gap-1.5" onClick={() => void enable()}>
-                  <Bell className="h-4 w-4" />
-                  <span className="hidden sm:inline">Enable notifications</span>
-                </Button>
-              )}
-              {status === 'denied' && (
-                <span className="flex items-center gap-1.5 text-xs text-slate-400">
-                  <BellOff className="h-4 w-4" />
-                  <span className="hidden sm:inline">Notifications blocked</span>
-                </span>
-              )}
-              <Button
-                variant="secondary"
-                className="shrink-0"
-                onClick={() => setIsDrawerOpen(true)}
-              >
-                <User className="h-4 w-4" />
-                Profile
+          <div className="flex items-center gap-2">
+            {status === 'unknown' && (
+              <Button variant="secondary" className="shrink-0 !gap-1.5" onClick={() => void enable()}>
+                <Bell className="h-4 w-4" />
+                <span className="hidden sm:inline">Enable notifications</span>
               </Button>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                className="shrink-0 !text-xs !py-1"
-                onClick={toggleTheme}
-                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-              >
-                {theme === 'light' ? (
-                  <Moon className="h-3.5 w-3.5" />
-                ) : (
-                  <Sun className="h-3.5 w-3.5" />
-                )}
-                <span className="hidden sm:inline">Theme</span>
-              </Button>
-              {profile?.isAdmin && (
-                <Button variant="secondary" className="shrink-0 !text-xs !py-1" onClick={() => nav('/admin')}>
-                  <Shield className="h-3.5 w-3.5" />
-                  Admin
-                </Button>
+            )}
+            {status === 'denied' && (
+              <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                <BellOff className="h-4 w-4" />
+                <span className="hidden sm:inline">Notifications blocked</span>
+              </span>
+            )}
+            <Button
+              variant="secondary"
+              className="shrink-0 !p-2 sm:!px-4 sm:!py-2.5 !rounded-full sm:!rounded-lg"
+              onClick={toggleTheme}
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {theme === 'light' ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Sun className="h-4 w-4" />
               )}
-            </div>
+              <span className="hidden sm:inline">Theme</span>
+            </Button>
+            <Button
+              variant="secondary"
+              className="shrink-0 !p-2 sm:!px-4 sm:!py-2.5 !rounded-full sm:!rounded-lg"
+              onClick={() => setIsDrawerOpen(true)}
+            >
+              <User className="h-4 w-4" aria-label="Profile" />
+              <span className="hidden sm:inline">Profile</span>
+            </Button>
           </div>
         </div>
 

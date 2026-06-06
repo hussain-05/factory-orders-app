@@ -97,12 +97,12 @@ export function AdminPage() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-slate-700" />
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900">
+          <Shield className="h-5 w-5 text-slate-700 dark:text-slate-300" />
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             User access
           </h1>
         </div>
-        <p className="mt-2 max-w-2xl text-sm text-slate-600">
+        <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
           Only emails listed here can sign up. Admins can manage this list.
         </p>
       </div>
@@ -115,8 +115,8 @@ export function AdminPage() {
 
       {/* Factory WhatsApp number */}
       <Card>
-        <h2 className="font-display text-lg font-semibold text-slate-900">Factory WhatsApp number</h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100">Factory WhatsApp number</h2>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Shop users will see a "Notify factory" button after placing an order, which opens WhatsApp with this number pre-filled.
         </p>
         <div className="mt-4 flex items-center gap-3">
@@ -152,10 +152,10 @@ export function AdminPage() {
 
       {/* Add new email */}
       <Card>
-        <h2 className="font-display text-lg font-semibold text-slate-900">Add email</h2>
+        <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100">Add email</h2>
         <div className="mt-4 space-y-3">
           <div>
-            <label className="text-xs font-semibold text-slate-700">Email address</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Email address</label>
             <Input
               className="mt-1"
               type="email"
@@ -178,8 +178,8 @@ export function AdminPage() {
               <div
                 className={`h-5 w-5 rounded border-2 transition-colors ${
                   newIsAdmin
-                    ? 'border-emerald-600 bg-emerald-600'
-                    : 'border-slate-300 bg-white'
+                    ? 'border-emerald-600 bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-500'
+                    : 'border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900'
                 }`}
               >
                 {newIsAdmin && (
@@ -191,8 +191,8 @@ export function AdminPage() {
               </div>
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-900">Admin access</p>
-              <p className="text-xs text-slate-500">Can manage this user list</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Admin access</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Can manage this user list</p>
             </div>
           </label>
           <Button
@@ -207,12 +207,12 @@ export function AdminPage() {
 
       {/* Existing emails */}
       <Card className="p-0">
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-          <h2 className="font-display text-lg font-semibold text-slate-900">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/50 px-5 py-4">
+          <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100">
             Allowed users
           </h2>
           <div className="flex items-center gap-3">
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
+            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
               {emails.length}
             </span>
             <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
@@ -222,18 +222,18 @@ export function AdminPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center gap-3 px-5 py-10 text-sm text-slate-500">
+          <div className="flex items-center gap-3 px-5 py-10 text-sm text-slate-500 dark:text-slate-400">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
             Loading…
           </div>
         ) : emails.length === 0 ? (
-          <p className="px-5 py-10 text-sm text-slate-500">No emails added yet.</p>
+          <p className="px-5 py-10 text-sm text-slate-500 dark:text-slate-400">No emails added yet.</p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800/50">
             {emails.map((e) => (
               <li key={e.email} className="flex items-center justify-between gap-3 px-5 py-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-900">{e.email}</p>
+                  <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{e.email}</p>
                   {e.isAdmin && (
                     <Badge tone="neutral">Admin</Badge>
                   )}
@@ -246,8 +246,8 @@ export function AdminPage() {
                     onClick={() => void handleToggleAdmin(e.email, e.isAdmin)}
                     className={`rounded-lg p-2 transition-colors ${
                       e.isAdmin
-                        ? 'text-emerald-600 hover:bg-emerald-50'
-                        : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'
+                        ? 'text-emerald-600 dark:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
+                        : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300'
                     }`}
                   >
                     {e.isAdmin ? <UserCheck className="h-4 w-4" /> : <UserX className="h-4 w-4" />}
@@ -277,7 +277,7 @@ export function AdminPage() {
                       title="Remove"
                       disabled={busy}
                       onClick={() => setConfirmDelete(e.email)}
-                      className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                      className="rounded-lg p-2 text-slate-400 dark:text-slate-500 transition-colors hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
