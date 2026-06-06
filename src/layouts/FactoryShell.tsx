@@ -1,5 +1,5 @@
-import { Bell, BellOff, ClipboardList, LayoutDashboard, Moon, ScrollText, Shield, Sun, User, Warehouse } from 'lucide-react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Bell, BellOff, ClipboardList, LayoutDashboard, Moon, ScrollText, Sun, User, Warehouse } from 'lucide-react'
+import { NavLink, Outlet } from 'react-router-dom'
 import { UserProfileDrawer } from '../components/UserProfileDrawer'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
@@ -30,7 +30,6 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export function FactoryShell() {
   const { profile } = useAuth()
-  const nav = useNavigate()
   const { status, toast, dismissToast, enable } = useNotifications()
   const pendingCount = usePendingOrderCount()
   const { theme, toggleTheme } = useTheme()
@@ -76,11 +75,11 @@ export function FactoryShell() {
               )}
               <Button
                 variant="secondary"
-                className="shrink-0"
+                className="shrink-0 !p-2 sm:!px-4 sm:!py-2.5 !rounded-full sm:!rounded-lg"
                 onClick={() => setIsDrawerOpen(true)}
               >
-                <User className="h-4 w-4" />
-                Profile
+                <User className="h-4 w-4" aria-label="Profile" />
+                <span className="hidden sm:inline">Profile</span>
               </Button>
             </div>
             <div className="flex items-center gap-2">
@@ -97,12 +96,6 @@ export function FactoryShell() {
                 )}
                 <span className="hidden sm:inline">Theme</span>
               </Button>
-              {profile?.isAdmin && (
-                <Button variant="secondary" className="shrink-0 !text-xs !py-1" onClick={() => nav('/admin')}>
-                  <Shield className="h-3.5 w-3.5" />
-                  Admin
-                </Button>
-              )}
             </div>
           </div>
         </div>
