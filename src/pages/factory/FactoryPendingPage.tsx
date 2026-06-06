@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { useAuth } from '../../contexts/AuthContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
+import { useUsersMap } from '../../hooks/useUsersMap'
 import { addDispatch, deleteOrder, listPendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
 import { whatsappLink } from '../../utils/whatsapp'
 import { Badge } from '../../components/ui/Badge'
@@ -587,6 +588,7 @@ function TimelineStage({ done, isLast, nextDone, dot, label, timestamp, sub, chi
 }
 
 export function FactoryPendingPage() {
+  const usersMap = useUsersMap()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -642,8 +644,8 @@ export function FactoryPendingPage() {
   }, [orders])
 
   const requestorOptions = useMemo(
-    () => [...new Set(orders.map(o => o.requestorName).filter(Boolean))].sort(),
-    [orders]
+    () => [...new Set(orders.map(o => usersMap[o.shopUserId]?.displayName || o.requestorName).filter(Boolean))].sort(),
+    [orders, usersMap]
   )
 
   const grouped = useMemo(() => {
@@ -651,7 +653,8 @@ export function FactoryPendingPage() {
     const filtered = orders.filter(o => {
       if (needle && !(o.orderNumber ?? '').includes(needle)) return false
       if (filterShop !== 'all' && o.shopName !== filterShop) return false
-      if (filterRequestor !== 'all' && o.requestorName !== filterRequestor) return false
+      const reqName = usersMap[o.shopUserId]?.displayName || o.requestorName
+      if (filterRequestor !== 'all' && reqName !== filterRequestor) return false
       if (filterKind !== 'all' && o.orderKind !== filterKind) return false
       if (filterStartDate) {
         const [y, m, d] = filterStartDate.split('-').map(Number); const start = new Date(y, m - 1, d, 0, 0, 0, 0).getTime()
@@ -665,7 +668,7 @@ export function FactoryPendingPage() {
     })
     const sorted = filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     return groupByMonth(sorted)
-  }, [orders, orderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate])
+  }, [orders, orderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate, usersMap])
 
   const totalOrders = grouped.reduce((s, g) => s + g.orders.length, 0)
   const hasActiveFilters = filterShop !== 'all' || filterRequestor !== 'all' || filterKind !== 'all' || filterStartDate !== '' || filterEndDate !== ''
