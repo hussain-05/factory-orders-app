@@ -574,7 +574,7 @@ function TimelineStage({ done, isLast, nextDone, dot, label, timestamp, sub, chi
 
       {/* Content */}
       <div className={`pb-4 min-w-0 flex-1 ${isLast ? 'pb-0' : ''}`}>
-        <p className={`text-sm font-semibold leading-7 ${done ? 'text-slate-900' : 'text-slate-400'}`}>
+        <p className={`text-sm font-semibold leading-7 ${done ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400'}`}>
           {label}
         </p>
         {timestamp && <p className="text-xs text-emerald-600">{timestamp}</p>}
