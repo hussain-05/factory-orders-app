@@ -36,7 +36,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  }
 
  // Local notification state for the drawer since useNotifications toast might be hidden or generic
- const [localMessage, setLocalMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null)
+ const [localMessage, setLocalMessage] = useState<{ type: 'error' | 'success', text: string, action?: { label: string, onClick: () => void } } | null>(null)
 
  // Sync profile data when drawer opens or profile changes
  useEffect(() => {
@@ -71,6 +71,12 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  setLocalMessage({ type: 'error', text: 'Incorrect current password' })
  } else if (err.code === 'auth/weak-password') {
  setLocalMessage({ type: 'error', text: 'Password is too weak' })
+ } else if (err.code === 'auth/requires-recent-login') {
+ setLocalMessage({
+  type: 'error',
+  text: 'For security reasons, you must log in recently to change your password.',
+  action: { label: 'Sign out now', onClick: handleLogout }
+ })
  } else {
  setLocalMessage({ type: 'error', text: err.message || 'Failed to update password' })
  }
@@ -121,8 +127,13 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  {/* Body */}
  <div className="flex-1 overflow-y-auto px-6 py-6">
  {localMessage && (
- <div className={`mb-6 rounded-lg px-4 py-3 text-sm ${localMessage.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
- {localMessage.text}
+ <div className={`mb-6 rounded-lg px-4 py-3 text-sm flex flex-col gap-1 ${localMessage.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+ <span>{localMessage.text}</span>
+ {localMessage.action && (
+  <button onClick={localMessage.action.onClick} className="self-start mt-1 font-semibold underline hover:text-red-700">
+    {localMessage.action.label}
+  </button>
+ )}
  </div>
  )}
 
