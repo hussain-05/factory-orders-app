@@ -581,7 +581,7 @@ export function ShopOrderHistoryPage() {
                     <Card
                       key={o.id}
                       id={o.id}
-                      className={`p-0 ${o.status === "pending" && (o.dispatches ?? []).some((d) => d.items.some((it) => !it.confirmedAt)) ? "border-l-4 border-l-rose-400" : ""}`}
+                      className={`p-0 ${o.status === "pending" && (o.dispatches ?? []).some((d) => d.items.some((it) => !it.confirmedAt)) ? "border-l-4 !border-l-rose-500" : ""}`}
                     >
                       <button
                         type="button"

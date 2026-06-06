@@ -97,12 +97,12 @@ export function AdminPage() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-slate-700" />
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900">
+          <Shield className="h-5 w-5 text-slate-700 dark:text-slate-300" />
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             User access
           </h1>
         </div>
-        <p className="mt-2 max-w-2xl text-sm text-slate-600">
+        <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
           Only emails listed here can sign up. Admins can manage this list.
         </p>
       </div>
@@ -115,8 +115,8 @@ export function AdminPage() {
 
       {/* Factory WhatsApp number */}
       <Card>
-        <h2 className="font-display text-lg font-semibold text-slate-900">Factory WhatsApp number</h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100">Factory WhatsApp number</h2>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Shop users will see a "Notify factory" button after placing an order, which opens WhatsApp with this number pre-filled.
         </p>
         <div className="mt-4 flex items-center gap-3">
