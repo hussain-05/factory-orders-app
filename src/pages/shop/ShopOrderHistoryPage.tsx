@@ -426,7 +426,7 @@ export function ShopOrderHistoryPage() {
               onChange={(e) =>
                 setOrderSearch(e.target.value.replace(/\D/g, ""))
               }
-              className="w-full bg-transparent py-3 pl-7 text-sm text-slate-700 dark:text-slate-300 placeholder-slate-400 focus:outline-none transition-colors duration-200"
+              className="w-full bg-transparent py-3 pl-7 text-base sm:text-sm text-slate-700 dark:text-slate-300 placeholder-slate-400 focus:outline-none transition-colors duration-200"
             />
           </div>
         </div>
