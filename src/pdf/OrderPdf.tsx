@@ -136,38 +136,35 @@ export function OrderPdfDocument({ order, requestorName }: { order: Order, reque
           </Text>
         </View>
 
-        {/* Items ordered */}
+        {/* Items ordered (Fulfillment summary) */}
         <Text style={styles.sectionTitle}>Items ordered</Text>
         <View style={styles.tableHeader}>
           <Text style={styles.cellName}>Item</Text>
-          <Text style={styles.cellSize}>Size</Text>
-          <Text style={styles.cellUnit}>Unit</Text>
           <Text style={styles.cellQty}>Ordered</Text>
-          {hasDispatches
-            ? <Text style={styles.cellDispatched}>Dispatched</Text>
-            : <View style={styles.cellCheck}><Text>✓</Text></View>
-          }
+          <Text style={styles.cellDispatched}>Dispatched</Text>
+          <Text style={{ width: '15%', textAlign: 'right' }}>Confirmed</Text>
         </View>
         {order.items.map((it, idx) => {
           const dispatched = dispQty[it.productId] ?? 0
-          const unavailableQty = it.quantity - dispatched
+          const confirmed = confQty[it.productId] ?? 0
           return (
-          <View key={`${it.productId}-${idx}`} style={styles.rowItem} wrap={false}>
-            <View style={styles.cellName}>
-              <Text style={it.notAvailable ? { textDecoration: 'line-through', color: '#94a3b8' } : {}}>{it.name}</Text>
-              {it.notAvailable && (
-                <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>Not Available: {unavailableQty} qty</Text>
-              )}
+            <View key={`sum-${it.productId}-${idx}`} style={styles.rowItem} wrap={false}>
+              <View style={styles.cellName}>
+                <Text style={it.notAvailable ? { textDecoration: 'line-through', color: '#94a3b8' } : {}}>{it.name}{it.size ? ` · ${it.size}` : ''}</Text>
+                {it.notAvailable && (
+                  <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>Not Available: {it.quantity - dispatched} qty</Text>
+                )}
+              </View>
+              <Text style={styles.cellQty}>{String(it.quantity)}</Text>
+              <Text style={{ ...styles.cellDispatched, color: dispatched >= it.quantity ? '#16a34a' : '#d97706' }}>
+                {String(dispatched)}
+              </Text>
+              <Text style={{ width: '15%', textAlign: 'right', color: confirmed >= it.quantity ? '#16a34a' : '#d97706' }}>
+                {String(confirmed)}
+              </Text>
             </View>
-            <Text style={styles.cellSize}>{it.size ?? '—'}</Text>
-            <Text style={styles.cellUnit}>{it.unit ?? '—'}</Text>
-            <Text style={styles.cellQty}>{String(it.quantity)}</Text>
-            {hasDispatches
-              ? <Text style={styles.cellDispatched}>{String(dispatched)}</Text>
-              : <View style={styles.cellCheck}><View style={styles.checkbox} /></View>
-            }
-          </View>
-        )})}
+          )
+        })}
 
         {/* Dispatches */}
         {hasDispatches && (
@@ -193,36 +190,6 @@ export function OrderPdfDocument({ order, requestorName }: { order: Order, reque
                 ))}
               </View>
             ))}
-
-            {/* Fulfillment summary */}
-            <Text style={styles.sectionTitle}>Fulfillment summary</Text>
-            <View style={styles.tableHeader}>
-              <Text style={styles.cellName}>Item</Text>
-              <Text style={styles.cellQty}>Ordered</Text>
-              <Text style={styles.cellDispatched}>Dispatched</Text>
-              <Text style={{ width: '15%', textAlign: 'right' }}>Confirmed</Text>
-            </View>
-            {order.items.map((it, idx) => {
-              const dispatched = dispQty[it.productId] ?? 0
-              const confirmed = confQty[it.productId] ?? 0
-              return (
-                <View key={`sum-${it.productId}-${idx}`} style={styles.rowItem} wrap={false}>
-                  <View style={styles.cellName}>
-                    <Text style={it.notAvailable ? { textDecoration: 'line-through', color: '#94a3b8' } : {}}>{it.name}{it.size ? ` · ${it.size}` : ''}</Text>
-                    {it.notAvailable && (
-                      <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>Not Available: {it.quantity - dispatched} qty</Text>
-                    )}
-                  </View>
-                  <Text style={styles.cellQty}>{String(it.quantity)}</Text>
-                  <Text style={{ ...styles.cellDispatched, color: dispatched >= it.quantity ? '#16a34a' : '#d97706' }}>
-                    {String(dispatched)}
-                  </Text>
-                  <Text style={{ width: '15%', textAlign: 'right', color: confirmed >= it.quantity ? '#16a34a' : '#d97706' }}>
-                    {String(confirmed)}
-                  </Text>
-                </View>
-              )
-            })}
           </View>
         )}
 

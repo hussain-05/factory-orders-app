@@ -98,13 +98,15 @@ function StatCard({
   value: string | number
   sub?: string
   icon: React.ReactNode
-  tone?: 'default' | 'warning' | 'success'
+  tone?: 'default' | 'warning' | 'success' | 'info' | 'indigo'
   onClick?: () => void
 }) {
   const iconClass = {
     default: 'bg-slate-100 text-slate-600',
     warning: 'bg-amber-100 text-amber-700',
     success: 'bg-emerald-100 text-emerald-700',
+    info: 'bg-blue-100 text-blue-700',
+    indigo: 'bg-indigo-100 text-indigo-700',
   }[tone]
 
   const inner = (
@@ -298,6 +300,7 @@ export function ShopDashboardPage() {
           value={lastOrder ? format(new Date(lastOrder.createdAt), 'dd MMM') : '—'}
           sub={lastOrder ? format(new Date(lastOrder.createdAt), 'yyyy') : 'No orders yet'}
           icon={<BarChart3 className="h-5 w-5" />}
+          tone="indigo"
           onClick={lastOrder ? () => nav('/shop/history', { state: { openId: lastOrder.id } }) : undefined}
         />
         <StatCard
@@ -305,7 +308,7 @@ export function ShopDashboardPage() {
           value={ordersAwaitingConfirmation}
           sub="Orders needing receipt"
           icon={<PackageCheck className="h-5 w-5" />}
-          tone={ordersAwaitingConfirmation > 0 ? 'warning' : 'default'}
+          tone={ordersAwaitingConfirmation > 0 ? 'warning' : 'info'}
           onClick={() => nav('/shop/history', { state: { filterAwaiting: true } })}
         />
         <StatCard
@@ -327,6 +330,7 @@ export function ShopDashboardPage() {
           value={avgLead != null ? `${avgLead}d` : '—'}
           sub="order placed → delivered"
           icon={<Clock className="h-5 w-5" />}
+          tone="info"
         />
         <StatCard
           label="Placed this month"
