@@ -166,11 +166,6 @@ export function FactoryOrderHistoryPage() {
     [orders, usersMap]
   )
 
-  const baseGrouped = useMemo(() => {
-    const sorted = [...orders].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
-    return groupByMonth(sorted)
-  }, [orders])
-
   const grouped = useMemo(() => {
     const needle = orderSearch.trim()
 const filtered = orders.filter(o => {

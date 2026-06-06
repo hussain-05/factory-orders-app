@@ -1,5 +1,6 @@
 import { Bell, BellOff, ClipboardList, LayoutDashboard, Moon, ScrollText, Shield, Sun, User, Warehouse } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { UserProfileDrawer } from '../components/UserProfileDrawer'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../hooks/useTheme'
