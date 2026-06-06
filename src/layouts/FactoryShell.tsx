@@ -6,14 +6,14 @@ import { useNotifications } from '../hooks/useNotifications'
 import { Button } from '../components/ui/Button'
 import { ModeSwitcher } from '../components/ModeSwitcher'
 import { db } from '../lib/firebase'
-import { listPendingOrdersForFactory } from '../lib/orderService'
+import { countPendingOrdersForFactory } from '../lib/orderService'
 
 function usePendingOrderCount() {
   const [count, setCount] = useState<number | null>(null)
   useEffect(() => {
     if (!db) return
-    listPendingOrdersForFactory(db)
-      .then((orders) => setCount(orders.length))
+    countPendingOrdersForFactory(db)
+      .then((c) => setCount(c))
       .catch(() => setCount(null))
   }, [])
   return count

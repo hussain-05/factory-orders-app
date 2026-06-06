@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
   limit,
@@ -226,6 +227,15 @@ export async function listPendingOrdersForFactory(firestore: Firestore): Promise
   const rows = snap.docs.map((docu) => mapOrder(docu.id, docu.data() as Record<string, unknown>))
   rows.sort((a, b) => a.createdAt - b.createdAt)
   return rows
+}
+
+export async function countPendingOrdersForFactory(firestore: Firestore): Promise<number> {
+  const qy = query(
+    collection(firestore, ordersCol),
+    where('status', '==', 'pending'),
+  )
+  const snapshot = await getCountFromServer(qy)
+  return snapshot.data().count
 }
 
 export async function listAllOrdersForFactory(firestore: Firestore): Promise<Order[]> {
