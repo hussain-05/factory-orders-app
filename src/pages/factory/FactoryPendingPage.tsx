@@ -250,7 +250,7 @@ function DispatchForm({
                   }))}
                   onFocus={e => e.target.select()}
                   disabled={busy || isNa}
-                  className="!w-20 !py-1 !text-xs"
+                  className="!w-20 !py-1 text-base sm:!text-xs"
                 />
               </div>
             </div>
