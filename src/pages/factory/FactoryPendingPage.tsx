@@ -368,6 +368,10 @@ function PendingCard({
                         className="!py-1 !text-xs [color-scheme:light] dark:[color-scheme:dark]"
                         value={expectedDraft}
                         onChange={(e) => onExpectedChange(e.target.value)}
+                        onClick={(e) => {
+                          const target = e.target as HTMLInputElement;
+                          if (target.showPicker) target.showPicker();
+                        }}
                         disabled={busy}
                       />
                     </div>
@@ -944,7 +948,7 @@ export function FactoryPendingPage() {
               href={whatsappLink(notifyBanner.number, notifyBanner.message)}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1ebe5d]"
+              className="flex items-center gap-1.5 rounded-lg bg-[#25D366] dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1ebe5d] dark:hover:bg-slate-800 transition-colors duration-200"
             >
               <WhatsAppIcon />
               Send on WhatsApp

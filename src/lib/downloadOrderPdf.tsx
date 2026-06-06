@@ -7,7 +7,16 @@ export async function previewOrderPdf(order: Order, _requestorName?: string) {
   ])
   const blob = await pdf(<OrderPdfDocument order={order} requestorName={_requestorName} />).toBlob()
   const url = URL.createObjectURL(blob)
-  window.open(url, '_blank')
-  // Revoke after a delay to give the new tab time to load the blob
+
+  // Create an invisible <a> tag to force a download with the proper filename
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `Factory_Orders_${order.orderNumber || order.id}.pdf`
+  a.style.display = 'none'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+
+  // Revoke the blob URL
   setTimeout(() => URL.revokeObjectURL(url), 10_000)
 }

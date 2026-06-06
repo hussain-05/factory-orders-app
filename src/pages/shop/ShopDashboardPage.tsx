@@ -98,7 +98,7 @@ function StatCard({
   value: string | number
   sub?: string
   icon: React.ReactNode
-  tone?: 'default' | 'warning' | 'success' | 'info' | 'indigo'
+  tone?: 'default' | 'warning' | 'success' | 'info' | 'indigo' | 'purple' | 'teal'
   onClick?: () => void
 }) {
   const iconClass = {
@@ -107,6 +107,8 @@ function StatCard({
     success: 'bg-emerald-100 text-emerald-700',
     info: 'bg-blue-100 text-blue-700',
     indigo: 'bg-indigo-100 text-indigo-700',
+    purple: 'bg-purple-100 text-purple-700',
+    teal: 'bg-teal-100 text-teal-700',
   }[tone]
 
   const inner = (
@@ -322,7 +324,7 @@ export function ShopDashboardPage() {
             pendingConfirmations > 0 && `${pendingConfirmations} to confirm`,
           ].filter(Boolean).join(' · ')}
           icon={<PackageCheck className="h-5 w-5" />}
-          tone={pending.length > 0 ? 'warning' : 'success'}
+          tone={pending.length > 0 ? 'warning' : 'purple'}
           onClick={() => nav('/shop/history')}
         />
         <StatCard
@@ -330,7 +332,7 @@ export function ShopDashboardPage() {
           value={avgLead != null ? `${avgLead}d` : '—'}
           sub="order placed → delivered"
           icon={<Clock className="h-5 w-5" />}
-          tone="info"
+          tone="teal"
         />
         <StatCard
           label="Placed this month"

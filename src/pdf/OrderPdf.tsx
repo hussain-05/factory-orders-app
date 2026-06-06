@@ -116,7 +116,7 @@ export function OrderPdfDocument({ order, requestorName }: { order: Order, reque
   const confQty = confirmedQtyByProduct(dispatches)
 
   return (
-    <Document>
+    <Document title={`Factory_Orders_${order.orderNumber || order.id}`}>
       <Page size="A4" style={styles.page}>
 
         {/* Header */}
