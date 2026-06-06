@@ -105,13 +105,15 @@ function StatCard({
   value: string | number
   sub?: string
   icon: React.ReactNode
-  tone?: 'default' | 'warning' | 'success'
+  tone?: 'default' | 'warning' | 'success' | 'info' | 'indigo'
   onClick?: () => void
 }) {
   const iconClass = {
     default: 'bg-slate-100 text-slate-600',
     warning: 'bg-amber-100 text-amber-700',
     success: 'bg-emerald-100 text-emerald-700',
+    info: 'bg-blue-100 text-blue-700',
+    indigo: 'bg-indigo-100 text-indigo-700',
   }[tone]
 
   const inner = (
@@ -313,12 +315,14 @@ export function FactoryDashboardPage() {
           value={avgLead != null ? `${avgLead}d` : '—'}
           sub="order placed → delivered"
           icon={<Clock className="h-5 w-5" />}
+          tone="info"
         />
         <StatCard
           label="Total orders"
           value={orders.length}
           sub="all time"
           icon={<BarChart3 className="h-5 w-5" />}
+          tone="indigo"
           onClick={() => nav('/factory/history')}
         />
       </div>

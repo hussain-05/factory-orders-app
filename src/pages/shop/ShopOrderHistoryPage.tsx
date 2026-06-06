@@ -123,7 +123,7 @@ function OrderTimeline({ order, usersMap }: { order: Order; usersMap: any }) {
               {/* Content */}
               <div className={`pb-4 ${isLast ? "pb-0" : ""}`}>
                 <p
-                  className={`text-sm font-semibold leading-7 ${stage.done ? "text-slate-900" : "text-slate-400"}`}
+                  className={`text-sm font-semibold leading-7 ${stage.done ? "text-slate-900 dark:text-slate-100" : "text-slate-400"}`}
                 >
                   {stage.label}
                 </p>
