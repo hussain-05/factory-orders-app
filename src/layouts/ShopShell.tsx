@@ -1,7 +1,8 @@
-import { Bell, BellOff, LayoutDashboard, LayoutGrid, LogOut, PackagePlus, ScrollText, Shield, Moon, Sun } from 'lucide-react'
+import { Bell, BellOff, LayoutDashboard, LayoutGrid, Moon, PackagePlus, ScrollText, Shield, Sun, User } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { UserProfileDrawer } from '../components/UserProfileDrawer'
 import { useNotifications } from '../hooks/useNotifications'
 import { Button } from '../components/ui/Button'
 import { ModeSwitcher } from '../components/ModeSwitcher'
@@ -18,11 +19,14 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
   }`
 
 export function ShopShell() {
-  const { profile, logout } = useAuth()
+  const { profile } = useAuth()
   const { shopView } = useAdminMode()
   const displayShopName = profile?.isAdmin ? shopView : (profile?.shopName ?? 'Shop')
   const [awaitingCount, setAwaitingCount] = useState(0)
   const { theme, toggleTheme } = useTheme()
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const nav = useNavigate()
+  const { status, toast, dismissToast, enable } = useNotifications()
 
   useEffect(() => {
     const shopName = profile?.isAdmin ? shopView : profile?.shopName
@@ -35,14 +39,13 @@ export function ShopShell() {
       setAwaitingCount(count)
     }).catch(() => {})
   }, [profile?.shopName, profile?.isAdmin, shopView])
-  const nav = useNavigate()
-  const { status, toast, dismissToast, enable } = useNotifications()
 
   return (
     <div className="min-h-dvh bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl transition-colors duration-200">
         {profile?.isAdmin && <ModeSwitcher />}
-        {/* Row 1: identity + sign out */}
+
+        {/* Row 1: identity + actions */}
         <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-3 sm:px-6">
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-500">
@@ -54,7 +57,7 @@ export function ShopShell() {
             <p className="truncate text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{profile?.displayName}</p>
           </div>
 
-          {/* Seva logo — absolutely centred so it's unaffected by unequal side widths */}
+          {/* Seva logo — absolutely centred */}
           <img
             src="/seva-logo.png"
             alt="Seva"
@@ -78,10 +81,10 @@ export function ShopShell() {
               <Button
                 variant="secondary"
                 className="shrink-0"
-                onClick={async () => { await logout(); nav('/login') }}
+                onClick={() => setIsDrawerOpen(true)}
               >
-                <LogOut className="h-4 w-4" />
-                Sign out
+                <User className="h-4 w-4" />
+                Profile
               </Button>
             </div>
             <div className="flex items-center gap-2">
@@ -121,7 +124,7 @@ export function ShopShell() {
             </NavLink>
             <NavLink className={linkClass} to="/shop/available">
               <LayoutGrid className="h-4 w-4 shrink-0" />
-              <span className="sm:hidden">Available</span>
+              <span className="sm:hidden">Stock</span>
               <span className="hidden sm:inline">Available products</span>
             </NavLink>
             <NavLink className={linkClass} to="/shop/new-order">
@@ -166,6 +169,8 @@ export function ShopShell() {
           </div>
         </div>
       )}
+
+      <UserProfileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
     </div>
   )
 }

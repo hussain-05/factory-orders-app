@@ -38,6 +38,7 @@ type AuthContextValue = AuthState & {
     whatsappNumber?: string
   }) => Promise<void>
   logout: () => Promise<void>
+  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -48,6 +49,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(() => firebaseReady)
   const [error, setError] = useState<string | null>(null)
 
+  const refreshProfile = useCallback(async () => {
+    if (!db || !user) return
+    const p = await fetchUserProfile(db, user.uid)
+    if (p && user.email) {
+      const allowedSnap = await getDoc(doc(db, 'allowedEmails', user.email.toLowerCase()))
+      p.isAdmin = allowedSnap.exists() && allowedSnap.data()?.isAdmin === true
+    }
+    setProfile(p)
+  }, [user])
   useEffect(() => {
     if (!firebaseReady || !auth || !db) return
 
@@ -139,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInEmail,
       signUpEmail,
       logout,
+      refreshProfile,
     }),
     [user, profile, loading, error, signInEmail, signUpEmail, logout],
   )

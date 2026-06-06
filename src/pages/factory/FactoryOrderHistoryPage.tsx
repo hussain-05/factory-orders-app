@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
+import { useUsersMap } from '../../hooks/useUsersMap'
 import { useAuth } from '../../contexts/AuthContext'
 import { listAllOrdersForFactory, deleteOrder } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
@@ -30,11 +31,11 @@ interface TimelineStage {
   done: boolean
 }
 
-function OrderTimeline({ order }: { order: Order }) {
+function OrderTimeline({ order, usersMap }: { order: Order, usersMap: any }) {
   const stages: TimelineStage[] = [
     {
       label: 'Order placed',
-      sublabel: `${order.requestorName} · ${order.shopName}`,
+      sublabel: `${usersMap[order.shopUserId]?.displayName || order.requestorName} · ${order.shopName}`,
       ts: order.createdAt,
       done: true,
     },
@@ -114,6 +115,7 @@ function OrderTimeline({ order }: { order: Order }) {
 }
 
 export function FactoryOrderHistoryPage() {
+  const usersMap = useUsersMap()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -160,37 +162,30 @@ export function FactoryOrderHistoryPage() {
   }, [refresh])
 
   const requestorOptions = useMemo(
-    () => [...new Set(orders.map(o => o.requestorName).filter(Boolean))].sort(),
-    [orders]
+    () => [...new Set(orders.map(o => usersMap[o.shopUserId]?.displayName || o.requestorName).filter(Boolean))].sort(),
+    [orders, usersMap]
   )
-
-  const baseGrouped = useMemo(() => {
-    const sorted = [...orders].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
-    return groupByMonth(sorted)
-  }, [orders])
 
   const grouped = useMemo(() => {
     const needle = orderSearch.trim()
-
-    return baseGrouped.map(group => {
-      const filtered = group.orders.filter(o => {
-        if (needle && !(o.orderNumber ?? '').includes(needle)) return false
-        if (filterShop !== 'all' && o.shopName !== filterShop) return false
-        if (filterRequestor !== 'all' && o.requestorName !== filterRequestor) return false
-        if (filterKind !== 'all' && o.orderKind !== filterKind) return false
-        if (filterStartDate) {
-          const [y, m, d] = filterStartDate.split('-').map(Number); const start = new Date(y, m - 1, d, 0, 0, 0, 0).getTime()
-          if ((o.createdAt ?? 0) < start) return false
-        }
-
-        if (filterEndDate) {
-          const [ey, em, ed] = filterEndDate.split('-').map(Number); const end = new Date(ey, em - 1, ed, 23, 59, 59, 999).getTime(); if ((o.createdAt ?? 0) > end) return false
-        }
-        return true
-      })
-      return { ...group, orders: filtered }
-    }).filter(g => g.orders.length > 0)
-  }, [baseGrouped, orderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate])
+const filtered = orders.filter(o => {
+      if (needle && !(o.orderNumber ?? '').includes(needle)) return false
+      if (filterShop !== 'all' && o.shopName !== filterShop) return false
+      const reqName = usersMap[o.shopUserId]?.displayName || o.requestorName
+      if (filterRequestor !== 'all' && reqName !== filterRequestor) return false
+      if (filterKind !== 'all' && o.orderKind !== filterKind) return false
+      if (filterStartDate) {
+        const [y, m, d] = filterStartDate.split('-').map(Number); const start = new Date(y, m - 1, d, 0, 0, 0, 0).getTime()
+        if ((o.createdAt ?? 0) < start) return false
+      }
+      if (filterEndDate) {
+        const [ey, em, ed] = filterEndDate.split('-').map(Number); const end = new Date(ey, em - 1, ed, 23, 59, 59, 999).getTime(); if ((o.createdAt ?? 0) > end) return false
+      }
+      return true
+    })
+    const sorted = filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+    return groupByMonth(sorted)
+  }, [orders, orderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate, usersMap])
 
   const hasActiveFilters = filterShop !== 'all' || filterRequestor !== 'all' || filterKind !== 'all' || filterStartDate !== '' || filterEndDate !== ''
 
@@ -386,9 +381,9 @@ export function FactoryOrderHistoryPage() {
                             <Badge tone={o.status === 'completed' ? 'success' : 'warning'}>
                               {o.status === 'completed' ? 'Completed' : 'Pending'}
                             </Badge>
-                            {o.requestorName && (
+                            {(usersMap[o.shopUserId]?.displayName || o.requestorName) && (
                               <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200">
-                                {o.requestorName.split(' ')[0]}
+                                {(usersMap[o.shopUserId]?.displayName || o.requestorName).split(' ')[0]}
                               </span>
                             )}
                           </div>
@@ -403,14 +398,14 @@ export function FactoryOrderHistoryPage() {
                         <div className="space-y-4 border-t border-slate-100 dark:border-slate-800/50 px-4 py-3 transition-colors duration-200">
 
                           {/* Timeline */}
-                          <OrderTimeline order={o} />
+                          <OrderTimeline order={o} usersMap={usersMap} />
 
                           {/* Requestor */}
                           <div className="rounded-xl bg-slate-50 dark:bg-slate-900/50 p-3 transition-colors duration-200">
                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
                               Requestor
                             </p>
-                            <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{o.requestorName}</p>
+                            <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{usersMap[o.shopUserId]?.displayName || o.requestorName}</p>
                             <p className="text-xs text-slate-600 dark:text-slate-400 transition-colors duration-200">{o.requestorEmail}</p>
                           </div>
 
@@ -431,7 +426,7 @@ export function FactoryOrderHistoryPage() {
                               onClick={async () => {
                                 setPdfBusyId(o.id)
                                 try {
-                                  await previewOrderPdf(o)
+                                  await previewOrderPdf(o, usersMap[o.shopUserId]?.displayName)
                                 } finally {
                                   setPdfBusyId(null)
                                 }

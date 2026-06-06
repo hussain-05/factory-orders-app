@@ -1,5 +1,6 @@
-import { Bell, BellOff, ClipboardList, LayoutDashboard, LogOut, Moon, ScrollText, Shield, Sun, Warehouse } from 'lucide-react'
+import { Bell, BellOff, ClipboardList, LayoutDashboard, Moon, ScrollText, Shield, Sun, User, Warehouse } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { UserProfileDrawer } from '../components/UserProfileDrawer'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../hooks/useTheme'
@@ -28,17 +29,19 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
   }`
 
 export function FactoryShell() {
-  const { profile, logout } = useAuth()
+  const { profile } = useAuth()
   const nav = useNavigate()
   const { status, toast, dismissToast, enable } = useNotifications()
   const pendingCount = usePendingOrderCount()
   const { theme, toggleTheme } = useTheme()
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
   return (
     <div className="min-h-dvh bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl transition-colors duration-200">
         {profile?.isAdmin && <ModeSwitcher />}
-        {/* Row 1: identity + sign out */}
+
+        {/* Row 1: identity + actions */}
         <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-3 sm:px-6">
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 dark:text-slate-400">
@@ -50,7 +53,7 @@ export function FactoryShell() {
             <p className="truncate text-xs text-slate-500 dark:text-slate-400">{profile?.displayName}</p>
           </div>
 
-          {/* Seva logo — absolutely centred so it's unaffected by unequal side widths */}
+          {/* Seva logo — absolutely centred */}
           <img
             src="/seva-logo.png"
             alt="Seva"
@@ -74,10 +77,10 @@ export function FactoryShell() {
               <Button
                 variant="secondary"
                 className="shrink-0"
-                onClick={async () => { await logout(); nav('/login') }}
+                onClick={() => setIsDrawerOpen(true)}
               >
-                <LogOut className="h-4 w-4" />
-                Sign out
+                <User className="h-4 w-4" />
+                Profile
               </Button>
             </div>
             <div className="flex items-center gap-2">
@@ -162,6 +165,8 @@ export function FactoryShell() {
           </div>
         </div>
       )}
+
+      <UserProfileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
     </div>
   )
 }

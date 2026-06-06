@@ -105,7 +105,7 @@ function confirmedQtyByProduct(dispatches: OrderDispatch[]): Record<string, numb
   return map
 }
 
-export function OrderPdfDocument({ order }: { order: Order }) {
+export function OrderPdfDocument({ order, requestorName }: { order: Order, requestorName?: string }) {
   const created = order.createdAt ? format(order.createdAt, 'dd MMM yyyy, HH:mm') : '—'
   const expected = order.expectedDeliveryDate
     ? format(order.expectedDeliveryDate, 'dd MMM yyyy')
@@ -128,7 +128,7 @@ export function OrderPdfDocument({ order }: { order: Order }) {
           </Text>
           <Text style={styles.meta}>Shop: {order.shopName}</Text>
           <Text style={styles.meta}>
-            Requested by: {order.requestorName} ({order.requestorEmail})
+            Requested by: {requestorName || order.requestorName} ({order.requestorEmail})
           </Text>
           <Text style={styles.meta}>Placed: {created}</Text>
           <Text style={styles.meta}>
