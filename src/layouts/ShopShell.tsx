@@ -1,4 +1,6 @@
 import { Bell, BellOff, LayoutDashboard, LayoutGrid, Moon, PackagePlus, ScrollText, Sun, User } from 'lucide-react'
+
+import { motion, AnimatePresence } from 'framer-motion'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
@@ -48,7 +50,7 @@ export function ShopShell() {
         <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-3 sm:px-6">
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-500">
-              Shop console
+              Seva · Shop
             </p>
             <p className="truncate font-display text-lg font-semibold leading-tight text-slate-900 dark:text-slate-100 transition-colors duration-200">
               {displayShopName}
@@ -127,7 +129,7 @@ export function ShopShell() {
               <span className="sm:hidden">History</span>
               <span className="hidden sm:inline">Order history</span>
               {awaitingCount > 0 && (
-                <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
+                <span className="animate-pulse rounded-full bg-rose-500 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
                   {awaitingCount}
                 </span>
               )}
@@ -141,24 +143,32 @@ export function ShopShell() {
       </main>
 
       {/* Foreground notification toast */}
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2">
-          <div className="flex items-start gap-3 rounded-2xl bg-slate-900 px-4 py-3 shadow-xl">
-            <Bell className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-            <div>
-              <p className="text-sm font-semibold text-white">{toast.title}</p>
-              {toast.body && <p className="text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">{toast.body}</p>}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.25 }}
+            className="fixed bottom-6 left-1/2 z-50 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2"
+          >
+            <div className="flex items-start gap-3 rounded-2xl bg-slate-900 px-4 py-3 shadow-xl">
+              <Bell className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+              <div>
+                <p className="text-sm font-semibold text-white">{toast.title}</p>
+                {toast.body && <p className="text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">{toast.body}</p>}
+              </div>
+              <button
+                type="button"
+                onClick={dismissToast}
+                className="ml-2 shrink-0 text-slate-500 dark:text-slate-400 hover:text-white transition-colors duration-200"
+              >
+                ✕
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={dismissToast}
-              className="ml-2 shrink-0 text-slate-500 dark:text-slate-400 hover:text-white transition-colors duration-200"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <UserProfileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
     </div>

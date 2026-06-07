@@ -1,4 +1,6 @@
 import { Bell, BellOff, ClipboardList, LayoutDashboard, Moon, ScrollText, Sun, User, Warehouse } from 'lucide-react'
+
+import { motion, AnimatePresence } from 'framer-motion'
 import { NavLink, Outlet } from 'react-router-dom'
 import { UserProfileDrawer } from '../components/UserProfileDrawer'
 import { useEffect, useState } from 'react'
@@ -44,10 +46,10 @@ export function FactoryShell() {
         <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-3 sm:px-6">
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 dark:text-slate-400">
-              Factory console
+              Seva · Factory
             </p>
             <p className="truncate font-display text-lg font-semibold leading-tight text-slate-900 dark:text-slate-100">
-              Operations
+              Production Console
             </p>
             <p className="truncate text-xs text-slate-500 dark:text-slate-400">{profile?.displayName}</p>
           </div>
@@ -113,12 +115,12 @@ export function FactoryShell() {
               <span className="sm:hidden">Items</span>
               <span className="hidden sm:inline">Products</span>
             </NavLink>
-            <NavLink className={linkClass} to="/factory/pending">
+            <NavLink className={linkClass} to="/factory/pending" title="Orders awaiting production or dispatch">
               <ClipboardList className="h-4 w-4 shrink-0" />
               <span className="sm:hidden">Pending</span>
               <span className="hidden sm:inline">Pending orders</span>
               {pendingCount != null && pendingCount > 0 && (
-                <span className="ml-0.5 rounded-full bg-rose-500 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
+                <span className="ml-0.5 animate-pulse rounded-full bg-rose-500 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
                   {pendingCount}
                 </span>
               )}
@@ -137,24 +139,32 @@ export function FactoryShell() {
       </main>
 
       {/* Foreground notification toast */}
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2">
-          <div className="flex items-start gap-3 rounded-2xl bg-slate-900 px-4 py-3 shadow-xl">
-            <Bell className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-            <div>
-              <p className="text-sm font-semibold text-white">{toast.title}</p>
-              {toast.body && <p className="text-xs text-slate-400">{toast.body}</p>}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.25 }}
+            className="fixed bottom-6 left-1/2 z-50 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2"
+          >
+            <div className="flex items-start gap-3 rounded-2xl bg-slate-900 px-4 py-3 shadow-xl">
+              <Bell className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+              <div>
+                <p className="text-sm font-semibold text-white">{toast.title}</p>
+                {toast.body && <p className="text-xs text-slate-400">{toast.body}</p>}
+              </div>
+              <button
+                type="button"
+                onClick={dismissToast}
+                className="ml-2 shrink-0 text-slate-500 hover:text-white"
+              >
+                ✕
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={dismissToast}
-              className="ml-2 shrink-0 text-slate-500 hover:text-white"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <UserProfileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
     </div>

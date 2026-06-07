@@ -1,3 +1,5 @@
+import { AlertTriangle } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { useLocation } from 'react-router-dom'
@@ -365,7 +367,7 @@ function PendingCard({
                       <Input
                         id={`expected-delivery-date-${o.id}`}
                         type="date"
-                        className="!py-1 !text-xs [color-scheme:light] dark:[color-scheme:dark]"
+                        className="!py-1 !text-base sm:!text-xs [color-scheme:light] dark:[color-scheme:dark]"
                         value={expectedDraft}
                         onChange={(e) => onExpectedChange(e.target.value)}
                         onClick={(e) => {
@@ -744,10 +746,15 @@ export function FactoryPendingPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+      className="space-y-6"
+    >
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 transition-colors duration-200">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 transition-colors duration-200">
             Pending orders
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
@@ -884,9 +891,11 @@ export function FactoryPendingPage() {
       </div>
 
       {error && (
-        <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
-          {error}
+        <div className="flex items-start gap-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 px-4 py-3 ring-1 ring-rose-200 dark:ring-rose-800/50">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+          <p className="text-sm text-rose-800 dark:text-rose-300">{error}
         </p>
+        </div>
       )}
 
       {loading ? (
@@ -964,6 +973,6 @@ export function FactoryPendingPage() {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }

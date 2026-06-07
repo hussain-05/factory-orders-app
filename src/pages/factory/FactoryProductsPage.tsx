@@ -1,3 +1,5 @@
+import { AlertTriangle } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { db, storage } from '../../lib/firebase'
 import {
@@ -218,9 +220,14 @@ export function FactoryProductsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+      className="space-y-6"
+    >
       <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 transition-colors duration-200">Products</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 transition-colors duration-200">Products</h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
           Maintain limited-stock items with photography, and keep the always-available standard
           catalogue up to date for shopkeepers.
@@ -241,9 +248,11 @@ export function FactoryProductsPage() {
       </div>
 
       {error ? (
-        <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
-          {error}
+        <div className="flex items-start gap-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 px-4 py-3 ring-1 ring-rose-200 dark:ring-rose-800/50">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+          <p className="text-sm text-rose-800 dark:text-rose-300">{error}
         </p>
+        </div>
       ) : null}
 
       {tab === 'limited' ? (
@@ -581,6 +590,6 @@ export function FactoryProductsPage() {
         title={imageView?.title}
         onClose={() => setImageView(null)}
       />
-    </div>
+    </motion.div>
   )
 }

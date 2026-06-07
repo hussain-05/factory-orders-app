@@ -1,3 +1,5 @@
+import { AlertTriangle } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { Minus, Plus, ShoppingBag } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
@@ -6,7 +8,7 @@ import { getFactoryWhatsappNumber } from '../../lib/adminService'
 import { createOrder } from '../../lib/orderService'
 import { listLimitedProducts } from '../../lib/productService'
 import { whatsappLink } from '../../utils/whatsapp'
-import { Badge } from '../../components/ui/Badge'
+
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { ImageLightbox } from '../../components/ui/ImageLightbox'
@@ -107,10 +109,15 @@ export function ShopAvailablePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+      className="space-y-6"
+    >
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 transition-colors duration-200">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 transition-colors duration-200">
             Available products
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
@@ -124,9 +131,11 @@ export function ShopAvailablePage() {
       </div>
 
       {error ? (
-        <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
-          {error}
+        <div className="flex items-start gap-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 px-4 py-3 ring-1 ring-rose-200 dark:ring-rose-800/50">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+          <p className="text-sm text-rose-800 dark:text-rose-300">{error}
         </p>
+        </div>
       ) : null}
 
       {submitted ? (
@@ -169,8 +178,13 @@ export function ShopAvailablePage() {
             const line = cart[p.id]
             const qty = line?.quantity ?? 0
             return (
-              <Card key={p.id} className="overflow-hidden p-0">
-                <div className="aspect-[4/3] w-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
+              <Card key={p.id} className="overflow-hidden p-0 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-default relative">
+                {p.stock === 0 && (
+                  <div className="absolute top-3 left-3 z-10 rounded-lg bg-rose-100/90 px-2.5 py-1 text-xs font-semibold text-rose-700 shadow-sm backdrop-blur-sm dark:bg-rose-900/80 dark:text-rose-300">
+                    Out of stock
+                  </div>
+                )}
+                <div className={`aspect-[4/3] w-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200 ${p.stock === 0 ? 'opacity-60 grayscale-[0.8]' : ''}`}>
                   {p.photoUrl ? (
                     <button
                       type="button"
@@ -190,17 +204,31 @@ export function ShopAvailablePage() {
                     </div>
                   )}
                 </div>
-                <div className="space-y-3 p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{p.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">Size: {p.size}</p>
+                <div className="space-y-4 p-5">
+                  <div>
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{p.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">Size: {p.size}</p>
+                      </div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">₹{p.rate.toFixed(2)}</p>
                     </div>
-                    <Badge tone={p.stock > 5 ? 'success' : p.stock > 0 ? 'warning' : 'danger'}>
-                      Stock {p.stock}
-                    </Badge>
+
+                    <div className="mt-3">
+                      <div className="mb-1.5 flex items-center justify-between text-xs">
+                        <span className="font-medium text-slate-600 dark:text-slate-400 transition-colors duration-200">Stock</span>
+                        <span className="font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{p.stock} units</span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            p.stock > 50 ? 'bg-emerald-500' : p.stock > 20 ? 'bg-amber-400' : 'bg-rose-500 animate-pulse'
+                          }`}
+                          style={{ width: `${Math.min(100, Math.max(0, (p.stock / 100) * 100))}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">₹{p.rate.toFixed(2)}</p>
 
                   <div className="flex items-center justify-between gap-3">
                     <div className="inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 p-1 transition-colors duration-200">
@@ -313,6 +341,6 @@ export function ShopAvailablePage() {
       />
 
       {lines.length > 0 ? <div className="h-24 lg:h-0" /> : null}
-    </div>
+    </motion.div>
   )
 }
