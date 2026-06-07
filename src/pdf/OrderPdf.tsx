@@ -147,20 +147,21 @@ export function OrderPdfDocument({ order, requestorName }: { order: Order, reque
         {order.items.map((it, idx) => {
           const dispatched = dispQty[it.productId] ?? 0
           const confirmed = confQty[it.productId] ?? 0
+          const unit = (it as any).unit || 'box'
           return (
             <View key={`sum-${it.productId}-${idx}`} style={styles.rowItem} wrap={false}>
               <View style={styles.cellName}>
                 <Text style={it.notAvailable ? { textDecoration: 'line-through', color: '#94a3b8' } : {}}>{it.name}{it.size ? ` · ${it.size}` : ''}</Text>
                 {it.notAvailable && (
-                  <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>Not Available: {it.quantity - dispatched} qty</Text>
+                  <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>Not Available: {it.quantity - dispatched} {unit}</Text>
                 )}
               </View>
-              <Text style={styles.cellQty}>{String(it.quantity)}</Text>
+              <Text style={styles.cellQty}>{String(it.quantity)} {unit}</Text>
               <Text style={{ ...styles.cellDispatched, color: dispatched >= it.quantity ? '#16a34a' : '#d97706' }}>
-                {String(dispatched)}
+                {String(dispatched)} {unit}
               </Text>
               <Text style={{ width: '15%', textAlign: 'right', color: confirmed >= it.quantity ? '#16a34a' : '#d97706' }}>
-                {String(confirmed)}
+                {String(confirmed)} {unit}
               </Text>
             </View>
           )
