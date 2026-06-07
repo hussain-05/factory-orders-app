@@ -147,7 +147,7 @@ export function OrderPdfDocument({ order, requestorName }: { order: Order, reque
         {order.items.map((it, idx) => {
           const dispatched = dispQty[it.productId] ?? 0
           const confirmed = confQty[it.productId] ?? 0
-          const unit = (it as any).unit || 'box'
+          const unit = (it as any).unit || (order.orderKind === 'limited' ? 'pcs' : 'box')
           return (
             <View key={`sum-${it.productId}-${idx}`} style={styles.rowItem} wrap={false}>
               <View style={styles.cellName}>

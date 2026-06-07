@@ -690,7 +690,7 @@ export function ShopOrderHistoryPage() {
                                   {d.items.map((it) => {
                                     const key = `${d.id}:${it.productId}`;
                                     const originalItem = o.items.find((oi) => oi.productId === it.productId);
-                                    const unit = (originalItem as any)?.unit || 'box';
+                                    const unit = (originalItem as any)?.unit || (o.orderKind === 'limited' ? 'pcs' : 'box');
                                     return (
                                       <div
                                         key={it.productId}
@@ -837,7 +837,7 @@ export function ShopOrderHistoryPage() {
                                     )}
                                   </div>
                                   <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">
-                                    ×{it.quantity} {(it as any).unit || 'box'}
+                                    ×{it.quantity} {(it as any).unit || (o.orderKind === 'limited' ? 'pcs' : 'box')}
                                   </span>
                                 </li>
                               ))}
