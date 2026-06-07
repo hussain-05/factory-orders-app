@@ -1,3 +1,4 @@
+import { AlertTriangle } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
@@ -163,9 +164,11 @@ export function SignUpPage() {
             </div>
 
             {(localError || error) && (
-              <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
-                {localError || error}
+              <div className="flex items-start gap-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 px-4 py-3 ring-1 ring-rose-200 dark:ring-rose-800/50">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+          <p className="text-sm text-rose-800 dark:text-rose-300">{localError || error}
               </p>
+        </div>
             )}
 
             <Button className="w-full" type="submit" disabled={busy}>

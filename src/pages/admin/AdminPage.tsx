@@ -1,3 +1,4 @@
+import { AlertTriangle } from 'lucide-react'
 import { Shield, Trash2, UserCheck, UserX } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { db } from '../../lib/firebase'
@@ -108,9 +109,11 @@ export function AdminPage() {
       </div>
 
       {error && (
-        <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
-          {error}
+        <div className="flex items-start gap-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 px-4 py-3 ring-1 ring-rose-200 dark:ring-rose-800/50">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+          <p className="text-sm text-rose-800 dark:text-rose-300">{error}
         </p>
+        </div>
       )}
 
       {/* Factory WhatsApp number */}
@@ -257,7 +260,7 @@ export function AdminPage() {
                     <div className="flex items-center gap-1">
                       <Button
                         variant="danger"
-                        className="!py-1 !px-2 !text-xs"
+                        className="!py-1 !px-2 !text-base sm:!text-xs"
                         disabled={busy}
                         onClick={() => void handleRemove(e.email)}
                       >
@@ -265,7 +268,7 @@ export function AdminPage() {
                       </Button>
                       <Button
                         variant="secondary"
-                        className="!py-1 !px-2 !text-xs"
+                        className="!py-1 !px-2 !text-base sm:!text-xs"
                         onClick={() => setConfirmDelete(null)}
                       >
                         Cancel

@@ -19,12 +19,12 @@ export function ModeSwitcher() {
   }
 
   return (
-    <div className="border-b border-slate-100 bg-slate-900/95">
+    <div className="bg-amber-50/80 dark:bg-amber-900/20 border-b border-amber-200/60 dark:border-amber-800/40">
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-1.5 sm:px-6">
-        <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+        <span className="text-xs font-semibold uppercase tracking-widest text-amber-800 dark:text-amber-300">
           View
         </span>
-        <div className="flex rounded-lg bg-slate-800 p-0.5">
+        <div className="flex rounded-lg bg-amber-200/50 dark:bg-amber-800/50 p-0.5">
           {(['factory', 'shop'] as const).map(m => (
             <button
               key={m}
@@ -32,8 +32,8 @@ export function ModeSwitcher() {
               onClick={() => switchTo(m)}
               className={`rounded-md px-3 py-1 text-xs font-semibold capitalize transition-colors ${
                 mode === m
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-white dark:bg-amber-900 text-amber-900 dark:text-amber-100 shadow-sm'
+                  : 'text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200'
               }`}
             >
               {m}
@@ -45,7 +45,7 @@ export function ModeSwitcher() {
           <select
             value={shopView}
             onChange={e => setShopView(e.target.value as typeof shopView)}
-            className="ml-1 rounded-lg bg-slate-800 px-2 py-1 text-xs font-medium text-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-500"
+            className="ml-1 rounded-lg bg-amber-100 dark:bg-amber-900/50 border border-amber-200/50 dark:border-amber-800/50 px-2 py-1 text-xs font-medium text-amber-900 dark:text-amber-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
           >
             {shops.map(s => (
               <option key={s} value={s}>{s}</option>

@@ -1,4 +1,7 @@
-import { Minus, Plus, Search, ShoppingBag } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { Minus, Plus, Search, ShoppingBag, X } from 'lucide-react'
+
+import { motion, AnimatePresence } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Fuse from 'fuse.js'
 import { useAuth } from '../../contexts/AuthContext'
@@ -162,50 +165,65 @@ export function ShopNewOrderPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+      className="space-y-6"
+    >
       <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 transition-colors duration-200">
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 transition-colors duration-200">
           New order (standard catalogue)
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
-          Browse the full catalogue and enter quantities for the items you need.
+          Pick from the full product catalogue. Enter quantities and tap Preview to review before submitting.
         </p>
       </div>
 
       {error ? (
-        <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
-          {error}
+        <div className="flex items-start gap-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 px-4 py-3 ring-1 ring-rose-200 dark:ring-rose-800/50">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+          <p className="text-sm text-rose-800 dark:text-rose-300">{error}
         </p>
-      ) : null}
-
-      {submitted ? (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 w-max max-w-[calc(100vw-2rem)]">
-          <div className="flex items-center gap-3 rounded-xl bg-emerald-600 px-5 py-3 shadow-lg shadow-emerald-900/20">
-            <p className="text-sm font-semibold text-white">
-              Order submitted!
-            </p>
-            {factoryNumber && (
-              <a
-                href={whatsappLink(factoryNumber, `Hi, I've placed a new order:\nOrder number: ${lastOrderNumber}\nShop: ${profile?.shopName}\nNo of items: ${lastItemCount}\nRequestor: ${profile?.displayName}\nType: Standard Catalogue`)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 rounded-lg bg-[#25D366] dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#1ebe5d] dark:hover:bg-slate-800 transition-colors duration-200"
-              >
-                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                Notify factory
-              </a>
-            )}
-            <button
-              type="button"
-              className="shrink-0 text-emerald-200 hover:text-white"
-              onClick={() => setSubmitted(false)}
-              aria-label="Dismiss"
-            >
-              ✕
-            </button>
-          </div>
         </div>
       ) : null}
+
+      <AnimatePresence>
+        {submitted && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 30 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 w-max max-w-[calc(100vw-2rem)]"
+          >
+            <div className="flex items-center gap-3 rounded-xl bg-emerald-600 px-5 py-3 shadow-lg shadow-emerald-900/20">
+              <p className="text-sm font-semibold text-white">
+                Order submitted!
+              </p>
+              {factoryNumber && (
+                <a
+                  href={whatsappLink(factoryNumber, `Hi, I've placed a new order:\nOrder number: ${lastOrderNumber}\nShop: ${profile?.shopName}\nNo of items: ${lastItemCount}\nRequestor: ${profile?.displayName}\nType: Standard Catalogue`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 rounded-lg bg-[#25D366] dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#1ebe5d] dark:hover:bg-slate-800 transition-colors duration-200"
+                >
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  Notify factory
+                </a>
+              )}
+              <button
+                type="button"
+                className="shrink-0 text-emerald-200 hover:text-white transition-colors duration-200"
+                onClick={() => setSubmitted(false)}
+                aria-label="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         {/* ── Catalogue list ── */}
@@ -214,12 +232,22 @@ export function ShopNewOrderPage() {
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500 transition-colors duration-200" />
               <Input
-                className="pl-10"
+                className={`pl-10 ${query ? 'pr-10' : ''}`}
                 placeholder="Search products…"
                 aria-label="Search products"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
+              {query && (
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  onClick={() => setQuery('')}
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
             <div className="mt-2 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
               <span>
@@ -239,9 +267,13 @@ export function ShopNewOrderPage() {
 
           <div className="divide-y divide-slate-100 dark:divide-slate-800/50 transition-colors duration-200">
             {loading ? (
-              <div className="flex items-center gap-3 px-5 py-10 text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
-                Loading catalogue…
+              <div className="divide-y divide-slate-100 dark:divide-slate-800 animate-pulse">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="flex items-center justify-between px-5 py-3">
+                    <div className="h-4 w-32 rounded bg-slate-100 dark:bg-slate-800" />
+                    <div className="h-9 w-28 rounded-xl bg-slate-100 dark:bg-slate-800" />
+                  </div>
+                ))}
               </div>
             ) : filteredGroups.length === 0 ? (
               <p className="px-5 py-10 text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">
@@ -262,7 +294,7 @@ export function ShopNewOrderPage() {
                     return (
                       <div
                         key={v.id}
-                        className={`flex items-center justify-between gap-4 px-5 py-3 transition-colors ${ active ? 'bg-emerald-50/60 dark:bg-emerald-900/40' : 'hover:bg-slate-50/60' }`}
+                        className={`flex items-center justify-between gap-4 px-5 py-3 border-l-2 transition-all duration-200 ${ active ? 'border-l-emerald-500 bg-emerald-50/60 dark:bg-emerald-900/40' : 'border-l-transparent hover:bg-slate-50/60 dark:hover:bg-slate-800/30' }`}
                       >
                         <div className="min-w-0">
                           <span className="text-sm font-medium text-slate-900 dark:text-slate-100 transition-colors duration-200">
@@ -329,25 +361,33 @@ export function ShopNewOrderPage() {
             <div className="mt-4 max-h-[min(45vh,400px)] space-y-2 overflow-y-auto pr-1">
               {validLines.length === 0 ? (
                 <p className="text-sm text-slate-400 dark:text-slate-500 transition-colors duration-200">
-                  Set quantities above to build the order.
+                  Items you add will appear here. Review before submitting.
                 </p>
               ) : (
-                validLines.map((l) => (
-                  <div
-                    key={l.productId}
-                    className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 px-3 py-2 text-sm transition-colors duration-200"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-900 dark:text-slate-100 transition-colors duration-200">{l.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
-                        {l.size || 'Standard'} · {l.unit}
-                      </p>
-                    </div>
-                    <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">
-                      ×{l.quantity}
-                    </span>
-                  </div>
-                ))
+                <AnimatePresence>
+                  {validLines.map((l) => (
+                    <motion.div
+                      key={l.productId}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 px-3 py-2 text-sm transition-colors duration-200 mb-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-slate-900 dark:text-slate-100 transition-colors duration-200">{l.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
+                            {l.size || 'Standard'} · {l.unit}
+                          </p>
+                        </div>
+                        <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">
+                          ×{l.quantity}
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               )}
             </div>
 
@@ -369,13 +409,13 @@ export function ShopNewOrderPage() {
 
       {/* ── Mobile sticky bar ── */}
       {hasItems ? (
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 dark:border-slate-800/50 bg-white/90 dark:bg-slate-900/90 p-4 backdrop-blur lg:hidden transition-colors duration-200">
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-slate-900 p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] lg:hidden transition-colors duration-200">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
                 <ShoppingBag className="h-4 w-4" />
               </span>
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">
+              <p className="font-display text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">
                 {validLines.length} items · {totalQty} qty
               </p>
             </div>
@@ -404,9 +444,9 @@ export function ShopNewOrderPage() {
         }
       >
         <p className="text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
-          Submitting{' '}
-          <span className="font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{validLines.length}</span> items,{' '}
-          <span className="font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{totalQty}</span> total qty.
+          Ready to submit —{' '}
+          <span className="font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{validLines.length}</span> product lines,{' '}
+          <span className="font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{totalQty}</span> total units. This will notify the factory team.
         </p>
         <div className="mt-3 max-h-[50vh] space-y-2 overflow-y-auto">
           {validLines.map((l) => (
@@ -424,6 +464,6 @@ export function ShopNewOrderPage() {
           ))}
         </div>
       </Modal>
-    </div>
+    </motion.div>
   )
 }

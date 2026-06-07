@@ -1,4 +1,7 @@
+import { AlertTriangle } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+
+import { motion } from 'framer-motion'
 import { addMonths, differenceInCalendarDays, format, startOfMonth } from 'date-fns'
 import { BarChart3, Clock, PackageCheck, RefreshCw, Repeat, TrendingUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -150,12 +153,17 @@ function PipelineStage({
   color: string
   onClick?: () => void
 }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 100)
+    return () => clearTimeout(t)
+  }, [])
   const pct = total > 0 ? Math.round((count / total) * 100) : 0
   const inner = (
     <>
       <p className="font-display text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">{count}</p>
       <div className="mx-auto my-2 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
-        <div className={`h-1.5 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+        <div className={`h-1.5 rounded-full transition-all duration-700 ${color}`} style={{ width: mounted ? `${pct}%` : '0%' }} />
       </div>
       <p className="text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors duration-200">{label}</p>
       <p className="text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">{pct}%</p>
@@ -182,6 +190,7 @@ export function ShopDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
 
   const refresh = useCallback(async () => {
     if (!db || !user) return
@@ -193,6 +202,7 @@ export function ShopDashboardPage() {
       setError('Could not load dashboard data.')
     } finally {
       setLoading(false)
+      setTimeout(() => setMounted(true), 100)
     }
   }, [user, profile?.shopName, effectiveShopName])
 
@@ -263,24 +273,39 @@ export function ShopDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 py-16 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
-        Loading dashboard…
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 animate-pulse pt-8">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+            <div className="flex items-start gap-4">
+              <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-20 rounded bg-slate-100 dark:bg-slate-800" />
+                <div className="h-7 w-14 rounded bg-slate-200 dark:bg-slate-700" />
+                <div className="h-2.5 w-28 rounded bg-slate-100 dark:bg-slate-800" />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+      className="space-y-8"
+    >
 
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 transition-colors duration-200">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 transition-colors duration-200">
             Dashboard
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
-            {effectiveShopName} orders at a glance.
+            Your order activity, delivery pipeline, and frequently ordered products at a glance.
           </p>
         </div>
         <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
@@ -290,58 +315,70 @@ export function ShopDashboardPage() {
       </div>
 
       {error && (
-        <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
-          {error}
+        <div className="flex items-start gap-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 px-4 py-3 ring-1 ring-rose-200 dark:ring-rose-800/50">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+          <p className="text-sm text-rose-800 dark:text-rose-300">{error}
         </p>
+        </div>
       )}
 
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5 items-stretch">
-        <StatCard
-          label="Last order"
-          value={lastOrder ? format(new Date(lastOrder.createdAt), 'dd MMM') : '—'}
-          sub={lastOrder ? format(new Date(lastOrder.createdAt), 'yyyy') : 'No orders yet'}
-          icon={<BarChart3 className="h-5 w-5" />}
-          tone="indigo"
-          onClick={lastOrder ? () => nav('/shop/history', { state: { openId: lastOrder.id } }) : undefined}
-        />
-        <StatCard
-          label="Awaiting confirmation"
-          value={ordersAwaitingConfirmation}
-          sub="Orders needing receipt"
-          icon={<PackageCheck className="h-5 w-5" />}
-          tone={ordersAwaitingConfirmation > 0 ? 'warning' : 'info'}
-          onClick={() => nav('/shop/history', { state: { filterAwaiting: true } })}
-        />
-        <StatCard
-          label="Active orders"
-          value={pending.length}
-          sub={pending.length === 0 ? 'All clear' : [
-            stages.placed > 0 && `${stages.placed} placed`,
-            stages.inProduction > 0 && `${stages.inProduction} in prod`,
-            stages.partial > 0 && `${stages.partial} partial`,
-            stages.awaiting > 0 && `${stages.awaiting} awaiting`,
-            pendingConfirmations > 0 && `${pendingConfirmations} to confirm`,
-          ].filter(Boolean).join(' · ')}
-          icon={<PackageCheck className="h-5 w-5" />}
-          tone={pending.length > 0 ? 'warning' : 'purple'}
-          onClick={() => nav('/shop/history')}
-        />
-        <StatCard
-          label="Avg delivery time"
-          value={avgLead != null ? `${avgLead}d` : '—'}
-          sub="order placed → delivered"
-          icon={<Clock className="h-5 w-5" />}
-          tone="teal"
-        />
-        <StatCard
-          label="Placed this month"
-          value={placedThisMonth}
-          sub={`${orders.length} all time`}
-          icon={<TrendingUp className="h-5 w-5" />}
-          tone="success"
-          onClick={() => nav('/shop/history')}
-        />
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
+          <StatCard
+            label="Last order"
+            value={lastOrder ? format(new Date(lastOrder.createdAt), 'dd MMM') : '—'}
+            sub={lastOrder ? format(new Date(lastOrder.createdAt), 'yyyy') : 'No orders yet'}
+            icon={<BarChart3 className="h-5 w-5" />}
+            tone="indigo"
+            onClick={lastOrder ? () => nav('/shop/history', { state: { openId: lastOrder.id } }) : undefined}
+          />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.06, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
+          <StatCard
+            label="Awaiting confirmation"
+            value={ordersAwaitingConfirmation}
+            sub="Dispatched orders waiting for your confirmation"
+            icon={<PackageCheck className="h-5 w-5" />}
+            tone={ordersAwaitingConfirmation > 0 ? 'warning' : 'info'}
+            onClick={() => nav('/shop/history', { state: { filterAwaiting: true } })}
+          />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.12, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
+          <StatCard
+            label="Active orders"
+            value={pending.length}
+            sub={pending.length === 0 ? 'All clear' : [
+              stages.placed > 0 && `${stages.placed} placed`,
+              stages.inProduction > 0 && `${stages.inProduction} in prod`,
+              stages.partial > 0 && `${stages.partial} partial`,
+              stages.awaiting > 0 && `${stages.awaiting} awaiting`,
+              pendingConfirmations > 0 && `${pendingConfirmations} to confirm`,
+            ].filter(Boolean).join(' · ')}
+            icon={<PackageCheck className="h-5 w-5" />}
+            tone={pending.length > 0 ? 'warning' : 'purple'}
+            onClick={() => nav('/shop/history')}
+          />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.18, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
+          <StatCard
+            label="Avg delivery time"
+            value={avgLead != null ? `${avgLead}d` : '—'}
+            sub="order placed → delivered"
+            icon={<Clock className="h-5 w-5" />}
+            tone="teal"
+          />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.24, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
+          <StatCard
+            label="Placed this month"
+            value={placedThisMonth}
+            sub={`${orders.length} all time`}
+            icon={<TrendingUp className="h-5 w-5" />}
+            tone="success"
+            onClick={() => nav('/shop/history')}
+          />
+        </motion.div>
       </div>
 
       {/* ── Pipeline + order type split ── */}
@@ -349,7 +386,7 @@ export function ShopDashboardPage() {
 
         {/* My pending pipeline */}
         <Card className="p-5">
-          <p className="mb-5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
+          <p className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 before:block before:h-3 before:w-0.5 before:rounded-full before:bg-emerald-500 dark:before:bg-emerald-400 transition-colors duration-200">
             My pending pipeline
           </p>
           {pending.length === 0 ? (
@@ -393,11 +430,14 @@ export function ShopDashboardPage() {
 
         {/* Order type split */}
         <Card className="p-5">
-          <p className="mb-5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
+          <p className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 before:block before:h-3 before:w-0.5 before:rounded-full before:bg-emerald-500 dark:before:bg-emerald-400 transition-colors duration-200">
             Order type split
           </p>
           {orders.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">No orders yet.</p>
+            <div className="flex flex-col items-center gap-2 py-6 text-center">
+              <span className="text-2xl">📦</span>
+              <p className="text-sm text-slate-500 dark:text-slate-400">No orders placed yet. Start one to see your history here.</p>
+            </div>
           ) : (
             <div className="space-y-4">
               <div>
@@ -409,8 +449,8 @@ export function ShopDashboardPage() {
                 </div>
                 <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
                   <div
-                    className="h-2 rounded-full bg-slate-700 transition-all"
-                    style={{ width: `${orderTypeSplit.standardPct}%` }}
+                    className="h-2 rounded-full bg-slate-700 transition-all duration-700"
+                    style={{ width: mounted ? `${orderTypeSplit.standardPct}%` : '0%' }}
                   />
                 </div>
               </div>
@@ -423,8 +463,8 @@ export function ShopDashboardPage() {
                 </div>
                 <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
                   <div
-                    className="h-2 rounded-full bg-emerald-500 transition-all"
-                    style={{ width: `${orderTypeSplit.limitedPct}%` }}
+                    className="h-2 rounded-full bg-emerald-500 transition-all duration-700"
+                    style={{ width: mounted ? `${orderTypeSplit.limitedPct}%` : '0%' }}
                   />
                 </div>
               </div>
@@ -436,20 +476,21 @@ export function ShopDashboardPage() {
 
       {/* ── Monthly trend ── */}
       <Card className="p-5">
-        <p className="mb-6 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
+        <p className="mb-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 before:block before:h-3 before:w-0.5 before:rounded-full before:bg-emerald-500 dark:before:bg-emerald-400 transition-colors duration-200">
           My orders — last 6 months
         </p>
         <div className="flex h-36 items-end justify-between gap-2">
-          {trend.map(({ label, count }) => (
+          {trend.map(({ label, count }, i) => (
             <div key={label} className="flex flex-1 flex-col items-center gap-1">
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">
                 {count > 0 ? count : ''}
               </span>
               <div
-                className="w-full rounded-t-md bg-emerald-500 transition-all"
+                className="w-full rounded-t-md bg-emerald-500 transition-all duration-500"
                 style={{
-                  height: `${Math.round((count / trendMax) * 100)}%`,
-                  minHeight: count > 0 ? '4px' : '0',
+                  height: mounted ? `${Math.round((count / trendMax) * 100)}%` : '0%',
+                  minHeight: mounted && count > 0 ? '4px' : '0',
+                  transitionDelay: `${i * 50}ms`
                 }}
               />
               <span className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{label}</span>
@@ -463,7 +504,7 @@ export function ShopDashboardPage() {
 
         {/* Recent orders */}
         <Card className="p-5">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
+          <p className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 before:block before:h-3 before:w-0.5 before:rounded-full before:bg-emerald-500 dark:before:bg-emerald-400 transition-colors duration-200">
             Recent orders
           </p>
           {recentOrders.length === 0 ? (
@@ -503,7 +544,7 @@ export function ShopDashboardPage() {
 
         {/* Frequently ordered products */}
         <Card className="p-5">
-          <p className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
+          <p className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 before:block before:h-3 before:w-0.5 before:rounded-full before:bg-emerald-500 dark:before:bg-emerald-400 transition-colors duration-200">
             <Repeat className="h-3.5 w-3.5" />
             Frequently ordered
           </p>
@@ -533,6 +574,6 @@ export function ShopDashboardPage() {
           )}
         </Card>
       </div>
-    </div>
+    </motion.div>
   )
 }

@@ -25,8 +25,11 @@ function HomeRedirect() {
   if (!firebaseReady) return <MissingFirebase />
   if (loading) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-slate-50">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+        <img src="/seva-logo.png" alt="Seva" className="h-10 w-auto animate-pulse" />
+        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
+          <div className="h-full w-1/2 animate-[shimmer_1.2s_ease-in-out_infinite] rounded-full bg-emerald-500" />
+        </div>
       </div>
     )
   }

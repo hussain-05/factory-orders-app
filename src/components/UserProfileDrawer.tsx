@@ -127,6 +127,15 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
 
  {/* Body */}
  <div className="flex-1 overflow-y-auto px-6 py-6">
+ <div className="mb-6 flex flex-col items-center gap-3">
+  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-2xl font-bold font-display text-emerald-700 dark:text-emerald-400 ring-4 ring-white dark:ring-slate-900 shadow-sm">
+    {displayName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || '?'}
+  </div>
+  <p className="font-display text-base font-semibold text-slate-900 dark:text-slate-100">{displayName}</p>
+  <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+    {profile?.role === 'factory' ? 'Factory Staff' : 'Shopkeeper'}
+  </span>
+ </div>
  {localMessage && (
  <div className={`mb-6 rounded-lg px-4 py-3 text-sm flex flex-col gap-1 ${localMessage.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
  <span>{localMessage.text}</span>
@@ -202,9 +211,23 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
  className="w-full rounded-lg border border-slate-300 dark:border-slate-800/80 bg-white dark:bg-slate-900 px-3 py-2 text-base sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
  />
  {newPassword && (
- <p className={`mt-1 text-xs ${isPasswordStrong(newPassword) ? 'text-emerald-600 dark:text-emerald-500' : 'text-amber-600 dark:text-amber-500'}`}>
- {isPasswordStrong(newPassword) ? '✓ Strong password' : 'Password must be at least 8 characters, contain 1 special character and 1 capital letter.'}
- </p>
+  <div className="mt-2 space-y-1">
+    <div className="flex gap-1">
+      {[1,2,3].map(i => (
+        <div
+          key={i}
+          className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+            i === 1 ? (newPassword.length >= 1 ? 'bg-rose-400' : 'bg-slate-200 dark:bg-slate-700') :
+            i === 2 ? (newPassword.length >= 6 ? 'bg-amber-400' : 'bg-slate-200 dark:bg-slate-700') :
+            isPasswordStrong(newPassword) ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'
+          }`}
+        />
+      ))}
+    </div>
+    <p className={`text-xs ${isPasswordStrong(newPassword) ? 'text-emerald-600 dark:text-emerald-500' : 'text-amber-600 dark:text-amber-500'}`}>
+      {isPasswordStrong(newPassword) ? '✓ Strong password' : 'Min 8 chars, 1 capital letter, 1 special character'}
+    </p>
+  </div>
  )}
  </div>
  <div>
