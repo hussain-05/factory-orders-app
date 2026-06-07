@@ -49,7 +49,7 @@ export function FactoryShell() {
               Seva · Factory
             </p>
             <p className="truncate font-display text-lg font-semibold leading-tight text-slate-900 dark:text-slate-100">
-              Production Console
+              Factory
             </p>
             <p className="truncate text-xs text-slate-500 dark:text-slate-400">{profile?.displayName}</p>
           </div>
