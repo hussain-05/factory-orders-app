@@ -31,6 +31,7 @@ export function ShopNewOrderPage() {
   const [lastItemCount, setLastItemCount] = useState(0)
   const [factoryNumber, setFactoryNumber] = useState('')
   const [qtys, setQtys] = useState<Record<string, number>>({})
+  const [units, setUnits] = useState<Record<string, string>>({})
 
   const refresh = useCallback(async () => {
     if (!db) return
@@ -122,9 +123,9 @@ export function ShopNewOrderPage() {
           name: p.name,
           size: p.size,
           quantity: qtys[p.id]!,
-          unit: p.defaultUnit ?? 'pcs',
+          unit: (units[p.id] ?? p.defaultUnit ?? 'box') as 'box' | 'bag' | 'pcs',
         })),
-    [catalog, qtys],
+      [catalog, qtys, units],
   )
 
   const totalQty = useMemo(
@@ -300,45 +301,58 @@ export function ShopNewOrderPage() {
                           <span className="text-sm font-medium text-slate-900 dark:text-slate-100 transition-colors duration-200">
                             {v.size || 'Standard'}
                           </span>
-                          <span className="ml-2 text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">
-                            {v.defaultUnit ?? 'pcs'}
-                          </span>
                         </div>
 
-                        <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 p-0.5 shadow-sm">
-                          <button
-                            type="button"
+                        <div className="flex items-center">
+                          <select
+                            value={units[v.id] ?? v.defaultUnit ?? 'box'}
+                            onChange={(e) =>
+                              setUnits((prev) => ({
+                                ...prev,
+                                [v.id]: e.target.value,
+                              }))
+                            }
+                            className="mr-3 rounded-xl border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 px-3 py-2 text-base text-slate-900 shadow-sm transition-all duration-150 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 sm:text-sm"
+                          >
+                            <option value="box">box</option>
+                            <option value="bag">bag</option>
+                            <option value="pcs">pcs</option>
+                          </select>
+                          <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 p-0.5 shadow-sm">
+                            <button
+                              type="button"
                             className="rounded-lg p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 disabled:opacity-30 transition-colors duration-200"
                             onClick={() => stepQty(v.id, -1)}
                             disabled={qty <= 0}
                             aria-label="Decrease quantity"
                           >
-                            <Minus className="h-3.5 w-3.5" />
-                          </button>
-                          <input
-                            className="w-14 bg-transparent text-center text-base sm:text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100 outline-none transition-colors duration-200"
-                            inputMode="numeric"
-                            value={qty === 0 ? '' : String(qty)}
-                            placeholder="0"
-                            onChange={(e) => {
-                              const raw = e.target.value.trim()
-                              if (raw === '') {
-                                setQty(v.id, 0)
-                                return
-                              }
-                              const n = Number(raw)
-                              if (!Number.isFinite(n)) return
-                              setQty(v.id, n)
-                            }}
-                          />
-                          <button
-                            type="button"
-                            className="rounded-lg p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 transition-colors duration-200"
-                            onClick={() => stepQty(v.id, 1)}
-                            aria-label="Increase quantity"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                          </button>
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                            <input
+                              className="w-14 bg-transparent text-center text-base sm:text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100 outline-none transition-colors duration-200"
+                              inputMode="numeric"
+                              value={qty === 0 ? '' : String(qty)}
+                              placeholder="0"
+                              onChange={(e) => {
+                                const raw = e.target.value.trim()
+                                if (raw === '') {
+                                  setQty(v.id, 0)
+                                  return
+                                }
+                                const n = Number(raw)
+                                if (!Number.isFinite(n)) return
+                                setQty(v.id, n)
+                              }}
+                            />
+                            <button
+                              type="button"
+                              className="rounded-lg p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 transition-colors duration-200"
+                              onClick={() => stepQty(v.id, 1)}
+                              aria-label="Increase quantity"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )
