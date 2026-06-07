@@ -1,11 +1,13 @@
-import {
+import { AlertTriangle } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ScrollText,
   ChevronDown,
   ChevronRight,
   Filter,
   Printer,
   Search,
   Trash2,
-} from "lucide-react";
+ } from 'lucide-react';
 import { useLocation } from "react-router-dom";
 import { FirebaseError } from "firebase/app";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -356,10 +358,15 @@ export function ShopOrderHistoryPage() {
     filterEndDate !== "";
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+      className="space-y-6"
+    >
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 transition-colors duration-200">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 transition-colors duration-200">
             Order history
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
@@ -377,6 +384,7 @@ export function ShopOrderHistoryPage() {
       </div>
 
       {/* ── Search + Filter bar ── */}
+      <div className="sticky top-[104px] z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-sm border-b border-slate-200/60 dark:border-slate-800/60 mb-4 transition-colors duration-200">
       <div className="rounded-xl border-2 border-slate-300 dark:border-slate-700/50 bg-slate-50/80 dark:bg-slate-900/80 transition-colors duration-200 shadow-sm">
         <div className="flex divide-x divide-slate-200 dark:divide-slate-800/50 transition-colors duration-200">
           {/* Filter toggle — wider */}
@@ -536,11 +544,14 @@ export function ShopOrderHistoryPage() {
           </div>
         )}
       </div>
+      </div>
 
       {error ? (
-        <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
-          {error}
+        <div className="flex items-start gap-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 px-4 py-3 ring-1 ring-rose-200 dark:ring-rose-800/50">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+          <p className="text-sm text-rose-800 dark:text-rose-300">{error}
         </p>
+        </div>
       ) : null}
 
       {loading ? (
@@ -549,17 +560,21 @@ export function ShopOrderHistoryPage() {
           Loading…
         </div>
       ) : orders.length === 0 ? (
-        <Card>
-          <p className="text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
-            No orders yet.
+        <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <ScrollText className="h-10 w-10 text-slate-300 dark:text-slate-700" />
+          <p className="font-display text-base font-semibold text-slate-700 dark:text-slate-300">No orders found</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500 max-w-xs">
+            Orders will appear here once they've been placed.
           </p>
-        </Card>
+        </div>
       ) : grouped.length === 0 ? (
-        <Card>
-          <p className="text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
-            No orders match the current filters.
+        <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <ScrollText className="h-10 w-10 text-slate-300 dark:text-slate-700" />
+          <p className="font-display text-base font-semibold text-slate-700 dark:text-slate-300">No orders found</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500 max-w-xs">
+            Try clearing your filters to see all orders.
           </p>
-        </Card>
+        </div>
       ) : (
         <div className="space-y-8">
           {grouped.map(({ label, orders: groupOrders }) => (
@@ -633,10 +648,18 @@ export function ShopOrderHistoryPage() {
                         )}
                       </button>
 
-                      {open ? (
-                        <div className="space-y-4 border-t border-slate-100 dark:border-slate-800/50 px-4 py-3 transition-colors duration-200">
-                          {/* Timeline */}
-                          <OrderTimeline order={o} usersMap={usersMap} />
+                      <AnimatePresence initial={false}>
+                        {open && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                            className="overflow-hidden"
+                          >
+                            <div className="space-y-4 border-t border-slate-100 dark:border-slate-800/50 px-4 py-3 transition-colors duration-200">
+                              {/* Timeline */}
+                              <OrderTimeline order={o} usersMap={usersMap} />
 
                           {/* Dispatches */}
                           {(o.dispatches ?? []).length > 0 && (
@@ -688,7 +711,7 @@ export function ShopOrderHistoryPage() {
                                         ) : (
                                           <Button
                                             variant="secondary"
-                                            className="!py-1 !text-xs shrink-0"
+                                            className="!py-1 !text-base sm:!text-xs shrink-0"
                                             disabled={confirmBusyId === key}
                                             onClick={() =>
                                               void handleConfirmDispatch(
@@ -818,8 +841,10 @@ export function ShopOrderHistoryPage() {
                               ))}
                             </ul>
                           </div>
-                        </div>
-                      ) : null}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </Card>
                   );
                 })}
@@ -880,6 +905,6 @@ export function ShopOrderHistoryPage() {
           {deleteTarget?.items.length === 1 ? "" : "s"}.
         </p>
       </Modal>
-    </div>
+    </motion.div>
   );
 }
