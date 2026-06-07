@@ -17,6 +17,13 @@ import type { LimitedProduct, OrderLineItem, ShopName } from '../../types/models
 
 type Line = { product: LimitedProduct; quantity: number }
 
+function stockBarClass(stock: number) {
+  if (stock <= 10) return 'bg-rose-500 animate-pulse'
+  if (stock >= 21 && stock <= 70) return 'bg-amber-400'
+  if (stock > 70) return 'bg-emerald-500'
+  return 'bg-slate-300 dark:bg-slate-700'
+}
+
 export function ShopAvailablePage() {
   const { profile, user } = useAuth()
   const [items, setItems] = useState<LimitedProduct[]>([])
@@ -221,9 +228,7 @@ export function ShopAvailablePage() {
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
                         <div
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            p.stock > 50 ? 'bg-emerald-500' : p.stock > 20 ? 'bg-amber-400' : 'bg-rose-500 animate-pulse'
-                          }`}
+                          className={`h-full rounded-full transition-all duration-500 ${stockBarClass(p.stock)}`}
                           style={{ width: `${Math.min(100, Math.max(0, (p.stock / 100) * 100))}%` }}
                         />
                       </div>

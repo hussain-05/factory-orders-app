@@ -123,9 +123,9 @@ function StatCard({
       <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm ${iconClass}`}>
         {icon}
       </div>
-      <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">{label}</p>
-        <p className="mt-1 font-display text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">{value}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 break-words whitespace-normal transition-colors duration-200">{label}</p>
+        <p className="mt-1 font-display text-xl sm:text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100 break-words whitespace-normal transition-colors duration-200">{value}</p>
         {sub && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{sub}</p>}
       </div>
     </>
@@ -133,15 +133,15 @@ function StatCard({
 
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} className="block w-full h-full text-left group">
-        <Card className="flex h-full items-start gap-4 p-5 transition-shadow group-hover:shadow-md group-hover:ring-1 group-hover:ring-slate-200">
+      <button type="button" onClick={onClick} className="block w-full h-full text-left group min-w-0">
+        <Card className="flex h-full items-start gap-3 sm:gap-4 p-4 sm:p-5 transition-shadow group-hover:shadow-md group-hover:ring-1 group-hover:ring-slate-200 min-w-0">
           {inner}
         </Card>
       </button>
     )
   }
 
-  return <Card className="flex h-full items-start gap-4 p-5">{inner}</Card>
+  return <Card className="flex h-full items-start gap-3 sm:gap-4 p-4 sm:p-5 min-w-0">{inner}</Card>
 }
 
 function PipelineStage({
@@ -477,14 +477,14 @@ export function FactoryDashboardPage() {
         </p>
         <div className="flex h-36 items-end justify-between gap-2">
           {trend.map(({ label, placed }, i) => (
-            <div key={label} className="flex flex-1 flex-col items-center gap-1">
+            <div key={label} className="flex flex-1 flex-col items-center justify-end h-full gap-1">
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">
                 {placed > 0 ? placed : ''}
               </span>
               <div
                 className="w-full rounded-t-md bg-emerald-500 transition-all duration-500"
                 style={{
-                  height: mounted ? `${Math.round((placed / trendMax) * 100)}%` : '0%',
+                  height: mounted ? (placed === 0 ? '0%' : `${Math.max((placed / trendMax) * 100, 8)}%`) : '0%',
                   minHeight: mounted && placed > 0 ? '4px' : '0',
                   transitionDelay: `${i * 50}ms`
                 }}
