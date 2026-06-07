@@ -1,6 +1,6 @@
 import { AlertTriangle } from 'lucide-react'
-import { motion } from 'framer-motion'
-import { ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Check, ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -44,10 +44,19 @@ function groupByMonth(orders: Order[]): Array<{ label: string; orders: Order[] }
   return Array.from(map.entries()).map(([label, orders]) => ({ label, orders }))
 }
 
-function currentStageLabel(o: Order): string {
-  if (o.milestones.dispatchedAt) return 'Awaiting delivery'
-  if (o.milestones.receivedAt) return 'In production'
-  return 'Order placed'
+function currentStageMeta(o: Order): {
+  label: 'Order placed' | 'In production' | 'Awaiting delivery'
+  tone: 'neutral' | 'warning' | 'success'
+} {
+  if (o.milestones?.dispatchedAt) {
+    return { label: 'Awaiting delivery', tone: 'success' }
+  }
+
+  if (o.milestones?.receivedAt || o.expectedDeliveryDate) {
+    return { label: 'In production', tone: 'warning' }
+  }
+
+  return { label: 'Order placed', tone: 'neutral' }
 }
 
 // ─── Dispatch helpers ─────────────────────────────────────────────────────
@@ -316,6 +325,8 @@ function PendingCard({
   const dispatchedQty = dispatchedQtyByProduct(dispatches)
   const allDispatched = o.items.every(it => (dispatchedQty[it.productId] ?? 0) >= it.quantity)
   const allReceived = dispatches.length > 0 && dispatches.every(d => d.items.every(it => it.confirmedAt))
+  const stage = currentStageMeta(o)
+
   return (
     <Card id={id} className="p-0">
       {/* ── Collapsed header ── */}
@@ -331,7 +342,7 @@ function PendingCard({
               <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-mono font-semibold text-slate-600 dark:text-slate-400 transition-colors duration-200">#{o.orderNumber}</span>
             )}
             <Badge tone="neutral">{o.orderKind === 'limited' ? 'Limited' : 'Standard'}</Badge>
-            <Badge tone="warning">{currentStageLabel(o)}</Badge>
+            <Badge tone={stage.tone}>{stage.label}</Badge>
             {o.requestorName && (
               <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200">
                 {o.requestorName.split(' ')[0]}
@@ -349,13 +360,21 @@ function PendingCard({
       </button>
 
       {/* ── Expanded body ── */}
+      <AnimatePresence initial={false}>
       {open && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+          className="overflow-hidden"
+        >
         <div className="border-t border-slate-100 dark:border-slate-800/50 px-4 py-4 space-y-4 transition-colors duration-200">
 
           {/* Interactive timeline */}
           <div>
             <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
-              Order progress
+              Production timeline
             </p>
 
             {/* Stage 1: Placed */}
@@ -566,7 +585,9 @@ function PendingCard({
             </ul>
           </details>
         </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </Card>
   )
 }
@@ -582,38 +603,28 @@ interface TimelineStageProps {
   children?: React.ReactNode
 }
 
-function TimelineStage({ done, isLast, nextDone, dot, label, timestamp, sub, children }: TimelineStageProps) {
+function TimelineStage({ isLast, nextDone, dot, label, timestamp, sub, children }: TimelineStageProps) {
   return (
     <div className="flex gap-3">
       {/* Dot + connector */}
       <div className="flex flex-col items-center">
-        <div
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${ done ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 bg-white' }`}
-        >
-          {dot === 'check' ? (
-            <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 12 12" fill="none">
-              <path
-                d="M2 6l3 3 5-5"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          ) : (
-            <div className="h-2 w-2 rounded-full bg-slate-300" />
-          )}
-        </div>
+        {dot === 'check' ? (
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm transition-colors duration-200">
+            <Check className="h-4 w-4" />
+          </div>
+        ) : (
+          <div className="h-7 w-7 shrink-0 rounded-full border-2 border-slate-300 bg-slate-200 dark:border-slate-600 dark:bg-slate-700 transition-colors duration-200" />
+        )}
         {!isLast && (
           <div
-            className={`my-1 w-0.5 flex-1 min-h-[20px] ${nextDone ? 'bg-emerald-400' : 'bg-slate-200'}`}
+            className={`my-1 w-0.5 flex-1 min-h-[20px] ${nextDone ? 'bg-emerald-400' : 'bg-slate-200 dark:bg-slate-700'} transition-colors duration-200`}
           />
         )}
       </div>
 
       {/* Content */}
       <div className={`pb-4 min-w-0 flex-1 ${isLast ? 'pb-0' : ''}`}>
-        <p className={`text-sm font-semibold leading-7 ${done ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400'}`}>
+        <p className="text-sm font-semibold leading-7 text-slate-800 dark:text-slate-200 transition-colors duration-200">
           {label}
         </p>
         {timestamp && <p className="text-xs text-emerald-600">{timestamp}</p>}

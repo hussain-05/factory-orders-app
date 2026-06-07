@@ -16,7 +16,7 @@ import { listOrdersForShop } from '../lib/orderService'
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all sm:gap-2 sm:px-3 ${
     isActive
-      ? 'bg-emerald-600/90 text-white shadow-sm dark:bg-emerald-700/90 dark:text-slate-100'
+      ? 'bg-emerald-600/90 text-white shadow-sm dark:bg-emerald-700/90'
       : 'text-slate-600 hover:bg-white/70 dark:text-slate-400 dark:hover:bg-slate-800/50'
   }`
 

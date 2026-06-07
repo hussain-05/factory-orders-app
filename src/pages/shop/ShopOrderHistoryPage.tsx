@@ -384,7 +384,7 @@ export function ShopOrderHistoryPage() {
       </div>
 
       {/* ── Search + Filter bar ── */}
-      <div className="sticky top-[104px] z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-sm border-b border-slate-200/60 dark:border-slate-800/60 mb-4 transition-colors duration-200">
+      <div className="sticky top-[104px] z-20 -mx-4 mb-4 border-b border-slate-200/60 bg-slate-50/80 px-4 py-3 backdrop-blur-sm dark:border-slate-800/60 dark:bg-slate-950/80 sm:-mx-6 sm:px-6">
       <div className="rounded-xl border-2 border-slate-300 dark:border-slate-700/50 bg-slate-50/80 dark:bg-slate-900/80 transition-colors duration-200 shadow-sm">
         <div className="flex divide-x divide-slate-200 dark:divide-slate-800/50 transition-colors duration-200">
           {/* Filter toggle — wider */}
