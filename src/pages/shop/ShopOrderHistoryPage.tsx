@@ -689,6 +689,8 @@ export function ShopOrderHistoryPage() {
                                   </div>
                                   {d.items.map((it) => {
                                     const key = `${d.id}:${it.productId}`;
+                                    const originalItem = o.items.find((oi) => oi.productId === it.productId);
+                                    const unit = (originalItem as any)?.unit || 'box';
                                     return (
                                       <div
                                         key={it.productId}
@@ -700,7 +702,7 @@ export function ShopOrderHistoryPage() {
                                             {it.size ? ` · ${it.size}` : ""}
                                           </span>
                                           <span className="ml-2 font-semibold tabular-nums text-slate-600 dark:text-slate-400 transition-colors duration-200">
-                                            ×{it.qty}
+                                            ×{it.qty} {unit}
                                           </span>
                                         </div>
                                         {it.confirmedAt ? (
