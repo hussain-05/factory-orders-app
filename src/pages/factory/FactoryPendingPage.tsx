@@ -530,7 +530,7 @@ function PendingCard({
           </div>
 
           {/* Actions */}
-          <OrderActions order={o} onRefresh={() => window.location.reload()} />
+          <OrderActions order={o} onRefresh={() => window.dispatchEvent(new CustomEvent('refresh-orders', { detail: { silent: true } }))} />
 
           {/* Line items */}
           <details className="rounded-xl border border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 transition-colors duration-200">
@@ -647,21 +647,30 @@ export function FactoryPendingPage() {
   const [filterEndDate, setFilterEndDate] = useState<string>('')
   const [filterOpen, setFilterOpen] = useState(false)
   const [orderSearch, setOrderSearch] = useState('')
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (silent = false) => {
     if (!db) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     setError(null)
     try {
       setOrders(await listPendingOrdersForFactory(db))
     } catch {
       setError('Could not load pending orders.')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
 
   useEffect(() => {
     queueMicrotask(() => { void refresh() })
+  }, [refresh])
+
+  useEffect(() => {
+    const handleRefreshEvent = (e: Event) => {
+      const isSilent = (e as CustomEvent).detail?.silent ?? false
+      void refresh(isSilent)
+    }
+    window.addEventListener('refresh-orders', handleRefreshEvent)
+    return () => window.removeEventListener('refresh-orders', handleRefreshEvent)
   }, [refresh])
 
   useEffect(() => {
@@ -769,7 +778,7 @@ export function FactoryPendingPage() {
           message: `Hi ${order.requestorName}, a dispatch for your order ${order.orderNumber ? `#${order.orderNumber}` : ''} from ${order.shopName} is on its way. Please confirm receipt when delivered.`,
         })
       }
-      await refresh()
+      await refresh(true)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Dispatch failed.')
     } finally {

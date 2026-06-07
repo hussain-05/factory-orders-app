@@ -20,7 +20,7 @@ type Line = { product: LimitedProduct; quantity: number }
 function stockBarClass(stock: number) {
   if (stock <= 10) return 'bg-rose-500 animate-pulse'
   if (stock >= 21 && stock <= 70) return 'bg-amber-400'
-  if (stock > 100) return 'bg-emerald-500'
+  if (stock > 70) return 'bg-emerald-500'
   return 'bg-slate-300 dark:bg-slate-700'
 }
 
