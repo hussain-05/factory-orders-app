@@ -120,8 +120,8 @@ function StatCard({
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">{label}</p>
-        <p className="mt-1 font-display text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">{value}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 break-words whitespace-normal transition-colors duration-200">{label}</p>
+        <p className="mt-1 font-display text-xl sm:text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100 break-words whitespace-normal transition-colors duration-200">{value}</p>
         {sub && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{sub}</p>}
       </div>
     </>
@@ -488,7 +488,7 @@ export function ShopDashboardPage() {
               <div
                 className="w-full rounded-t-md bg-emerald-500 transition-all duration-500"
                 style={{
-                  height: mounted ? `${Math.round((count / trendMax) * 100)}%` : '0%',
+                  height: mounted ? (count === 0 ? '0%' : `${Math.max((count / trendMax) * 100, 8)}%`) : '0%',
                   minHeight: mounted && count > 0 ? '4px' : '0',
                   transitionDelay: `${i * 50}ms`
                 }}

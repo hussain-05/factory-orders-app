@@ -52,6 +52,25 @@ function currentStageLabel(o: Order): string {
 
 // ─── Dispatch helpers ─────────────────────────────────────────────────────
 
+function getFulfilmentMeta(order: Order) {
+  const totalQty = order.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
+
+  const dispatchedQty = (order.dispatches ?? []).reduce((sum, dispatch) => {
+    return (
+      sum +
+      dispatch.items.reduce((itemSum, item) => itemSum + Number(item.qty || 0), 0)
+    )
+  }, 0)
+
+  const remainingQty = Math.max(totalQty - dispatchedQty, 0)
+
+  return {
+    totalQty,
+    dispatchedQty,
+    remainingQty,
+  }
+}
+
 function dispatchedQtyByProduct(dispatches: OrderDispatch[]): Record<string, number> {
   const map: Record<string, number> = {}
   for (const d of dispatches) {
@@ -222,10 +241,10 @@ function DispatchForm({
           return (
             <div key={it.productId} className="flex items-center justify-between gap-3 text-xs">
               <div className="min-w-0">
-                <p className={`font-medium truncate ${isNa ? 'text-slate-400 dark:text-slate-500 line-through transition-colors duration-200' : 'text-slate-800 dark:text-slate-200 transition-colors duration-200'}`}>
+                <p className={`font-medium min-w-0 whitespace-normal break-words text-sm ${isNa ? 'text-slate-400 dark:text-slate-500 line-through transition-colors duration-200' : 'text-slate-800 dark:text-slate-200 transition-colors duration-200'}`}>
                   {it.name}{it.size ? ` · ${it.size}` : ''}
                 </p>
-                <p className="text-slate-400 dark:text-slate-500 transition-colors duration-200">
+                <p className="mt-0.5 whitespace-normal break-words text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">
                   Ordered {it.quantity} · {dispatchedQty[it.productId] ?? 0} already sent · {remaining} remaining
                 </p>
               </div>
@@ -367,10 +386,12 @@ function PendingCard({
                       <Input
                         id={`expected-delivery-date-${o.id}`}
                         type="date"
-                        className="!py-1 !text-base sm:!text-xs [color-scheme:light] dark:[color-scheme:dark]"
+                        className="!py-1 !text-base sm:!text-sm [color-scheme:light] dark:[color-scheme:dark]"
                         value={expectedDraft}
                         onChange={(e) => onExpectedChange(e.target.value)}
                         onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
                           const target = e.target as HTMLInputElement;
                           if (target.showPicker) target.showPicker();
                         }}
@@ -379,6 +400,7 @@ function PendingCard({
                     </div>
                   </div>
                   <Button
+                    type="button"
                     variant="secondary"
                     className="!py-1.5 !text-xs"
                     disabled={busy || !expectedDraft}
@@ -442,23 +464,33 @@ function PendingCard({
                   ))}
 
                   {/* Fulfillment progress */}
-                  {dispatches.length > 0 && (
-                    <div className="rounded-lg border border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 p-3 space-y-1.5 transition-colors duration-200">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-2 transition-colors duration-200">Fulfillment</p>
-                      {o.items.map(it => {
-                        const sent = dispatchedQty[it.productId] ?? 0
-                        const full = sent >= it.quantity
-                        return (
-                          <div key={it.productId} className="flex items-center justify-between text-xs">
-                            <span className="text-slate-600 dark:text-slate-400 truncate transition-colors duration-200">{it.name}{it.size ? ` · ${it.size}` : ''}</span>
-                            <span className={`ml-3 shrink-0 font-semibold tabular-nums ${full ? 'text-emerald-600' : 'text-amber-600'}`}>
-                              {sent}/{it.quantity} {full ? '✓' : 'remaining'}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
+                  {dispatches.length > 0 && (() => {
+                    const meta = getFulfilmentMeta(o)
+                    const fullyDispatched = meta.remainingQty === 0
+                    return (
+                      <div className="rounded-lg border border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 p-3 space-y-1.5 transition-colors duration-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 transition-colors duration-200">Fulfillment summary</p>
+                          <span className={`text-xs font-semibold tabular-nums ${fullyDispatched ? 'text-emerald-600' : 'text-amber-600'}`}>
+                            {meta.remainingQty}/{meta.totalQty} {fullyDispatched ? '✓' : 'remaining'}
+                          </span>
+                        </div>
+                        {o.items.map(it => {
+                          const sent = dispatchedQty[it.productId] ?? 0
+                          const full = sent >= it.quantity
+                          const remaining = Math.max(it.quantity - sent, 0)
+                          return (
+                            <div key={it.productId} className="flex items-center justify-between text-xs">
+                              <span className="text-slate-600 dark:text-slate-400 truncate transition-colors duration-200">{it.name}{it.size ? ` · ${it.size}` : ''}</span>
+                              <span className={`ml-3 shrink-0 font-semibold tabular-nums ${full ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                {remaining}/{it.quantity} {full ? '✓' : 'remaining'}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )
+                  })()}
 
                   {/* All dispatched, awaiting shop confirmation */}
                   {allDispatched && !allReceived && (
