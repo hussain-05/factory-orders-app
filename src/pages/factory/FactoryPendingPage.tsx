@@ -245,7 +245,7 @@ function DispatchForm({
                   {it.name}{it.size ? ` · ${it.size}` : ''}
                 </p>
                 <p className="mt-0.5 whitespace-normal break-words text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">
-                  Ordered {it.quantity} · {dispatchedQty[it.productId] ?? 0} already sent · {remaining} remaining
+                  Ordered {it.quantity} {(it as any).unit || 'box'} · {dispatchedQty[it.productId] ?? 0} already sent · {remaining} remaining
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -448,18 +448,22 @@ function PendingCard({
                           : <span className="text-amber-600 font-medium">⏳ Awaiting confirmation</span>
                         }
                       </div>
-                      {d.items.map(it => (
-                        <div key={it.productId} className="flex justify-between text-slate-600 dark:text-slate-400 transition-colors duration-200">
-                          <span>{it.name}{it.size ? ` · ${it.size}` : ''}</span>
-                          <span className="flex items-center gap-2">
-                            <span className="font-semibold tabular-nums">×{it.qty}</span>
-                            {it.confirmedAt
-                              ? <span className="text-emerald-600">✓ {format(it.confirmedAt, 'dd MMM')}</span>
-                              : <span className="text-amber-500">⏳</span>
-                            }
-                          </span>
-                        </div>
-                      ))}
+                      {d.items.map(it => {
+                        const originalItem = o.items.find(oi => oi.productId === it.productId)
+                        const unit = (originalItem as any)?.unit || 'box'
+                        return (
+                          <div key={it.productId} className="flex justify-between text-slate-600 dark:text-slate-400 transition-colors duration-200">
+                            <span>{it.name}{it.size ? ` · ${it.size}` : ''}</span>
+                            <span className="flex items-center gap-2">
+                              <span className="font-semibold tabular-nums">×{it.qty} {unit}</span>
+                              {it.confirmedAt
+                                ? <span className="text-emerald-600">✓ {format(it.confirmedAt, 'dd MMM')}</span>
+                                : <span className="text-amber-500">⏳</span>
+                              }
+                            </span>
+                          </div>
+                        )
+                      })}
                     </div>
                   ))}
 
@@ -479,11 +483,12 @@ function PendingCard({
                           const sent = dispatchedQty[it.productId] ?? 0
                           const full = sent >= it.quantity
                           const remaining = Math.max(it.quantity - sent, 0)
+                          const unit = (it as any).unit || 'box'
                           return (
                             <div key={it.productId} className="flex items-center justify-between text-xs">
                               <span className="text-slate-600 dark:text-slate-400 truncate transition-colors duration-200">{it.name}{it.size ? ` · ${it.size}` : ''}</span>
                               <span className={`ml-3 shrink-0 font-semibold tabular-nums ${full ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                {remaining}/{it.quantity} {full ? '✓' : 'remaining'}
+                                {remaining}/{it.quantity} {unit} {full ? '✓' : 'remaining'}
                               </span>
                             </div>
                           )
@@ -553,7 +558,7 @@ function PendingCard({
                   </div>
                   <div className="flex items-center gap-4 shrink-0">
                     <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">
-                      ×{it.quantity}
+                      ×{it.quantity} {(it as any).unit || 'box'}
                     </span>
                   </div>
                 </li>
@@ -757,7 +762,7 @@ export function FactoryPendingPage() {
         }
       }
 
-      await refresh()
+      await refresh(true)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Update failed.')
     } finally {

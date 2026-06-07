@@ -835,7 +835,7 @@ export function ShopOrderHistoryPage() {
                                     )}
                                   </div>
                                   <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">
-                                    ×{it.quantity}
+                                    ×{it.quantity} {(it as any).unit || 'box'}
                                   </span>
                                 </li>
                               ))}
