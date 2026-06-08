@@ -1,5 +1,5 @@
 import { Minus, Plus, Search, ShoppingBag } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useDeferredValue } from 'react'
 import Fuse from 'fuse.js'
 import { useAuth } from '../../contexts/AuthContext'
 import { Button } from '../../components/ui/Button'
@@ -19,6 +19,7 @@ export function ShopNewOrderPage() {
   const { profile, user } = useAuth()
   const [catalog, setCatalog] = useState<UnlimitedProduct[]>([])
   const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -79,10 +80,10 @@ export function ShopNewOrderPage() {
   )
 
   const filteredGroups = useMemo(() => {
-    const q = query.trim()
+    const q = deferredQuery.trim()
     if (!q) return grouped
     return fuse.search(q).map(r => r.item)
-  }, [fuse, query, grouped])
+  }, [fuse, deferredQuery, grouped])
 
   function setQty(id: string, qty: number) {
     setQtys((prev) => {
