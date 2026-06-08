@@ -411,20 +411,26 @@ export function ShopNewOrderPage() {
       {/* ── Mobile sticky bar ── */}
       {hasItems ? (
         <div className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-slate-900 p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] lg:hidden transition-colors duration-200">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
                 <ShoppingBag className="h-4 w-4" />
               </span>
-              <p className="font-display text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">
-                {validLines.length} items · {totalQty} qty
-              </p>
+              <div>
+                <p className="font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{validLines.length} items selected</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{totalQty} total qty</p>
+              </div>
             </div>
-            <Button onClick={() => setPreviewOpen(true)}>Preview & submit</Button>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={clearStandardDraft}>
+                Clear all
+              </Button>
+              <Button onClick={() => setPreviewOpen(true)}>Preview order</Button>
+            </div>
           </div>
         </div>
       ) : null}
-      {hasItems ? <div className="h-20 lg:h-0" /> : null}
+      {hasItems ? <div className="h-28 sm:h-24 lg:h-0" /> : null}
 
       {/* ── Confirm modal ── */}
       <Modal

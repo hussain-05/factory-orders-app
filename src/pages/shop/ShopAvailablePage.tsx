@@ -340,8 +340,8 @@ export function ShopAvailablePage() {
       )}
 
       {lines.length > 0 ? (
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 dark:border-slate-800/50 bg-white/90 dark:bg-slate-900/90 p-4 backdrop-blur transition-colors duration-200">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 rounded-2xl border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 p-4 shadow-lg shadow-slate-200/40 sm:flex-row sm:items-center sm:justify-between">
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] transition-colors duration-200">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300 transition-colors duration-200">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
                 <ShoppingBag className="h-5 w-5" />
