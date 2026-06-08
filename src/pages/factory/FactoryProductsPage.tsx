@@ -2,6 +2,7 @@ import { AlertTriangle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Fuse from 'fuse.js'
 import { db, storage } from '../../lib/firebase'
 import {
   createLimitedProductWithPhoto,
@@ -48,17 +49,20 @@ export function FactoryProductsPage() {
   const [catalogFile, setCatalogFile] = useState<File | null>(null)
   const [imageView, setImageView] = useState<{ url: string; title: string } | null>(null)
 
+  const fuse = useMemo(
+    () =>
+      new Fuse(limited, {
+        keys: ['name', 'size', 'stock', 'rate'],
+        threshold: 0.4,
+      }),
+    [limited],
+  )
+
   const filteredLimited = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase()
+    const q = searchQuery.trim()
     if (!q) return limited
-    return limited.filter((p) => {
-      if (p.name.toLowerCase().includes(q)) return true
-      if (p.size.toLowerCase().includes(q)) return true
-      if (String(p.stock).includes(q)) return true
-      if (String(p.rate).includes(q)) return true
-      return false
-    })
-  }, [limited, searchQuery])
+    return fuse.search(q).map((res) => res.item)
+  }, [limited, searchQuery, fuse])
 
   const refresh = useCallback(async () => {
     if (!db) return
@@ -361,7 +365,7 @@ export function FactoryProductsPage() {
                   )}
                 </div>
 
-                {filteredLimited.length === 0 ? (
+                {filteredLimited.length === 0 && limited.length > 0 ? (
                   <div className="flex flex-col items-center gap-2 py-10 text-center">
                     <p className="font-display text-base font-semibold text-slate-700 dark:text-slate-300">
                       No products found
