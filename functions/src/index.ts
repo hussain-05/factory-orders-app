@@ -70,7 +70,7 @@ export const onNewOrder = functions.firestore
 
     const factoryUsers = await db
       .collection('users')
-      .where('role', '==', 'factory')
+      .where('role', 'in', ['factory', 'factory_staff'])
       .get()
 
     const tokens: string[] = []

@@ -1,8 +1,9 @@
 import { AlertTriangle } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { Minus, Plus, ShoppingBag } from 'lucide-react'
+import { Minus, Plus, ShoppingBag, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useOrderDraft } from '../../contexts/OrderDraftContext'
 import { db } from '../../lib/firebase'
 import { getFactoryWhatsappNumber } from '../../lib/adminService'
 import { createOrder } from '../../lib/orderService'
@@ -29,10 +30,14 @@ export function ShopAvailablePage() {
   const [items, setItems] = useState<LimitedProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [cart, setCart] = useState<Record<string, Line>>({})
+
+  const { limitedDraft, setLimitedQty, clearLimitedDraft } = useOrderDraft()
+  const cartQtys = limitedDraft.qtys
+
   const [previewOpen, setPreviewOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [lastOrderNumber, setLastOrderNumber] = useState('')
   const [lastItemCount, setLastItemCount] = useState(0)
   const [factoryNumber, setFactoryNumber] = useState('')
@@ -62,19 +67,33 @@ export function ShopAvailablePage() {
     })
   }, [refresh])
 
-  const lines = useMemo(() => Object.values(cart).filter((l) => l.quantity > 0), [cart])
+  const lines = useMemo(() => {
+    return Object.entries(cartQtys)
+      .map(([id, qty]) => {
+        const product = items.find((p) => p.id === id)
+        return product ? { product, quantity: qty } : null
+      })
+      .filter((l): l is Line => l !== null && l.quantity > 0)
+  }, [cartQtys, items])
+
+  const filteredItems = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return items
+    return items.filter((p) => {
+      if (p.name.toLowerCase().includes(q)) return true
+      if (p.size.toLowerCase().includes(q)) return true
+      if (String(p.rate).includes(q)) return true
+      return false
+    })
+  }, [items, searchQuery])
 
   function setQty(product: LimitedProduct, qty: number) {
-    setCart((prev) => {
-      const next = { ...prev }
-      if (qty <= 0) {
-        delete next[product.id]
-        return next
-      }
+    if (qty <= 0) {
+      setLimitedQty(product.id, 0)
+    } else {
       const clamped = Math.min(qty, product.stock)
-      next[product.id] = { product, quantity: clamped }
-      return next
-    })
+      setLimitedQty(product.id, clamped)
+    }
   }
 
   function openImage(product: LimitedProduct) {
@@ -103,7 +122,7 @@ export function ShopAvailablePage() {
         items: payload,
       })
       setLastItemCount(lines.length)
-      setCart({})
+      clearLimitedDraft()
       setLastOrderNumber(orderNumber)
       setSubmitted(true)
       setPreviewOpen(false)
@@ -180,10 +199,40 @@ export function ShopAvailablePage() {
           Loading catalogue…
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {items.map((p) => {
-            const line = cart[p.id]
-            const qty = line?.quantity ?? 0
+        <>
+          <div className="mb-6 max-w-md relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search limited stock products..."
+              className={`w-full rounded-xl border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 px-3 py-2 text-base sm:text-sm text-slate-900 dark:text-slate-100 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 ${searchQuery ? 'pr-10' : ''}`}
+            />
+            {searchQuery.trim() && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {filteredItems.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-10 text-center">
+              <p className="font-display text-base font-semibold text-slate-700 dark:text-slate-300">
+                No products found
+              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Try a different product name, size, or rate.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {filteredItems.map((p) => {
+                const qty = cartQtys[p.id] ?? 0
             return (
               <Card key={p.id} className="overflow-hidden p-0 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-default relative">
                 {p.stock === 0 && (
@@ -280,7 +329,9 @@ export function ShopAvailablePage() {
               </Card>
             )
           })}
-        </div>
+            </div>
+          )}
+        </>
       )}
 
       {lines.length > 0 ? (
@@ -296,7 +347,7 @@ export function ShopAvailablePage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="secondary" onClick={() => setCart({})}>
+              <Button variant="secondary" onClick={clearLimitedDraft}>
                 Clear cart
               </Button>
               <Button onClick={() => setPreviewOpen(true)}>Preview order</Button>

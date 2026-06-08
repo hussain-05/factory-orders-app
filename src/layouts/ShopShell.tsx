@@ -9,6 +9,7 @@ import { useNotifications } from '../hooks/useNotifications'
 import { Button } from '../components/ui/Button'
 import { ModeSwitcher } from '../components/ModeSwitcher'
 import { useAdminMode } from '../contexts/AdminModeContext'
+import { OrderDraftProvider } from '../contexts/OrderDraftContext'
 import { useTheme } from '../hooks/useTheme'
 import { db } from '../lib/firebase'
 import { listOrdersForShop } from '../lib/orderService'
@@ -139,7 +140,9 @@ export function ShopShell() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        <Outlet />
+        <OrderDraftProvider>
+          <Outlet />
+        </OrderDraftProvider>
       </main>
 
       {/* Foreground notification toast */}

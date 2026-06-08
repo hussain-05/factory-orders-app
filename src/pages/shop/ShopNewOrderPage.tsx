@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Fuse from 'fuse.js'
 import { useAuth } from '../../contexts/AuthContext'
+import { useOrderDraft } from '../../contexts/OrderDraftContext'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
@@ -30,8 +31,10 @@ export function ShopNewOrderPage() {
   const [lastOrderNumber, setLastOrderNumber] = useState('')
   const [lastItemCount, setLastItemCount] = useState(0)
   const [factoryNumber, setFactoryNumber] = useState('')
-  const [qtys, setQtys] = useState<Record<string, number>>({})
-  const [units, setUnits] = useState<Record<string, string>>({})
+
+  const { standardDraft, setStandardQty, setStandardUnits, clearStandardDraft } = useOrderDraft()
+  const qtys = standardDraft.qtys
+  const units = standardDraft.units
 
   const refresh = useCallback(async () => {
     if (!db) return
@@ -89,29 +92,13 @@ export function ShopNewOrderPage() {
   }, [fuse, query, grouped])
 
   function setQty(id: string, qty: number) {
-    setQtys((prev) => {
-      const next = { ...prev }
-      const clamped = Math.max(0, Math.floor(qty))
-      if (clamped === 0) {
-        delete next[id]
-      } else {
-        next[id] = clamped
-      }
-      return next
-    })
+    const clamped = Math.max(0, Math.floor(qty))
+    setStandardQty(id, clamped)
   }
 
   function stepQty(id: string, delta: number) {
-    setQtys((prev) => {
-      const next = { ...prev }
-      const clamped = Math.max(0, (prev[id] ?? 0) + delta)
-      if (clamped === 0) {
-        delete next[id]
-      } else {
-        next[id] = clamped
-      }
-      return next
-    })
+    const clamped = Math.max(0, (qtys[id] ?? 0) + delta)
+    setStandardQty(id, clamped)
   }
 
   const validLines = useMemo<OrderLineItem[]>(
@@ -154,7 +141,7 @@ export function ShopNewOrderPage() {
         items: validLines,
       })
       setLastItemCount(validLines.length)
-      setQtys({})
+      clearStandardDraft()
       setLastOrderNumber(orderNumber)
       setSubmitted(true)
       setPreviewOpen(false)
@@ -307,10 +294,10 @@ export function ShopNewOrderPage() {
                           <select
                             value={units[v.id] ?? v.defaultUnit ?? 'box'}
                             onChange={(e) =>
-                              setUnits((prev) => ({
-                                ...prev,
+                              setStandardUnits({
+                                ...units,
                                 [v.id]: e.target.value,
-                              }))
+                              })
                             }
                             className="mr-3 rounded-xl border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 px-3 py-2 text-base text-slate-900 shadow-sm transition-all duration-150 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:text-slate-100 sm:text-sm"
                           >
@@ -408,7 +395,7 @@ export function ShopNewOrderPage() {
             <div className="mt-5 flex flex-col gap-2">
               <Button
                 variant="secondary"
-                onClick={() => setQtys({})}
+                onClick={clearStandardDraft}
                 disabled={!hasItems}
               >
                 Clear all
