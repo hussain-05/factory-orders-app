@@ -22,11 +22,11 @@ export function SignUpPage() {
   const [localError, setLocalError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const title = useMemo(() => (role === 'factory' ? 'Factory access' : 'Shop access'), [role])
+  const title = useMemo(() => (role === 'factory' ? 'Factory access' : role === 'factory_staff' ? 'Factory Staff access' : 'Shop access'), [role])
 
   if (!firebaseReady) return <MissingFirebase />
   if (!loading && user && profile) {
-    const dest = profile.role === 'factory' ? '/factory/pending' : '/shop/available'
+    const dest = profile.role === 'factory' || profile.role === 'factory_staff' ? '/factory/pending' : '/shop/available'
     return <Navigate to={dest} replace />
   }
 
@@ -73,10 +73,11 @@ export function SignUpPage() {
                 id="role"
                 className="mt-1"
                 value={role}
-                onChange={(e) => setRole(e.target.value === 'factory' ? 'factory' : 'shop')}
+                onChange={(e) => setRole(e.target.value as UserRole)}
               >
                 <option value="shop">Shop owner</option>
                 <option value="factory">Factory owner</option>
+                <option value="factory_staff">Factory Staff</option>
               </Select>
               <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{title}</p>
             </div>

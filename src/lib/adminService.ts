@@ -16,6 +16,7 @@ export interface AllowedEmail {
   email: string
   isAdmin: boolean
   added: boolean
+  role?: string
 }
 
 export async function listAllowedEmails(firestore: Firestore): Promise<AllowedEmail[]> {
@@ -25,6 +26,7 @@ export async function listAllowedEmails(firestore: Firestore): Promise<AllowedEm
       email: d.id,
       isAdmin: d.data()?.isAdmin === true,
       added: true,
+      role: d.data()?.role,
     }))
     .sort((a, b) => a.email.localeCompare(b.email))
 }
@@ -33,9 +35,12 @@ export async function addAllowedEmail(
   firestore: Firestore,
   email: string,
   isAdmin: boolean,
+  role?: string,
 ): Promise<void> {
   const normalised = email.trim().toLowerCase()
-  await setDoc(doc(firestore, allowedCol, normalised), { added: true, isAdmin })
+  const data: Record<string, unknown> = { added: true, isAdmin }
+  if (role) data.role = role
+  await setDoc(doc(firestore, allowedCol, normalised), data)
 }
 
 export async function removeAllowedEmail(

@@ -10,6 +10,10 @@ service cloud.firestore {
     }
 
     function isFactory() {
+      return signedIn() && userDoc().role in ['factory', 'factory_staff'];
+    }
+
+    function isFactoryOwner() {
       return signedIn() && userDoc().role == 'factory';
     }
 
@@ -39,7 +43,7 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.auth.uid == uid
         && isEmailAllowed(request.auth.token.email)
-        && request.resource.data.role in ['shop', 'factory']
+        && request.resource.data.role in ['shop', 'factory', 'factory_staff']
         && (request.resource.data.role != 'shop'
             || request.resource.data.shopName in ['Seva', 'Seva Mart', 'Seva Super Store']);
       allow update: if signedIn()
@@ -52,13 +56,13 @@ service cloud.firestore {
 
     match /unlimitedProducts/{id} {
       allow read: if signedIn();
-      allow write: if isFactory() || isAdmin();
+      allow write: if isFactoryOwner() || isAdmin();
     }
 
     match /limitedProducts/{id} {
       allow read: if signedIn();
-      allow create, delete: if isFactory() || isAdmin();
-      allow update: if isFactory() || isAdmin()
+      allow create, delete: if isFactoryOwner() || isAdmin();
+      allow update: if isFactoryOwner() || isAdmin()
         || (
           isShop()
           && request.resource.data.stock is int

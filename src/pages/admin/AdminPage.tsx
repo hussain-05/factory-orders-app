@@ -15,6 +15,7 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
+import { Select } from '../../components/ui/Select'
 
 export function AdminPage() {
   const [emails, setEmails] = useState<AllowedEmail[]>([])
@@ -22,6 +23,7 @@ export function AdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [newEmail, setNewEmail] = useState('')
   const [newIsAdmin, setNewIsAdmin] = useState(false)
+  const [newRole, setNewRole] = useState('shop')
   const [busy, setBusy] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [factoryNumber, setFactoryNumber] = useState('')
@@ -54,9 +56,10 @@ export function AdminPage() {
     setBusy(true)
     setError(null)
     try {
-      await addAllowedEmail(db, newEmail.trim(), newIsAdmin)
+      await addAllowedEmail(db, newEmail.trim(), newIsAdmin, newRole)
       setNewEmail('')
       setNewIsAdmin(false)
+      setNewRole('shop')
       await refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not add email.')
@@ -169,6 +172,19 @@ export function AdminPage() {
               disabled={busy}
             />
           </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Role</label>
+            <Select
+              className="mt-1"
+              value={newRole}
+              onChange={(e) => setNewRole(e.target.value)}
+              disabled={busy}
+            >
+              <option value="shop">Shopkeeper</option>
+              <option value="factory">Factory Owner</option>
+              <option value="factory_staff">Factory Staff</option>
+            </Select>
+          </div>
           <label className="flex cursor-pointer items-center gap-3">
             <div className="relative">
               <input
@@ -237,9 +253,16 @@ export function AdminPage() {
               <li key={e.email} className="flex items-center justify-between gap-3 px-5 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{e.email}</p>
-                  {e.isAdmin && (
-                    <Badge tone="neutral">Admin</Badge>
-                  )}
+                  <div className="mt-0.5 flex flex-wrap gap-2">
+                    {e.isAdmin && (
+                      <Badge tone="neutral">Admin</Badge>
+                    )}
+                    {e.role && (
+                      <Badge tone="neutral">
+                        {e.role === 'factory' ? 'Factory Owner' : e.role === 'factory_staff' ? 'Factory Staff' : 'Shopkeeper'}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <button

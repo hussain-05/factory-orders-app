@@ -40,7 +40,9 @@ function HomeRedirect() {
     ? (profile.role === 'shop' ? '/shop/dashboard' : '/factory/dashboard')
     : profile.role === 'factory'
       ? '/factory/dashboard'
-      : '/shop/dashboard'
+      : profile.role === 'factory_staff'
+        ? '/factory/pending'
+        : '/shop/dashboard'
 
   return <Navigate to={dest} replace />
 }
@@ -68,9 +70,9 @@ function AppRoutes() {
 
         <Route element={<RequireAuth role="factory" />}>
           <Route path="/factory" element={<FactoryShell />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<FactoryDashboardPage />} />
-            <Route path="products" element={<FactoryProductsPage />} />
+            <Route index element={<Navigate to={profile?.role === 'factory_staff' ? 'pending' : 'dashboard'} replace />} />
+            <Route path="dashboard" element={profile?.role === 'factory_staff' ? <Navigate to="/factory/pending" replace /> : <FactoryDashboardPage />} />
+            <Route path="products" element={profile?.role === 'factory_staff' ? <Navigate to="/factory/pending" replace /> : <FactoryProductsPage />} />
             <Route path="pending" element={<FactoryPendingPage />} />
             <Route path="history" element={<FactoryOrderHistoryPage />} />
           </Route>

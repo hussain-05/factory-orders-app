@@ -1,6 +1,8 @@
 import { AlertTriangle } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Fuse from 'fuse.js'
 import { db, storage } from '../../lib/firebase'
 import {
   createLimitedProductWithPhoto,
@@ -37,6 +39,7 @@ export function FactoryProductsPage() {
   const [lRate, setLRate] = useState('0')
   const [lFile, setLFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const [edit, setEdit] = useState<LimitedProduct | null>(null)
 
@@ -45,6 +48,21 @@ export function FactoryProductsPage() {
   const [cUnit, setCUnit] = useState<'box' | 'bag' | 'pcs'>('pcs')
   const [catalogFile, setCatalogFile] = useState<File | null>(null)
   const [imageView, setImageView] = useState<{ url: string; title: string } | null>(null)
+
+  const fuse = useMemo(
+    () =>
+      new Fuse(limited, {
+        keys: ['name', 'size', 'stock', 'rate'],
+        threshold: 0.4,
+      }),
+    [limited],
+  )
+
+  const filteredLimited = useMemo(() => {
+    const q = searchQuery.trim()
+    if (!q) return limited
+    return fuse.search(q).map((res) => res.item)
+  }, [limited, searchQuery, fuse])
 
   const refresh = useCallback(async () => {
     if (!db) return
@@ -321,13 +339,44 @@ export function FactoryProductsPage() {
               </Button>
             </div>
             {loading ? (
-              <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
+              <div className="flex items-center gap-3 p-5 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-900 dark:border-slate-100 border-t-transparent transition-colors duration-200" />
                 Loading…
               </div>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {limited.map((p) => (
+              <div className="p-5">
+                <div className="mb-6 relative max-w-md">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search limited stock products..."
+                    className={`w-full rounded-xl border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 px-3 py-2 text-base sm:text-sm text-slate-900 dark:text-slate-100 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 ${searchQuery ? 'pr-10' : ''}`}
+                  />
+                  {searchQuery.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
+                      aria-label="Clear search"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                {filteredLimited.length === 0 && limited.length > 0 ? (
+                  <div className="flex flex-col items-center gap-2 py-10 text-center">
+                    <p className="font-display text-base font-semibold text-slate-700 dark:text-slate-300">
+                      No products found
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Try a different product name, size, stock, or rate.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {filteredLimited.map((p) => (
                   <Card key={p.id} className="overflow-hidden p-0">
                     <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
                       {p.photoUrl ? (
@@ -366,7 +415,12 @@ export function FactoryProductsPage() {
                       </Button>
                     </div>
                   </Card>
-                ))}
+                    ))}
+                  </div>
+                )}
+                {!loading && limited.length === 0 && !searchQuery ? (
+                  <p className="mt-5 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">No limited items yet.</p>
+                ) : null}
               </div>
             )}
           </div>

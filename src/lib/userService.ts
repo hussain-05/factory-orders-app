@@ -19,7 +19,7 @@ export async function fetchUserProfile(
     uid,
     email: String(d.email ?? ''),
     displayName: String(d.displayName ?? ''),
-    role: d.role === 'factory' ? 'factory' : 'shop',
+    role: d.role === 'factory' ? 'factory' : d.role === 'factory_staff' ? 'factory_staff' : 'shop',
     shopName: d.shopName as ShopName | undefined,
     createdAt: typeof d.createdAt?.toMillis === 'function' ? d.createdAt.toMillis() : 0,
     whatsappNumber: typeof d.whatsappNumber === 'string' ? d.whatsappNumber : undefined,
