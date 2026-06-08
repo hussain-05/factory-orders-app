@@ -89,30 +89,37 @@ function orderDispatchStage(o: Order): DispatchStage {
 
 // ─── sub-components ───────────────────────────────────────────────────────
 
+const iconToneClasses = {
+  emerald:
+    'bg-emerald-50 text-emerald-700 shadow-sm dark:bg-emerald-500/10 dark:text-emerald-400 dark:shadow-[0_0_24px_rgba(16,185,129,0.12)]',
+  sky:
+    'bg-sky-50 text-sky-700 shadow-sm dark:bg-sky-500/10 dark:text-sky-400 dark:shadow-[0_0_24px_rgba(56,189,248,0.12)]',
+  amber:
+    'bg-amber-50 text-amber-700 shadow-sm dark:bg-amber-500/10 dark:text-amber-400 dark:shadow-[0_0_24px_rgba(245,158,11,0.12)]',
+  violet:
+    'bg-violet-50 text-violet-700 shadow-sm dark:bg-violet-500/10 dark:text-violet-400 dark:shadow-[0_0_24px_rgba(139,92,246,0.12)]',
+  rose:
+    'bg-rose-50 text-rose-700 shadow-sm dark:bg-rose-500/10 dark:text-rose-400 dark:shadow-[0_0_24px_rgba(244,63,94,0.12)]',
+  indigo:
+    'bg-indigo-50 text-indigo-700 shadow-sm dark:bg-indigo-500/10 dark:text-indigo-400 dark:shadow-[0_0_24px_rgba(99,102,241,0.12)]',
+}
+
 function StatCard({
   label,
   value,
   sub,
   icon,
-  tone = 'default',
+  tone = 'sky',
   onClick,
 }: {
   label: string
   value: string | number
   sub?: string
   icon: React.ReactNode
-  tone?: 'default' | 'warning' | 'success' | 'info' | 'indigo' | 'purple' | 'teal'
+  tone?: keyof typeof iconToneClasses
   onClick?: () => void
 }) {
-  const iconClass = {
-    default: 'bg-slate-100 text-slate-600',
-    warning: 'bg-amber-100 text-amber-700',
-    success: 'bg-emerald-100 text-emerald-700',
-    info: 'bg-blue-100 text-blue-700',
-    indigo: 'bg-indigo-100 text-indigo-700',
-    purple: 'bg-purple-100 text-purple-700',
-    teal: 'bg-teal-100 text-teal-700',
-  }[tone]
+  const iconClass = iconToneClasses[tone]
 
   const inner = (
     <>
@@ -301,7 +308,7 @@ export function ShopDashboardPage() {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 transition-colors duration-200">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400">
             Dashboard
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
@@ -340,7 +347,7 @@ export function ShopDashboardPage() {
             value={ordersAwaitingConfirmation}
             sub="Dispatched orders waiting for your confirmation"
             icon={<PackageCheck className="h-5 w-5" />}
-            tone={ordersAwaitingConfirmation > 0 ? 'warning' : 'info'}
+            tone={ordersAwaitingConfirmation > 0 ? 'amber' : 'sky'}
             onClick={() => nav('/shop/history', { state: { filterAwaiting: true } })}
           />
         </motion.div>
@@ -356,7 +363,7 @@ export function ShopDashboardPage() {
               pendingConfirmations > 0 && `${pendingConfirmations} to confirm`,
             ].filter(Boolean).join(' · ')}
             icon={<PackageCheck className="h-5 w-5" />}
-            tone={pending.length > 0 ? 'warning' : 'purple'}
+            tone={pending.length > 0 ? 'rose' : 'violet'}
             onClick={() => nav('/shop/history')}
           />
         </motion.div>
@@ -366,7 +373,7 @@ export function ShopDashboardPage() {
             value={avgLead != null ? `${avgLead}d` : '—'}
             sub="order placed → delivered"
             icon={<Clock className="h-5 w-5" />}
-            tone="teal"
+            tone="emerald"
           />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.24, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
@@ -375,7 +382,7 @@ export function ShopDashboardPage() {
             value={placedThisMonth}
             sub={`${orders.length} all time`}
             icon={<TrendingUp className="h-5 w-5" />}
-            tone="success"
+            tone="sky"
             onClick={() => nav('/shop/history')}
           />
         </motion.div>
@@ -390,7 +397,12 @@ export function ShopDashboardPage() {
             My pending pipeline
           </p>
           {pending.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">No active orders right now.</p>
+            <div className="flex flex-col items-center gap-2 py-6 text-center">
+              <span className="text-2xl">🎉</span>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                All clear — no active orders.
+              </p>
+            </div>
           ) : (
             <div className="flex items-start gap-2">
               <PipelineStage
@@ -508,7 +520,12 @@ export function ShopDashboardPage() {
             Recent orders
           </p>
           {recentOrders.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">No orders yet.</p>
+            <div className="flex flex-col items-center gap-2 py-6 text-center">
+              <span className="text-2xl">📦</span>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                No orders placed yet. Start one to see your history here.
+              </p>
+            </div>
           ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-800/50 transition-colors duration-200">
               {recentOrders.map(o => {
@@ -549,7 +566,12 @@ export function ShopDashboardPage() {
             Frequently ordered
           </p>
           {frequentProducts.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">No order history yet.</p>
+            <div className="flex flex-col items-center gap-2 py-6 text-center">
+              <span className="text-2xl">📊</span>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Your frequently ordered products will appear here.
+              </p>
+            </div>
           ) : (
             <ul className="space-y-3">
               {frequentProducts.map((p, i) => (
