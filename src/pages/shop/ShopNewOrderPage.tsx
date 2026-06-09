@@ -410,22 +410,22 @@ export function ShopNewOrderPage() {
 
       {/* ── Mobile sticky bar ── */}
       {hasItems ? (
-        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-slate-900 p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] lg:hidden transition-colors duration-200">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-800/90 backdrop-blur border-t border-slate-200 dark:border-slate-800/50 p-3 sm:p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] lg:hidden transition-colors duration-200">
+          <div className="mx-auto flex max-w-6xl flex-row items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <span className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
                 <ShoppingBag className="h-4 w-4" />
               </span>
               <div>
-                <p className="font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{validLines.length} items selected</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{totalQty} total qty</p>
+                <p className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100 transition-colors duration-200 line-clamp-1">{validLines.length} items</p>
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200 line-clamp-1">{totalQty} total qty</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="secondary" onClick={clearStandardDraft}>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button variant="secondary" onClick={clearStandardDraft} className="px-2.5 py-2 text-xs sm:px-4 sm:py-2 sm:text-sm">
                 Clear all
               </Button>
-              <Button onClick={() => setPreviewOpen(true)}>Preview order</Button>
+              <Button onClick={() => setPreviewOpen(true)} className="px-2.5 py-2 text-xs sm:px-4 sm:py-2 sm:text-sm whitespace-nowrap">Preview order</Button>
             </div>
           </div>
         </div>
