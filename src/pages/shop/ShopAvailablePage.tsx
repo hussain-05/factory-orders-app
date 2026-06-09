@@ -174,6 +174,7 @@ export function ShopAvailablePage() {
                   {p.photoUrl ? (
                     <button
                       type="button"
+                      aria-label={`View full size image of ${p.name}`}
                       className="h-full w-full"
                       onClick={() => openImage(p)}
                     >
