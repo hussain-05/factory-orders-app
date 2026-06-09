@@ -133,7 +133,7 @@ export function UserProfileDrawer({ isOpen, onClose }: UserProfileDrawerProps) {
   </div>
   <p className="font-display text-base font-semibold text-slate-900 dark:text-slate-100">{displayName}</p>
   <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
-    {profile?.role === 'factory' ? 'Factory Staff' : 'Shopkeeper'}
+    {profile?.role === 'factory' ? 'Factory Owner' : profile?.role === 'factory_staff' ? 'Factory Staff' : 'Shopkeeper'}
   </span>
  </div>
  {localMessage && (

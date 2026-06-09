@@ -75,8 +75,8 @@ export function SignUpPage() {
                 value={role}
                 onChange={(e) => setRole(e.target.value as UserRole)}
               >
-                <option value="shop">Shop owner</option>
-                <option value="factory">Factory owner</option>
+                <option value="shop">Shopkeeper</option>
+                <option value="factory">Factory Owner</option>
                 <option value="factory_staff">Factory Staff</option>
               </Select>
               <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{title}</p>
