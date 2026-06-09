@@ -105,16 +105,20 @@ export function FactoryShell() {
             aria-label="Main navigation"
             className="inline-flex gap-0.5 rounded-2xl border border-white/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 p-1 shadow-md shadow-slate-900/8 dark:shadow-none backdrop-blur-xl sm:gap-1 sm:p-1.5 transition-colors duration-200"
           >
-            <NavLink className={linkClass} to="/factory/dashboard">
-              <LayoutDashboard className="h-4 w-4 shrink-0" />
-              <span className="sm:hidden">Dash</span>
-              <span className="hidden sm:inline">Dashboard</span>
-            </NavLink>
-            <NavLink className={linkClass} to="/factory/products">
-              <Warehouse className="h-4 w-4 shrink-0" />
-              <span className="sm:hidden">Items</span>
-              <span className="hidden sm:inline">Products</span>
-            </NavLink>
+            {profile?.role !== 'factory_staff' && (
+              <>
+                <NavLink className={linkClass} to="/factory/dashboard">
+                  <LayoutDashboard className="h-4 w-4 shrink-0" />
+                  <span className="sm:hidden">Dash</span>
+                  <span className="hidden sm:inline">Dashboard</span>
+                </NavLink>
+                <NavLink className={linkClass} to="/factory/products">
+                  <Warehouse className="h-4 w-4 shrink-0" />
+                  <span className="sm:hidden">Items</span>
+                  <span className="hidden sm:inline">Products</span>
+                </NavLink>
+              </>
+            )}
             <NavLink className={linkClass} to="/factory/pending" title="Orders awaiting production or dispatch">
               <ClipboardList className="h-4 w-4 shrink-0" />
               <span className="sm:hidden">Pending</span>

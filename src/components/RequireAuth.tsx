@@ -29,7 +29,10 @@ export function RequireAuth({ role }: { role: UserRole }) {
   // Admins can access both factory and shop routes
   if (profile.isAdmin) return <Outlet />
   if (profile.role !== role) {
-    const dest = profile.role === 'factory' ? '/factory/dashboard' : '/shop/dashboard'
+    if (role === 'factory' && profile.role === 'factory_staff') {
+      return <Outlet />
+    }
+    const dest = profile.role === 'factory' ? '/factory/dashboard' : profile.role === 'factory_staff' ? '/factory/pending' : '/shop/dashboard'
     return <Navigate to={dest} replace />
   }
   return <Outlet />

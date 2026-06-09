@@ -1,4 +1,4 @@
-export type UserRole = 'shop' | 'factory'
+export type UserRole = 'shop' | 'factory' | 'factory_staff'
 
 export type ShopName = 'Seva' | 'Seva Mart' | 'Seva Super Store'
 
