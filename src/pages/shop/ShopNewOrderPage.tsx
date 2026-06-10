@@ -1,5 +1,5 @@
 import { Minus, Plus, Search, ShoppingBag } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useDeferredValue } from 'react'
 import Fuse from 'fuse.js'
 import { useAuth } from '../../contexts/AuthContext'
 import { Button } from '../../components/ui/Button'
@@ -78,11 +78,16 @@ export function ShopNewOrderPage() {
     [grouped]
   )
 
+  // ⚡ Bolt Optimization: Defer the search query to keep the main thread responsive during keystrokes
+  // This allows the text input to update instantly while the expensive Fuse.js filtering
+  // happens in the background, preventing UI stuttering on large product lists.
+  const deferredQuery = useDeferredValue(query)
+
   const filteredGroups = useMemo(() => {
-    const q = query.trim()
+    const q = deferredQuery.trim()
     if (!q) return grouped
     return fuse.search(q).map(r => r.item)
-  }, [fuse, query, grouped])
+  }, [fuse, deferredQuery, grouped])
 
   function setQty(id: string, qty: number) {
     setQtys((prev) => {
