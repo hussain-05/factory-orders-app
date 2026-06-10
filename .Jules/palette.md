@@ -1,3 +1,4 @@
 ## 2024-06-06 - A11y enhancements for unlabelled search inputs
 **Learning:** Found that custom filter/search elements utilizing a placeholder string and no visible label didn't have `aria-label` attached.
 **Action:** Next time when evaluating inputs relying entirely on `placeholder` strings, check if they have a proper accessible label in the DOM via `aria-label`.
+## 2025-02-20 - Add aria-labels to image preview buttons\n**Learning:** Image preview buttons that use `<button>` to wrap `<img>` tags must have descriptive `aria-label` attributes to give context to screen reader users (e.g., "View larger image of Product Name"), rather than relying on the image's `alt` text alone or reading simply "button".\n**Action:** Always verify that interactive buttons wrapping decorative or inline images have an explicit `aria-label` describing the action being taken.
