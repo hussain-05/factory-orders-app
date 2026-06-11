@@ -176,6 +176,7 @@ export function ShopAvailablePage() {
                       type="button"
                       className="h-full w-full"
                       onClick={() => openImage(p)}
+                      aria-label={`Preview ${p.name}`}
                     >
                       <img
                         src={p.photoUrl}
