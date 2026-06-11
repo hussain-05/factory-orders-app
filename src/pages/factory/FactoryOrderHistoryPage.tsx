@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useDeferredValue } from 'react'
 import { format } from 'date-fns'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
@@ -147,6 +147,7 @@ export function FactoryOrderHistoryPage() {
   const [filterEndDate, setFilterEndDate] = useState<string>('')
   const [filterOpen, setFilterOpen] = useState(false)
   const [orderSearch, setOrderSearch] = useState('')
+  const deferredOrderSearch = useDeferredValue(orderSearch)
 
   const refresh = useCallback(async () => {
     if (!db) return
@@ -173,7 +174,7 @@ export function FactoryOrderHistoryPage() {
   )
 
   const grouped = useMemo(() => {
-    const needle = orderSearch.trim()
+    const needle = deferredOrderSearch.trim()
     const filtered = orders.filter(o => {
       if (needle && !(o.orderNumber ?? '').includes(needle)) return false
       if (filterShop !== 'all' && o.shopName !== filterShop) return false
@@ -191,7 +192,7 @@ export function FactoryOrderHistoryPage() {
     })
     const sorted = filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     return groupByMonth(sorted)
-  }, [orders, orderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate])
+  }, [orders, deferredOrderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate])
 
   const hasActiveFilters = filterShop !== 'all' || filterRequestor !== 'all' || filterKind !== 'all' || filterStartDate !== '' || filterEndDate !== ''
 

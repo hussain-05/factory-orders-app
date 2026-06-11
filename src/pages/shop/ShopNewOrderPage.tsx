@@ -19,6 +19,7 @@ export function ShopNewOrderPage() {
   const { profile, user } = useAuth()
   const [catalog, setCatalog] = useState<UnlimitedProduct[]>([])
   const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
