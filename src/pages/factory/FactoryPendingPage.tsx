@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { useLocation } from 'react-router-dom'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useDeferredValue } from 'react'
 import { format } from 'date-fns'
 import { useAuth } from '../../contexts/AuthContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
@@ -612,6 +612,7 @@ export function FactoryPendingPage() {
   const [filterEndDate, setFilterEndDate] = useState<string>('')
   const [filterOpen, setFilterOpen] = useState(false)
   const [orderSearch, setOrderSearch] = useState('')
+  const deferredOrderSearch = useDeferredValue(orderSearch)
   const refresh = useCallback(async () => {
     if (!db) return
     setLoading(true)
@@ -647,7 +648,7 @@ export function FactoryPendingPage() {
   )
 
   const grouped = useMemo(() => {
-    const needle = orderSearch.trim()
+    const needle = deferredOrderSearch.trim()
     const filtered = orders.filter(o => {
       if (needle && !(o.orderNumber ?? '').includes(needle)) return false
       if (filterShop !== 'all' && o.shopName !== filterShop) return false
@@ -665,7 +666,7 @@ export function FactoryPendingPage() {
     })
     const sorted = filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     return groupByMonth(sorted)
-  }, [orders, orderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate])
+  }, [orders, deferredOrderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate])
 
   const totalOrders = grouped.reduce((s, g) => s + g.orders.length, 0)
   const hasActiveFilters = filterShop !== 'all' || filterRequestor !== 'all' || filterKind !== 'all' || filterStartDate !== '' || filterEndDate !== ''
