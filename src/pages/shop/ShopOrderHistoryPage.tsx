@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { FirebaseError } from 'firebase/app'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useDeferredValue } from 'react'
 import { format } from 'date-fns'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAdminMode } from '../../contexts/AdminModeContext'
@@ -156,6 +156,7 @@ export function ShopOrderHistoryPage() {
   const [filterEndDate, setFilterEndDate] = useState<string>('')
   const [filterOpen, setFilterOpen] = useState((loc.state as any)?.filterAwaiting ?? false)
   const [orderSearch, setOrderSearch] = useState('')
+  const deferredOrderSearch = useDeferredValue(orderSearch)
 
   async function handleConfirmDispatch(orderId: string, dispatchId: string, productId: string) {
     if (!db) return
@@ -236,7 +237,7 @@ export function ShopOrderHistoryPage() {
   )
 
   const grouped = useMemo(() => {
-    const needle = orderSearch.trim()
+    const needle = deferredOrderSearch.trim()
     const filtered = orders.filter(o => {
       if (needle && !(o.orderNumber ?? '').includes(needle)) return false
       if (filterRequestor !== 'all' && o.requestorName !== filterRequestor) return false
@@ -253,7 +254,7 @@ export function ShopOrderHistoryPage() {
     })
     const sorted = filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     return groupByMonth(sorted)
-  }, [orders, orderSearch, filterRequestor, filterKind, filterAwaiting, filterStartDate, filterEndDate])
+  }, [orders, deferredOrderSearch, filterRequestor, filterKind, filterAwaiting, filterStartDate, filterEndDate])
 
   const hasActiveFilters = filterRequestor !== 'all' || filterKind !== 'all' || filterAwaiting || filterStartDate !== '' || filterEndDate !== ''
 
