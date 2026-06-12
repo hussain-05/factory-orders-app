@@ -304,6 +304,7 @@ export function FactoryOrderHistoryPage() {
                   type="date"
                   value={filterStartDate}
                   onChange={e => setFilterStartDate(e.target.value)}
+                  onClick={e => { try { (e.target as HTMLInputElement).showPicker?.() } catch { /* ignore unsupported browser error */ } }}
                   aria-label="Start date"
                   className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
@@ -312,6 +313,7 @@ export function FactoryOrderHistoryPage() {
                   type="date"
                   value={filterEndDate}
                   onChange={e => setFilterEndDate(e.target.value)}
+                  onClick={e => { try { (e.target as HTMLInputElement).showPicker?.() } catch { /* ignore unsupported browser error */ } }}
                   aria-label="End date"
                   className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
                 />
