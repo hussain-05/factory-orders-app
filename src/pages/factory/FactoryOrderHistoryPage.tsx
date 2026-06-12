@@ -513,7 +513,7 @@ export function FactoryOrderHistoryPage() {
                   await deleteOrder(db, deleteTarget.id)
                   setDeleteTarget(null)
                   window.location.reload()
-                } catch (e) {
+                } catch (_) {
                   alert('Failed to delete order.')
                   setDeleteTarget(null)
                 } finally {

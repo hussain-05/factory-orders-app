@@ -79,10 +79,6 @@ export function ShopNewOrderPage() {
     [grouped]
   )
 
-  // ⚡ Bolt Optimization: Defer the search query to keep the main thread responsive during keystrokes
-  // This allows the text input to update instantly while the expensive Fuse.js filtering
-  // happens in the background, preventing UI stuttering on large product lists.
-  const deferredQuery = useDeferredValue(query)
 
   const filteredGroups = useMemo(() => {
     const q = deferredQuery.trim()
@@ -116,18 +112,21 @@ export function ShopNewOrderPage() {
     })
   }
 
+  const catalogMap = useMemo(() => new Map(catalog.map(p => [p.id, p])), [catalog])
+
   const validLines = useMemo<OrderLineItem[]>(
-    () =>
-      catalog
-        .filter((p) => (qtys[p.id] ?? 0) > 0)
-        .map((p) => ({
-          productId: p.id,
-          name: p.name,
-          size: p.size,
-          quantity: qtys[p.id]!,
-          unit: p.defaultUnit ?? 'pcs',
-        })),
-    [catalog, qtys],
+    () => Object.entries(qtys).map(([id, quantity]) => {
+      const p = catalogMap.get(id)
+      if (!p) return null
+      return {
+        productId: p.id,
+        name: p.name,
+        size: p.size,
+        quantity,
+        unit: p.defaultUnit ?? 'pcs',
+      }
+    }).filter(Boolean) as OrderLineItem[],
+    [catalogMap, qtys],
   )
 
   const totalQty = useMemo(
