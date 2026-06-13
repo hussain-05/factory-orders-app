@@ -5,3 +5,4 @@
 ## 2024-06-09 - A11y enhancements for image preview buttons
 **Learning:** Buttons wrapping `<img>` elements (such as for image lightboxes/previews) need `aria-label` attributes to explicitly define their action for screen readers, as the implicit `alt` text of the image may not effectively convey the interactable purpose.
 **Action:** Always add an explicit `aria-label` (e.g. "View full size image of X") to `<button>` wrappers around images to ensure screen readers announce the action correctly.
+## 2024-06-13 - A11y enhancements for icon-only buttons\n**Learning:** Found that custom dismiss buttons (✕) and administrative toggle buttons lacked `aria-label` attributes.\n**Action:** Added `aria-label` attributes to ensure screen readers can announce the action of these icon-only buttons correctly.

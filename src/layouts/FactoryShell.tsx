@@ -156,6 +156,7 @@ export function FactoryShell() {
               type="button"
               onClick={dismissToast}
               className="ml-2 shrink-0 text-slate-500 hover:text-white"
+              aria-label="Dismiss"
             >
               ✕
             </button>

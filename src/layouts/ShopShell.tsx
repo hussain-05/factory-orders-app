@@ -160,6 +160,7 @@ export function ShopShell() {
               type="button"
               onClick={dismissToast}
               className="ml-2 shrink-0 text-slate-500 dark:text-slate-400 hover:text-white transition-colors duration-200"
+              aria-label="Dismiss"
             >
               ✕
             </button>

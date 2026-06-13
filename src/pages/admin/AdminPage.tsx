@@ -242,6 +242,7 @@ export function AdminPage() {
                   <button
                     type="button"
                     title={e.isAdmin ? 'Remove admin' : 'Make admin'}
+                    aria-label={e.isAdmin ? 'Remove admin' : 'Make admin'}
                     disabled={busy}
                     onClick={() => void handleToggleAdmin(e.email, e.isAdmin)}
                     className={`rounded-lg p-2 transition-colors ${
@@ -275,6 +276,7 @@ export function AdminPage() {
                     <button
                       type="button"
                       title="Remove"
+                      aria-label="Remove user"
                       disabled={busy}
                       onClick={() => setConfirmDelete(e.email)}
                       className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
