@@ -14,6 +14,7 @@ import { FactoryDashboardPage } from './pages/factory/FactoryDashboardPage'
 import { FactoryOrderHistoryPage } from './pages/factory/FactoryOrderHistoryPage'
 import { FactoryPendingPage } from './pages/factory/FactoryPendingPage'
 import { FactoryProductsPage } from './pages/factory/FactoryProductsPage'
+import { FactoryCreateOrderPage } from './pages/factory/FactoryCreateOrderPage'
 import { ShopAvailablePage } from './pages/shop/ShopAvailablePage'
 import { ShopDashboardPage } from './pages/shop/ShopDashboardPage'
 import { ShopNewOrderPage } from './pages/shop/ShopNewOrderPage'
@@ -73,6 +74,7 @@ function AppRoutes() {
             <Route index element={<Navigate to={profile?.role === 'factory_staff' ? 'pending' : 'dashboard'} replace />} />
             <Route path="dashboard" element={profile?.role === 'factory_staff' ? <Navigate to="/factory/pending" replace /> : <FactoryDashboardPage />} />
             <Route path="products" element={profile?.role === 'factory_staff' ? <Navigate to="/factory/pending" replace /> : <FactoryProductsPage />} />
+            <Route path="create-order" element={profile?.role === 'factory_staff' ? <Navigate to="/factory/pending" replace /> : <FactoryCreateOrderPage />} />
             <Route path="pending" element={<FactoryPendingPage />} />
             <Route path="history" element={<FactoryOrderHistoryPage />} />
           </Route>

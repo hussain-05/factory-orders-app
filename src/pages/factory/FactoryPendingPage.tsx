@@ -254,7 +254,7 @@ function DispatchForm({
                   {it.name}{it.size ? ` · ${it.size}` : ''}
                 </p>
                 <p className="mt-0.5 whitespace-normal break-words text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">
-                  Ordered {it.quantity} {(it as any).unit || (order.orderKind === 'limited' ? 'pcs' : 'box')} · {dispatchedQty[it.productId] ?? 0} already sent · {remaining} remaining
+                  Ordered {it.quantity} {(it as any).unit || ((it as any)?.source === 'limited' || order.orderKind === 'limited' ? 'pcs' : 'box')} · {dispatchedQty[it.productId] ?? 0} already sent · {remaining} remaining
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -341,7 +341,7 @@ function PendingCard({
             {o.orderNumber && (
               <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-mono font-semibold text-slate-600 dark:text-slate-400 transition-colors duration-200">#{o.orderNumber}</span>
             )}
-            <Badge tone="neutral">{o.orderKind === 'limited' ? 'Limited' : 'Standard'}</Badge>
+            <Badge tone="neutral">{o.orderKind === 'factory_dispatch' ? 'Factory sent' : o.orderKind === 'limited' ? 'Limited' : 'Standard'}</Badge>
             <Badge tone={stage.tone}>{stage.label}</Badge>
             {o.requestorName && (
               <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-200">
@@ -469,7 +469,7 @@ function PendingCard({
                       </div>
                       {d.items.map(it => {
                         const originalItem = o.items.find(oi => oi.productId === it.productId)
-                        const unit = (originalItem as any)?.unit || (o.orderKind === 'limited' ? 'pcs' : 'box')
+                        const unit = (originalItem as any)?.unit || ((originalItem as any)?.source === 'limited' || o.orderKind === 'limited' ? 'pcs' : 'box')
                         return (
                           <div key={it.productId} className="flex justify-between text-slate-600 dark:text-slate-400 transition-colors duration-200">
                             <span>{it.name}{it.size ? ` · ${it.size}` : ''}</span>
@@ -502,7 +502,7 @@ function PendingCard({
                           const sent = dispatchedQty[it.productId] ?? 0
                           const full = sent >= it.quantity
                           const remaining = Math.max(it.quantity - sent, 0)
-                          const unit = (it as any).unit || (o.orderKind === 'limited' ? 'pcs' : 'box')
+                          const unit = (it as any).unit || ((it as any)?.source === 'limited' || o.orderKind === 'limited' ? 'pcs' : 'box')
                           return (
                             <div key={it.productId} className="flex items-center justify-between text-xs">
                               <span className="text-slate-600 dark:text-slate-400 truncate transition-colors duration-200">{it.name}{it.size ? ` · ${it.size}` : ''}</span>
@@ -577,7 +577,7 @@ function PendingCard({
                   </div>
                   <div className="flex items-center gap-4 shrink-0">
                     <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">
-                      ×{it.quantity} {(it as any).unit || (o.orderKind === 'limited' ? 'pcs' : 'box')}
+                      ×{it.quantity} {(it as any).unit || ((it as any)?.source === 'limited' || o.orderKind === 'limited' ? 'pcs' : 'box')}
                     </span>
                   </div>
                 </li>
@@ -897,7 +897,7 @@ export function FactoryPendingPage() {
             <div className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors duration-200">Type</span>
               <div className="flex gap-1.5">
-                {([['all', 'All'], ['unlimited', 'Standard'], ['limited', 'Limited']] as [string, string][]).map(([val, label]) => (
+                {([['all', 'All'], ['unlimited', 'Standard'], ['limited', 'Limited'], ['factory_dispatch', 'Factory sent']] as [string, string][]).map(([val, label]) => (
                   <button
                     key={val}
                     type="button"

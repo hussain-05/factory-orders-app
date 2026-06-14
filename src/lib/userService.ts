@@ -1,11 +1,30 @@
 import {
+  collection,
   doc,
   getDoc,
+  getDocs,
+  query,
   serverTimestamp,
   setDoc,
+  where,
   type Firestore,
 } from 'firebase/firestore'
 import type { ShopName, UserProfile, UserRole } from '../types/models'
+
+function userProfileFromDoc(id: string, data: Record<string, unknown>): UserProfile {
+  const rawCreatedAt = data.createdAt as { toMillis?: () => number } | undefined
+  const rawRole = data.role
+
+  return {
+    uid: id,
+    email: String(data.email ?? ''),
+    displayName: String(data.displayName ?? ''),
+    role: rawRole === 'factory' ? 'factory' : rawRole === 'factory_staff' ? 'factory_staff' : 'shop',
+    shopName: data.shopName as ShopName | undefined,
+    createdAt: typeof rawCreatedAt?.toMillis === 'function' ? rawCreatedAt.toMillis() : 0,
+    whatsappNumber: typeof data.whatsappNumber === 'string' ? data.whatsappNumber : undefined,
+  }
+}
 
 export async function fetchUserProfile(
   firestore: Firestore,
@@ -14,16 +33,7 @@ export async function fetchUserProfile(
   const ref = doc(firestore, 'users', uid)
   const snap = await getDoc(ref)
   if (!snap.exists()) return null
-  const d = snap.data()
-  return {
-    uid,
-    email: String(d.email ?? ''),
-    displayName: String(d.displayName ?? ''),
-    role: d.role === 'factory' ? 'factory' : d.role === 'factory_staff' ? 'factory_staff' : 'shop',
-    shopName: d.shopName as ShopName | undefined,
-    createdAt: typeof d.createdAt?.toMillis === 'function' ? d.createdAt.toMillis() : 0,
-    whatsappNumber: typeof d.whatsappNumber === 'string' ? d.whatsappNumber : undefined,
-  }
+  return userProfileFromDoc(uid, snap.data())
 }
 
 export async function saveUserProfile(
@@ -50,4 +60,26 @@ export async function saveUserProfile(
     },
     { merge: true },
   )
+}
+
+export async function listShopUsers(
+  firestore: Firestore,
+  shopName?: ShopName,
+): Promise<UserProfile[]> {
+  // Query only by role and filter shopName client-side. This avoids requiring a
+  // composite Firestore index for role + shopName and keeps the selector reliable.
+  const snap = await getDocs(query(collection(firestore, 'users'), where('role', '==', 'shop')))
+
+  const rows = snap.docs
+    .map((d) => userProfileFromDoc(d.id, d.data()))
+    .filter((u): u is UserProfile & { role: 'shop' } => u.role === 'shop')
+    .filter((u) => !shopName || u.shopName === shopName)
+
+  rows.sort((a, b) => {
+    const an = a.displayName || a.email
+    const bn = b.displayName || b.email
+    return an.localeCompare(bn) || a.email.localeCompare(b.email)
+  })
+
+  return rows
 }

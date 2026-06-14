@@ -21,12 +21,13 @@ async function sendToTokens(
   tokens: string[],
   notification: { title: string; body: string }
 ): Promise<void> {
-  if (tokens.length === 0) return
+  const uniqueTokens = Array.from(new Set(tokens.filter(Boolean)))
+  if (uniqueTokens.length === 0) return
 
   // Send as data-only (no notification field) so the OS never auto-displays it.
   // The service worker handles background display; onMessage handles foreground.
   const response = await messaging.sendEachForMulticast({
-    tokens,
+    tokens: uniqueTokens,
     data: {
       title: notification.title,
       body: notification.body,
@@ -41,7 +42,7 @@ async function sendToTokens(
       (r.error.code === 'messaging/registration-token-not-registered' ||
         r.error.code === 'messaging/invalid-registration-token')
     ) {
-      stale.push(tokens[i])
+      stale.push(uniqueTokens[i])
     }
   })
 
@@ -60,7 +61,7 @@ async function sendToTokens(
   }
 }
 
-// ── Trigger 1: New order placed → notify all factory users ───────────────────
+// ── Trigger 1: New order placed ──────────────────────────────────────────────
 
 export const onNewOrder = functions.firestore
   .document('orders/{orderId}')
@@ -68,13 +69,24 @@ export const onNewOrder = functions.firestore
     const order = snap.data()
     if (!order) return
 
-    const factoryUsers = await db
-      .collection('users')
-      .where('role', 'in', ['factory', 'factory_staff'])
-      .get()
+    if (order.orderKind === 'factory_dispatch') {
+      const userSnap = await db.collection('users').doc(order.shopUserId).get()
+      const tokens: string[] = userSnap.data()?.fcmTokens || []
+      const itemCount: number = (order.items || []).length
+      await sendToTokens(tokens, {
+        title: 'Extra stock sent by factory',
+        body: `${itemCount} item${itemCount === 1 ? '' : 's'} have been dispatched to ${order.shopName}. Please confirm receipt after delivery.`,
+      })
+      return
+    }
+
+    const [factoryUsers, factoryStaffUsers] = await Promise.all([
+      db.collection('users').where('role', '==', 'factory').get(),
+      db.collection('users').where('role', '==', 'factory_staff').get(),
+    ])
 
     const tokens: string[] = []
-    factoryUsers.docs.forEach((doc) => {
+    ;[...factoryUsers.docs, ...factoryStaffUsers.docs].forEach((doc) => {
       const t: string[] = doc.data().fcmTokens || []
       tokens.push(...t)
     })
