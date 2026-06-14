@@ -50,19 +50,6 @@ function productLabel(p: { name: string; size?: string }) {
   return `${p.name}${p.size ? ` (${p.size})` : ""}`;
 }
 
-function stockChipClass(stock: number) {
-  if (stock <= 10) {
-    return "bg-rose-50 text-rose-700 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20 animate-pulse";
-  }
-  if (stock >= 21 && stock <= 70) {
-    return "bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20";
-  }
-  if (stock > 100) {
-    return "bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20";
-  }
-  return "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700";
-}
-
 export function FactoryCreateOrderPage() {
   const { profile, user } = useAuth();
   const {
