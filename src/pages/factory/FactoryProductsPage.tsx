@@ -37,6 +37,7 @@ export function FactoryProductsPage() {
   const [lSize, setLSize] = useState('')
   const [lStock, setLStock] = useState('0')
   const [lRate, setLRate] = useState('0')
+  const [lDescription, setLDescription] = useState('')
   const [lFile, setLFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -52,7 +53,7 @@ export function FactoryProductsPage() {
   const fuse = useMemo(
     () =>
       new Fuse(limited, {
-        keys: ['name', 'size', 'stock', 'rate'],
+        keys: ['name', 'size', 'stock', 'rate', 'description'],
         threshold: 0.4,
       }),
     [limited],
@@ -109,11 +110,13 @@ export function FactoryProductsPage() {
         size: lSize,
         stock: Number(lStock),
         rate: Number(lRate),
+        description: lDescription,
       })
       setLName('')
       setLSize('')
       setLStock('0')
       setLRate('0')
+      setLDescription('')
       setLFile(null)
       await refresh()
     } catch (err) {
@@ -138,6 +141,7 @@ export function FactoryProductsPage() {
         size: edit.size,
         stock: Number(edit.stock),
         rate: Number(edit.rate),
+        description: edit.description ?? '',
         photoUrl,
       })
       setEdit(null)
@@ -303,6 +307,17 @@ export function FactoryProductsPage() {
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Size / pack</label>
                 <Input className="mt-1" value={lSize} onChange={(e) => setLSize(e.target.value)} required />
               </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">
+                  Description <span className="font-normal text-slate-400">(optional)</span>
+                </label>
+                <textarea
+                  className="mt-1 min-h-24 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-900 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-800/50 dark:bg-slate-900 dark:text-slate-100 sm:text-sm"
+                  placeholder="Short note visible to shopkeepers"
+                  value={lDescription}
+                  onChange={(e) => setLDescription(e.target.value)}
+                />
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">Stock</label>
@@ -399,6 +414,11 @@ export function FactoryProductsPage() {
                         <div className="min-w-0">
                           <p className="truncate font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{p.name}</p>
                           <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{p.size}</p>
+                          {p.description ? (
+                            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400 transition-colors duration-200">
+                              {p.description}
+                            </p>
+                          ) : null}
                         </div>
                         <Badge tone="neutral">₹{p.rate.toFixed(2)}</Badge>
                       </div>
@@ -576,6 +596,16 @@ export function FactoryProductsPage() {
                   value={edit.size}
                   onChange={(e) => setEdit({ ...edit, size: e.target.value })}
                   required
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">
+                  Description <span className="font-normal text-slate-400">(optional)</span>
+                </label>
+                <textarea
+                  className="mt-1 min-h-24 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-900 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-800/50 dark:bg-slate-900 dark:text-slate-100 sm:text-sm"
+                  value={edit.description ?? ''}
+                  onChange={(e) => setEdit({ ...edit, description: e.target.value })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">

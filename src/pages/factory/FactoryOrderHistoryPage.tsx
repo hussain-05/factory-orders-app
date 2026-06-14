@@ -392,7 +392,7 @@ const filtered = orders.filter(o => {
                             {o.orderNumber && (
                               <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-mono font-semibold text-slate-600 dark:text-slate-400 transition-colors duration-200">#{o.orderNumber}</span>
                             )}
-                            <Badge tone="neutral">{o.orderKind === 'limited' ? 'Limited' : 'Standard'}</Badge>
+                            <Badge tone="neutral">{o.orderKind === 'factory_dispatch' ? 'Factory sent' : o.orderKind === 'limited' ? 'Limited' : 'Standard'}</Badge>
                             <Badge tone={o.status === 'completed' ? 'success' : 'warning'}>
                               {o.status === 'completed' ? 'Completed' : 'Pending'}
                             </Badge>
@@ -485,7 +485,7 @@ const filtered = orders.filter(o => {
                                     )}
                                   </div>
                                   <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">
-                                    ×{it.quantity} {(it as any).unit || (o.orderKind === 'limited' ? 'pcs' : 'box')}
+                                    ×{it.quantity} {(it as any).unit || ((it as any)?.source === 'limited' || o.orderKind === 'limited' ? 'pcs' : 'box')}
                                   </span>
                                 </li>
                               ))}

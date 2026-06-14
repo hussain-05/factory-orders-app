@@ -125,11 +125,109 @@ export async function createOrder(
   return { orderNumber }
 }
 
+
+export async function createFactoryDispatchOrder(
+  firestore: Firestore,
+  input: {
+    shopName: string
+    shopUserId: string
+    shopkeeperName: string
+    shopkeeperEmail: string
+    shopWhatsappNumber?: string
+    factoryCreatedByUid: string
+    factoryCreatedByName: string
+    requestorEmail: string
+    items: OrderLineItem[]
+  },
+): Promise<{ orderNumber: string }> {
+  if (input.items.length === 0) throw new Error('Add at least one line item.')
+
+  const orderRef = doc(collection(firestore, ordersCol))
+  const now = Date.now()
+  let orderNumber = ''
+
+  const limitedQtyByProduct = new Map<string, { qty: number; label: string }>()
+  for (const line of input.items) {
+    if (line.source !== 'limited') continue
+    const prev = limitedQtyByProduct.get(line.productId)
+    const nextQty = (prev?.qty ?? 0) + line.quantity
+    limitedQtyByProduct.set(line.productId, { qty: nextQty, label: line.name })
+  }
+
+  await runTransaction(firestore, async (tx) => {
+    // Phase 1: all reads first (counter + limited stock docs)
+    const counterSnap = await tx.get(counterRef(firestore))
+    const snapshots = new Map<string, { snap: DocumentSnapshot; qty: number; label: string }>()
+    for (const [productId, { qty, label }] of limitedQtyByProduct) {
+      const ref = doc(firestore, limitedCol, productId)
+      snapshots.set(productId, { snap: await tx.get(ref), qty, label })
+    }
+
+    // Phase 2: validate limited stock only
+    for (const { snap, qty, label } of snapshots.values()) {
+      if (!snap.exists()) throw new Error(`Limited stock product missing: ${label}`)
+      const stock = Number(snap.data()?.stock ?? 0)
+      if (stock < qty) throw new Error(`Insufficient stock for "${label}".`)
+    }
+
+    // Phase 3: writes
+    const lastNum = counterSnap.exists() ? Number(counterSnap.data()?.lastOrderNumber ?? 0) : 0
+    orderNumber = nextOrderNumber(lastNum)
+    tx.set(counterRef(firestore), { lastOrderNumber: lastNum + 1 }, { merge: true })
+
+    for (const { snap, qty } of snapshots.values()) {
+      tx.update(snap.ref, {
+        stock: Number(snap.data()?.stock ?? 0) - qty,
+        updatedAt: serverTimestamp(),
+      })
+    }
+
+    const dispatch: OrderDispatch = {
+      id: `d_${now}_${Math.random().toString(36).slice(2, 6)}`,
+      dispatchedAt: now,
+      receivedAt: null,
+      items: input.items.map((line) => ({
+        productId: line.productId,
+        name: line.name,
+        size: line.size,
+        qty: line.quantity,
+        confirmedAt: null,
+      })),
+    }
+
+    tx.set(orderRef, {
+      orderKind: 'factory_dispatch',
+      shopName: input.shopName,
+      shopUserId: input.shopUserId,
+      requestorName: input.shopkeeperName,
+      requestorEmail: input.shopkeeperEmail,
+      shopWhatsappNumber: input.shopWhatsappNumber ?? null,
+      orderNumber,
+      items: input.items,
+      status: 'pending',
+      milestones: {
+        receivedAt: Timestamp.fromMillis(now),
+        dispatchedAt: Timestamp.fromMillis(now),
+      },
+      expectedDeliveryDate: Timestamp.fromMillis(now),
+      actualDeliveryDate: null,
+      dispatches: [dispatch],
+      createdByFactory: true,
+      factoryCreatedByUid: input.factoryCreatedByUid,
+      factoryCreatedByName: input.factoryCreatedByName,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+  })
+
+  return { orderNumber }
+}
+
 function mapOrder(id: string, d: Record<string, unknown>): Order {
   const milestones = (d.milestones ?? {}) as Record<string, unknown>
   return {
     id,
-    orderKind: d.orderKind === 'limited' ? 'limited' : 'unlimited',
+    orderKind: d.orderKind === 'factory_dispatch' ? 'factory_dispatch' : d.orderKind === 'limited' ? 'limited' : 'unlimited',
     shopName: String(d.shopName ?? '') as Order['shopName'],
     shopUserId: String(d.shopUserId ?? ''),
     requestorName: String(d.requestorName ?? ''),
@@ -181,6 +279,9 @@ function mapOrder(id: string, d: Record<string, unknown>): Order {
           : null,
     shopWhatsappNumber: typeof d.shopWhatsappNumber === 'string' ? d.shopWhatsappNumber : undefined,
     orderNumber: typeof d.orderNumber === 'string' ? d.orderNumber : undefined,
+    createdByFactory: Boolean(d.createdByFactory),
+    factoryCreatedByUid: typeof d.factoryCreatedByUid === 'string' ? d.factoryCreatedByUid : undefined,
+    factoryCreatedByName: typeof d.factoryCreatedByName === 'string' ? d.factoryCreatedByName : undefined,
     dispatches: Array.isArray(d.dispatches)
       ? (d.dispatches as Array<Record<string, unknown>>).map(disp => ({
           id: String(disp.id ?? ''),
@@ -251,17 +352,21 @@ export async function deleteOrder(firestore: Firestore, orderId: string) {
 
   const order = mapOrder(orderId, orderSnap.data() as Record<string, unknown>)
 
-  // Unlimited orders have no stock to restore — simple delete
-  if (order.orderKind !== 'limited' || order.items.length === 0) {
+  const restockableItems = order.items.filter((item) =>
+    order.orderKind === 'limited' || item.source === 'limited',
+  )
+
+  // Standard/unlimited-only orders have no stock to restore — simple delete.
+  if (restockableItems.length === 0) {
     await deleteDoc(orderRef)
     return
   }
 
-  // Limited orders: restore each product's stock atomically then delete
+  // Limited/factory-dispatch limited items: restore stock atomically then delete.
   await runTransaction(firestore, async (tx) => {
     // Phase 1: all reads
     const reads: Array<{ snap: DocumentSnapshot; quantity: number }> = []
-    for (const item of order.items) {
+    for (const item of restockableItems) {
       const productRef = doc(firestore, limitedCol, item.productId)
       reads.push({ snap: await tx.get(productRef), quantity: item.quantity })
     }

@@ -2,10 +2,11 @@ export type UserRole = 'shop' | 'factory' | 'factory_staff'
 
 export type ShopName = 'Seva' | 'Seva Mart' | 'Seva Super Store'
 
-export type OrderKind = 'unlimited' | 'limited'
+export type OrderKind = 'unlimited' | 'limited' | 'factory_dispatch'
 
 export type OrderStatus = 'pending' | 'completed'
 export type Unit = 'box' | 'bag' | 'pcs'
+export type OrderLineSource = 'standard' | 'limited'
 
 export interface UserProfile {
   uid: string
@@ -34,6 +35,7 @@ export interface LimitedProduct {
   stock: number
   rate: number
   photoUrl: string
+  description?: string
   createdAt: number
   updatedAt: number
 }
@@ -59,6 +61,7 @@ export interface OrderLineItem {
   unit?: Unit
   rate?: number
   notAvailable?: boolean
+  source?: OrderLineSource
 }
 
 export interface OrderMilestones {
@@ -84,4 +87,7 @@ export interface Order {
   shopWhatsappNumber?: string
   orderNumber?: string
   dispatches?: OrderDispatch[]
+  createdByFactory?: boolean
+  factoryCreatedByUid?: string
+  factoryCreatedByName?: string
 }

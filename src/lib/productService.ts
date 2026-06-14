@@ -204,6 +204,7 @@ export async function listLimitedProducts(firestore: Firestore): Promise<Limited
       stock: Number(x.stock ?? 0),
       rate: Number(x.rate ?? 0),
       photoUrl: String(x.photoUrl ?? ''),
+      description: typeof x.description === 'string' ? x.description : '',
       createdAt:
         typeof x.createdAt?.toMillis === 'function' ? x.createdAt.toMillis() : Date.now(),
       updatedAt:
@@ -279,7 +280,7 @@ async function compressImageToMaxSize(file: File, maxBytes: number): Promise<Fil
 
 export async function createLimitedProduct(
   firestore: Firestore,
-  input: { name: string; size: string; stock: number; rate: number; photoUrl: string },
+  input: { name: string; size: string; stock: number; rate: number; photoUrl: string; description?: string },
 ) {
   const refDoc = await addDoc(collection(firestore, limitedCol), {
     name: input.name.trim(),
@@ -287,6 +288,7 @@ export async function createLimitedProduct(
     stock: input.stock,
     rate: input.rate,
     photoUrl: input.photoUrl,
+    description: (input.description ?? '').trim(),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })
@@ -297,7 +299,7 @@ export async function createLimitedProductWithPhoto(
   firestore: Firestore,
   storage: FirebaseStorage,
   file: File,
-  input: { name: string; size: string; stock: number; rate: number },
+  input: { name: string; size: string; stock: number; rate: number; description?: string },
 ) {
   const id = doc(collection(firestore, limitedCol)).id
   await setDoc(doc(firestore, limitedCol, id), {
@@ -306,6 +308,7 @@ export async function createLimitedProductWithPhoto(
     stock: input.stock,
     rate: input.rate,
     photoUrl: '',
+    description: (input.description ?? '').trim(),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })
@@ -317,7 +320,7 @@ export async function createLimitedProductWithPhoto(
 export async function updateLimitedProduct(
   firestore: Firestore,
   id: string,
-  input: Partial<{ name: string; size: string; stock: number; rate: number; photoUrl: string }>,
+  input: Partial<{ name: string; size: string; stock: number; rate: number; photoUrl: string; description: string }>,
 ) {
   await updateDoc(doc(firestore, limitedCol, id), {
     ...input,

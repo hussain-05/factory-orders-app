@@ -39,7 +39,11 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if signedIn() && request.auth.uid == uid;
+      allow read: if signedIn() && (
+        request.auth.uid == uid
+        || isFactoryOwner()
+        || isAdmin()
+      );
       allow create: if signedIn()
         && request.auth.uid == uid
         && isEmailAllowed(request.auth.token.email)
@@ -74,15 +78,35 @@ service cloud.firestore {
     match /orders/{id} {
       allow read: if signedIn() && (isFactory() || isAdmin() || resource.data.shopName == userDoc().shopName);
       allow create: if signedIn()
-        && isShop()
-        && request.resource.data.shopUserId == request.auth.uid
-        && request.resource.data.shopName == userDoc().shopName
-        && request.resource.data.status == 'pending';
+        && (
+          (
+            isShop()
+            && request.resource.data.shopUserId == request.auth.uid
+            && request.resource.data.shopName == userDoc().shopName
+            && request.resource.data.status == 'pending'
+          )
+          ||
+          (
+            (isFactoryOwner() || isAdmin())
+            && request.resource.data.orderKind == 'factory_dispatch'
+            && request.resource.data.createdByFactory == true
+            && request.resource.data.status == 'pending'
+          )
+        );
       allow update: if isFactory() || isAdmin()
         || (isShop() && resource.data.shopName == userDoc().shopName && resource.data.status == 'pending');
-      allow delete: if isAdmin() || (isShop()
-        && resource.data.shopUserId == request.auth.uid
-        && resource.data.status == 'pending');
+      allow delete: if isAdmin()
+        || (
+          isFactoryOwner()
+          && resource.data.orderKind == 'factory_dispatch'
+          && resource.data.createdByFactory == true
+        )
+        || (
+          isShop()
+          && resource.data.shopUserId == request.auth.uid
+          && resource.data.status == 'pending'
+          && resource.data.createdByFactory != true
+        );
     }
 
     match /settings/{doc} {

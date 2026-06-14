@@ -1,4 +1,4 @@
-import { Bell, BellOff, ClipboardList, LayoutDashboard, Moon, ScrollText, Sun, User, Warehouse } from 'lucide-react'
+import { Bell, BellOff, ClipboardList, LayoutDashboard, Moon, PackagePlus, ScrollText, Sun, User, Warehouse } from 'lucide-react'
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { NavLink, Outlet } from 'react-router-dom'
@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../hooks/useTheme'
 import { useNotifications } from '../hooks/useNotifications'
 import { Button } from '../components/ui/Button'
+import { FactoryDispatchDraftProvider } from '../contexts/FactoryDispatchDraftContext'
 import { ModeSwitcher } from '../components/ModeSwitcher'
 import { db } from '../lib/firebase'
 import { countPendingOrdersForFactory } from '../lib/orderService'
@@ -24,7 +25,7 @@ function usePendingOrderCount() {
 }
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all sm:gap-2 sm:px-3 ${
+  `flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all sm:gap-2 sm:px-3 ${
     isActive
       ? 'bg-slate-900/90 text-white shadow-sm dark:bg-slate-800 dark:text-slate-100'
       : 'text-slate-600 hover:bg-white/70 dark:text-slate-400 dark:hover:bg-slate-800/50'
@@ -101,9 +102,10 @@ export function FactoryShell() {
 
         {/* Row 2: nav pill */}
         <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
+          <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <nav
             aria-label="Main navigation"
-            className="inline-flex gap-0.5 rounded-2xl border border-white/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 p-1 shadow-md shadow-slate-900/8 dark:shadow-none backdrop-blur-xl sm:gap-1 sm:p-1.5 transition-colors duration-200"
+            className="inline-flex min-w-max gap-0.5 rounded-2xl border border-white/50 bg-white/50 p-1 shadow-md shadow-slate-900/8 backdrop-blur-xl transition-colors duration-200 dark:border-slate-800/50 dark:bg-slate-900/50 dark:shadow-none sm:gap-1 sm:p-1.5"
           >
             {profile?.role !== 'factory_staff' && (
               <>
@@ -116,6 +118,11 @@ export function FactoryShell() {
                   <Warehouse className="h-4 w-4 shrink-0" />
                   <span className="sm:hidden">Items</span>
                   <span className="hidden sm:inline">Products</span>
+                </NavLink>
+                <NavLink className={linkClass} to="/factory/create-order">
+                  <PackagePlus className="h-4 w-4 shrink-0" />
+                  <span className="sm:hidden">Send</span>
+                  <span className="hidden sm:inline">Factory dispatch</span>
                 </NavLink>
               </>
             )}
@@ -135,11 +142,14 @@ export function FactoryShell() {
               <span className="hidden sm:inline">Order history</span>
             </NavLink>
           </nav>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        <Outlet />
+        <FactoryDispatchDraftProvider>
+          <Outlet />
+        </FactoryDispatchDraftProvider>
       </main>
 
       {/* Foreground notification toast */}
