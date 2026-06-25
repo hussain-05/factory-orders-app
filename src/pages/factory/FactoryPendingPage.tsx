@@ -9,7 +9,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
 import { useUsersMap } from '../../hooks/useUsersMap'
-import { addDispatch, deleteOrder, listPendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
+import { addDispatch, deleteOrder, subscribePendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
 import { whatsappLink } from '../../utils/whatsapp'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -656,38 +656,59 @@ export function FactoryPendingPage() {
   const [expectedDraft, setExpectedDraft] = useState<Record<string, string>>({})
   const [dispatchFormOpenId, setDispatchFormOpenId] = useState<string | null>(null)
   const [notifyBanner, setNotifyBanner] = useState<{ message: string; number: string } | null>(null)
-  const [filterShop, setFilterShop] = useState<string>('all')
-  const [filterRequestor, setFilterRequestor] = useState<string>('all')
-  const [filterKind, setFilterKind] = useState<string>('all')
-  const [filterStartDate, setFilterStartDate] = useState<string>('')
-  const [filterEndDate, setFilterEndDate] = useState<string>('')
-  const [filterOpen, setFilterOpen] = useState(false)
+  // ── Filter state — persisted across navigation via sessionStorage ──────────
+  const FILTER_KEY = 'seva_pending_filters'
+  const loadFilters = () => {
+    try { return JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? '{}') } catch { return {} }
+  }
+  const saved = loadFilters()
+  const [filterShop, setFilterShopRaw] = useState<string>(saved.shop ?? 'all')
+  const [filterRequestor, setFilterRequestorRaw] = useState<string>(saved.requestor ?? 'all')
+  const [filterKind, setFilterKindRaw] = useState<string>(saved.kind ?? 'all')
+  const [filterStartDate, setFilterStartDateRaw] = useState<string>(saved.startDate ?? '')
+  const [filterEndDate, setFilterEndDateRaw] = useState<string>(saved.endDate ?? '')
+  const [filterOpen, setFilterOpen] = useState(
+    !!(saved.shop || saved.requestor || saved.kind || saved.startDate || saved.endDate)
+  )
   const [orderSearch, setOrderSearch] = useState('')
-  const refresh = useCallback(async (silent = false) => {
+
+  const persistFilters = (patch: Record<string, unknown>) => {
+    const current = loadFilters()
+    sessionStorage.setItem(FILTER_KEY, JSON.stringify({ ...current, ...patch }))
+  }
+  const setFilterShop = (v: string) => { setFilterShopRaw(v); persistFilters({ shop: v }) }
+  const setFilterRequestor = (v: string) => { setFilterRequestorRaw(v); persistFilters({ requestor: v }) }
+  const setFilterKind = (v: string) => { setFilterKindRaw(v); persistFilters({ kind: v }) }
+  const setFilterStartDate = (v: string) => { setFilterStartDateRaw(v); persistFilters({ startDate: v }) }
+  const setFilterEndDate = (v: string) => { setFilterEndDateRaw(v); persistFilters({ endDate: v }) }
+
+  // Real-time subscription
+  useEffect(() => {
     if (!db) return
-    if (!silent) setLoading(true)
+    setLoading(true)
     setError(null)
-    try {
-      setOrders(await listPendingOrdersForFactory(db))
-    } catch {
-      setError('Could not load pending orders.')
-    } finally {
-      if (!silent) setLoading(false)
-    }
+    const unsub = subscribePendingOrdersForFactory(
+      db,
+      (rows) => {
+        setOrders(rows)
+        setLoading(false)
+      },
+      () => {
+        setError('Could not load pending orders.')
+        setLoading(false)
+      }
+    )
+    return unsub
   }, [])
 
-  useEffect(() => {
-    queueMicrotask(() => { void refresh() })
-  }, [refresh])
-
-  useEffect(() => {
-    const handleRefreshEvent = (e: Event) => {
-      const isSilent = (e as CustomEvent).detail?.silent ?? false
-      void refresh(isSilent)
+  const refresh = useCallback(async (silent = false) => {
+    // Under real-time sync, we just show a visual transition for manual refresh clicks
+    if (!silent) {
+      setLoading(true)
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      setLoading(false)
     }
-    window.addEventListener('refresh-orders', handleRefreshEvent)
-    return () => window.removeEventListener('refresh-orders', handleRefreshEvent)
-  }, [refresh])
+  }, [])
 
   useEffect(() => {
     queueMicrotask(() => {

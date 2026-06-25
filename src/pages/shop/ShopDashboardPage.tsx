@@ -1,16 +1,15 @@
 import { AlertTriangle } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { motion } from 'framer-motion'
 import { addMonths, differenceInCalendarDays, format, startOfMonth } from 'date-fns'
-import { BarChart3, Clock, PackageCheck, RefreshCw, Repeat, TrendingUp } from 'lucide-react'
+import { BarChart3, Clock, PackageCheck, Repeat, TrendingUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAdminMode } from '../../contexts/AdminModeContext'
 import { db } from '../../lib/firebase'
-import { listOrdersForShop } from '../../lib/orderService'
+import { subscribeOrdersForShop } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
-import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import type { Order, OrderDispatch } from '../../types/models'
 import { formatDateTime } from '../../utils/format'
@@ -199,23 +198,26 @@ export function ShopDashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
-  const refresh = useCallback(async () => {
+  // Real-time subscription — re-subscribes whenever the active shop changes
+  useEffect(() => {
     if (!db || !user) return
     setLoading(true)
     setError(null)
-    try {
-      setOrders(await listOrdersForShop(db, effectiveShopName))
-    } catch {
-      setError('Could not load dashboard data.')
-    } finally {
-      setLoading(false)
-      setTimeout(() => setMounted(true), 100)
-    }
+    const unsub = subscribeOrdersForShop(
+      db,
+      effectiveShopName,
+      (rows) => {
+        setOrders(rows)
+        setLoading(false)
+        setTimeout(() => setMounted(true), 100)
+      },
+      () => {
+        setError('Could not load dashboard data.')
+        setLoading(false)
+      },
+    )
+    return unsub
   }, [user, effectiveShopName])
-
-  useEffect(() => {
-    queueMicrotask(() => { void refresh() })
-  }, [refresh])
 
   // ── derived metrics ──────────────────────────────────────────────────────
 
@@ -315,10 +317,13 @@ export function ShopDashboardPage() {
             Your order activity, delivery pipeline, and frequently ordered products at a glance.
           </p>
         </div>
-        <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          </span>
+          Live
+        </div>
       </div>
 
       {error && (

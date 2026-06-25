@@ -5,6 +5,7 @@ import {
   doc,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -341,4 +342,38 @@ export async function deleteLimitedProductWithPhoto(
     }
   }
   await deleteDoc(doc(firestore, limitedCol, input.id))
+}
+
+// ─── Real-time subscription helpers ───────────────────────────────────────
+
+function mapLimitedProduct(d: import('firebase/firestore').QueryDocumentSnapshot): LimitedProduct {
+  const x = d.data()
+  return {
+    id: d.id,
+    name: String(x.name ?? ''),
+    size: String(x.size ?? ''),
+    stock: Number(x.stock ?? 0),
+    rate: Number(x.rate ?? 0),
+    photoUrl: String(x.photoUrl ?? ''),
+    description: typeof x.description === 'string' ? x.description : '',
+    createdAt: typeof x.createdAt?.toMillis === 'function' ? x.createdAt.toMillis() : Date.now(),
+    updatedAt: typeof x.updatedAt?.toMillis === 'function' ? x.updatedAt.toMillis() : Date.now(),
+  }
+}
+
+/**
+ * Subscribe to all limited products, sorted by updatedAt desc.
+ * Returns an unsubscribe function — call it on component unmount.
+ */
+export function subscribeLimitedProducts(
+  firestore: Firestore,
+  onData: (products: LimitedProduct[]) => void,
+  onError?: (err: Error) => void,
+): () => void {
+  const qy = query(collection(firestore, limitedCol), orderBy('updatedAt', 'desc'), limit(200))
+  return onSnapshot(
+    qy,
+    (snap) => onData(snap.docs.map(mapLimitedProduct)),
+    (err) => onError?.(err),
+  )
 }
