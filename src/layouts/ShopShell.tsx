@@ -13,6 +13,7 @@ import { OrderDraftProvider } from '../contexts/OrderDraftContext'
 import { useTheme } from '../hooks/useTheme'
 import { db } from '../lib/firebase'
 import { listOrdersForShop } from '../lib/orderService'
+import type { ShopName } from '../types/models'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all sm:gap-2 sm:px-3 ${
@@ -23,24 +24,23 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export function ShopShell() {
   const { profile } = useAuth()
-  const { shopView } = useAdminMode()
-  const displayShopName = profile?.isAdmin ? shopView : (profile?.shopName ?? 'Shop')
+  const { shopView, shops, setShopView } = useAdminMode()
+  const displayShopName = shopView
   const [awaitingCount, setAwaitingCount] = useState(0)
   const { theme, toggleTheme } = useTheme()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const { status, toast, dismissToast, enable } = useNotifications()
 
   useEffect(() => {
-    const shopName = profile?.isAdmin ? shopView : profile?.shopName
-    if (!db || !shopName) return
-    listOrdersForShop(db, shopName).then(orders => {
+    if (!db || !shopView) return
+    listOrdersForShop(db, shopView).then(orders => {
       const count = orders.filter(o =>
         o.status === 'pending' &&
         (o.dispatches ?? []).some(d => d.items.some(it => !it.confirmedAt))
       ).length
       setAwaitingCount(count)
     }).catch(() => {})
-  }, [profile?.shopName, profile?.isAdmin, shopView])
+  }, [shopView])
 
   return (
     <div className="min-h-dvh bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
@@ -48,25 +48,43 @@ export function ShopShell() {
         {profile?.isAdmin && <ModeSwitcher />}
 
         {/* Row 1: identity + actions */}
-        <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-3 sm:px-6">
-          <div className="min-w-0">
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 pt-3 sm:px-6">
+          {/* Left column: identity */}
+          <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-500">
               Seva · Shop
             </p>
-            <p className="truncate font-display text-lg font-semibold leading-tight text-slate-900 dark:text-slate-100 transition-colors duration-200">
-              {displayShopName}
-            </p>
+            {shops.length > 1 && !profile?.isAdmin ? (
+              <div className="relative mt-0.5 flex items-center gap-1.5">
+                <select
+                  value={shopView}
+                  onChange={e => setShopView(e.target.value as ShopName)}
+                  className="max-w-[140px] sm:max-w-none rounded-lg border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 px-2 py-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors duration-200"
+                >
+                  {shops.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <p className="truncate font-display text-lg font-semibold leading-tight text-slate-900 dark:text-slate-100 transition-colors duration-200">
+                {displayShopName}
+              </p>
+            )}
             <p className="truncate text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{profile?.displayName}</p>
           </div>
 
-          {/* Seva logo — absolutely centred */}
-          <img
-            src="/seva-logo.png"
-            alt="Seva"
-            className="absolute left-1/2 top-1/2 h-9 w-auto -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-          />
+          {/* Middle column: Seva logo */}
+          <div className="shrink-0 flex items-center justify-center px-1">
+            <img
+              src="/seva-logo.png"
+              alt="Seva"
+              className="h-8 sm:h-9 w-auto pointer-events-none"
+            />
+          </div>
 
-          <div className="flex items-center gap-2">
+          {/* Right column: actions */}
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0">
             {status === 'unknown' && (
               <Button variant="secondary" className="shrink-0 !gap-1.5" onClick={() => void enable()}>
                 <Bell className="h-4 w-4" />
@@ -74,7 +92,7 @@ export function ShopShell() {
               </Button>
             )}
             {status === 'denied' && (
-              <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">
+              <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200 shrink-0">
                 <BellOff className="h-4 w-4" />
                 <span className="hidden sm:inline">Notifications blocked</span>
               </span>
@@ -140,7 +158,7 @@ export function ShopShell() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        <OrderDraftProvider>
+        <OrderDraftProvider key={shopView}>
           <Outlet />
         </OrderDraftProvider>
       </main>

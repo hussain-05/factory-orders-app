@@ -4,6 +4,7 @@ import { Minus, Plus, ShoppingBag, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Fuse from "fuse.js";
 import { useAuth } from "../../contexts/AuthContext";
+import { useAdminMode } from "../../contexts/AdminModeContext";
 import { useOrderDraft } from "../../contexts/OrderDraftContext";
 import { db } from "../../lib/firebase";
 import { getFactoryWhatsappNumber } from "../../lib/adminService";
@@ -18,7 +19,6 @@ import { Modal } from "../../components/ui/Modal";
 import type {
   LimitedProduct,
   OrderLineItem,
-  ShopName,
 } from "../../types/models";
 
 type Line = { product: LimitedProduct; quantity: number };
@@ -32,6 +32,7 @@ function stockBarClass(stock: number) {
 
 export function ShopAvailablePage() {
   const { profile, user } = useAuth();
+  const { shopView } = useAdminMode();
   const [items, setItems] = useState<LimitedProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +130,7 @@ export function ShopAvailablePage() {
     try {
       const { orderNumber } = await createOrder(db, {
         orderKind: "limited",
-        shopName: profile.shopName as ShopName,
+        shopName: shopView,
         shopUserId: user.uid,
         requestorName: profile.displayName,
         requestorEmail: profile.email,
@@ -190,7 +191,7 @@ export function ShopAvailablePage() {
               <a
                 href={whatsappLink(
                   factoryNumber,
-                  `Hi, I've placed a new order:\nOrder number: ${lastOrderNumber}\nShop: ${profile?.shopName}\nNo of items: ${lastItemCount}\nRequestor: ${profile?.displayName}\nType: Limited Stock`,
+                  `Hi, I've placed a new order:\nOrder number: ${lastOrderNumber}\nShop: ${shopView}\nNo of items: ${lastItemCount}\nRequestor: ${profile?.displayName}\nType: Limited Stock`,
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
