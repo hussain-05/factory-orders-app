@@ -26,7 +26,13 @@ export function SignUpPage() {
 
   if (!firebaseReady) return <MissingFirebase />
   if (!loading && user && profile) {
-    const dest = profile.role === 'factory' || profile.role === 'factory_staff' ? '/factory/pending' : '/shop/available'
+    const dest = profile.isAdmin
+      ? (profile.role === 'shop' ? '/shop/dashboard' : '/factory/dashboard')
+      : profile.role === 'factory'
+        ? '/factory/dashboard'
+        : profile.role === 'factory_staff'
+          ? '/factory/pending'
+          : '/shop/dashboard'
     return <Navigate to={dest} replace />
   }
 
