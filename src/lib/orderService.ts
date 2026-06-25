@@ -7,6 +7,7 @@ import {
   getDoc,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   runTransaction,
@@ -603,7 +604,8 @@ export async function markLineItemNotAvailable(
     const snap = await tx.get(ref)
     if (!snap.exists()) throw new Error('Order not found.')
 
-    const order = snap.data() as Order
+    // Use mapOrder to correctly normalise Timestamp fields (e.g. dispatches[].items[].confirmedAt)
+    const order = mapOrder(orderId, snap.data() as Record<string, unknown>)
     if (!order.items) return
 
     const updatedItems = order.items.map(it => {
@@ -642,4 +644,80 @@ export async function markLineItemNotAvailable(
 
     tx.update(ref, updates)
   })
+}
+
+// ─── Real-time subscription helpers ───────────────────────────────────────
+
+/**
+ * Subscribe to all orders for a given shop, sorted newest-first.
+ * Returns an unsubscribe function — call it on component unmount.
+ */
+export function subscribeOrdersForShop(
+  firestore: Firestore,
+  shopName: string,
+  onData: (orders: Order[]) => void,
+  onError?: (err: Error) => void,
+): () => void {
+  const qy = query(
+    collection(firestore, ordersCol),
+    where('shopName', '==', shopName),
+    limit(200),
+  )
+  return onSnapshot(
+    qy,
+    (snap) => {
+      const rows = snap.docs.map((d) => mapOrder(d.id, d.data() as Record<string, unknown>))
+      rows.sort((a, b) => b.createdAt - a.createdAt)
+      onData(rows)
+    },
+    (err) => onError?.(err),
+  )
+}
+
+/**
+ * Subscribe to all pending orders (status == 'pending') for the factory, sorted newest-first.
+ * Returns an unsubscribe function — call it on component unmount.
+ */
+export function subscribePendingOrdersForFactory(
+  firestore: Firestore,
+  onData: (orders: Order[]) => void,
+  onError?: (err: Error) => void,
+): () => void {
+  const qy = query(
+    collection(firestore, ordersCol),
+    where('status', '==', 'pending'),
+    limit(200),
+  )
+  return onSnapshot(
+    qy,
+    (snap) => {
+      const rows = snap.docs.map((d) => mapOrder(d.id, d.data() as Record<string, unknown>))
+      rows.sort((a, b) => b.createdAt - a.createdAt)
+      onData(rows)
+    },
+    (err) => onError?.(err),
+  )
+}
+
+/**
+ * Subscribe to all orders for the factory (all statuses), sorted newest-first.
+ * Returns an unsubscribe function — call it on component unmount.
+ */
+export function subscribeAllOrdersForFactory(
+  firestore: Firestore,
+  onData: (orders: Order[]) => void,
+  onError?: (err: Error) => void,
+): () => void {
+  const qy = query(
+    collection(firestore, ordersCol),
+    orderBy('createdAt', 'desc'),
+    limit(300),
+  )
+  return onSnapshot(
+    qy,
+    (snap) => {
+      onData(snap.docs.map((d) => mapOrder(d.id, d.data() as Record<string, unknown>)))
+    },
+    (err) => onError?.(err),
+  )
 }

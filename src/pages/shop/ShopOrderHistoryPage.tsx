@@ -9,8 +9,7 @@ import { ScrollText,
   Trash2,
  } from 'lucide-react';
 import { useLocation } from "react-router-dom";
-import { FirebaseError } from "firebase/app";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAdminMode } from "../../contexts/AdminModeContext";
@@ -20,7 +19,7 @@ import { useUsersMap } from "../../hooks/useUsersMap";
 import {
   confirmDispatchItem,
   deleteOrder,
-  listOrdersForShop,
+  subscribeOrdersForShop,
 } from "../../lib/orderService";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
@@ -183,17 +182,34 @@ export function ShopOrderHistoryPage() {
   const [confirmBusyId, setConfirmBusyId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
-  const [filterRequestor, setFilterRequestor] = useState<string>("all");
-  const [filterKind, setFilterKind] = useState<string>("all");
-  const [filterAwaiting, setFilterAwaiting] = useState<boolean>(
-    (loc.state as any)?.filterAwaiting ?? false,
+
+  // ── Filter state — persisted across navigation via sessionStorage ──────────
+  const FILTER_KEY = 'seva_shop_history_filters'
+  const loadFilters = () => {
+    try { return JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? '{}') } catch { return {} }
+  }
+  const saved = loadFilters()
+  const [filterRequestor, setFilterRequestorRaw] = useState<string>(saved.requestor ?? 'all');
+  const [filterKind, setFilterKindRaw] = useState<string>(saved.kind ?? 'all');
+  const [filterAwaiting, setFilterAwaitingRaw] = useState<boolean>(
+    (loc.state as any)?.filterAwaiting ?? saved.awaiting ?? false,
   );
-  const [filterStartDate, setFilterStartDate] = useState<string>("");
-  const [filterEndDate, setFilterEndDate] = useState<string>("");
+  const [filterStartDate, setFilterStartDateRaw] = useState<string>(saved.startDate ?? '');
+  const [filterEndDate, setFilterEndDateRaw] = useState<string>(saved.endDate ?? '');
   const [filterOpen, setFilterOpen] = useState(
-    (loc.state as any)?.filterAwaiting ?? false,
+    (loc.state as any)?.filterAwaiting ?? saved.awaiting ?? false,
   );
   const [orderSearch, setOrderSearch] = useState("");
+
+  const persistFilters = (patch: Record<string, unknown>) => {
+    const current = loadFilters()
+    sessionStorage.setItem(FILTER_KEY, JSON.stringify({ ...current, ...patch }))
+  }
+  const setFilterRequestor = (v: string) => { setFilterRequestorRaw(v); persistFilters({ requestor: v }) }
+  const setFilterKind = (v: string) => { setFilterKindRaw(v); persistFilters({ kind: v }) }
+  const setFilterAwaiting = (v: boolean) => { setFilterAwaitingRaw(v); persistFilters({ awaiting: v }) }
+  const setFilterStartDate = (v: string) => { setFilterStartDateRaw(v); persistFilters({ startDate: v }) }
+  const setFilterEndDate = (v: string) => { setFilterEndDateRaw(v); persistFilters({ endDate: v }) }
 
   async function handleConfirmDispatch(
     orderId: string,
@@ -254,36 +270,34 @@ export function ShopOrderHistoryPage() {
         }),
       );
     } catch {
-      await refresh(); // only on error — restores correct state
+      // Restore accurate state from the latest snapshot on error
+      setOrders(latestOrdersRef.current)
     } finally {
       setConfirmBusyId(null);
     }
   }
 
-  const refresh = useCallback(async () => {
+  // Real-time subscription — re-subscribes whenever the active shop changes
+  const latestOrdersRef = useRef<Order[]>([])
+  useEffect(() => {
     if (!db || !user) return;
     setLoading(true);
     setError(null);
-    try {
-      setOrders(await listOrdersForShop(db, effectiveShopName));
-    } catch (e) {
-      const msg =
-        e instanceof FirebaseError
-          ? e.message
-          : e instanceof Error
-            ? e.message
-            : "Could not load orders.";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
+    const unsub = subscribeOrdersForShop(
+      db,
+      effectiveShopName,
+      (rows) => {
+        latestOrdersRef.current = rows
+        setOrders(rows);
+        setLoading(false);
+      },
+      () => {
+        setError('Could not load orders.');
+        setLoading(false);
+      },
+    );
+    return unsub;
   }, [user, effectiveShopName]);
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      void refresh();
-    });
-  }, [refresh]);
 
   const requestorOptions = useMemo(
     () =>
@@ -372,13 +386,13 @@ export function ShopOrderHistoryPage() {
             delivery, and print an A4-ready PDF for your records.
           </p>
         </div>
-        <Button
-          variant="secondary"
-          onClick={() => void refresh()}
-          disabled={loading}
-        >
-          Refresh
-        </Button>
+        <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          </span>
+          Live
+        </div>
       </div>
 
       {/* ── Search + Filter bar ── */}
@@ -883,7 +897,6 @@ export function ShopOrderHistoryPage() {
                   await deleteOrder(db, deleteTarget.id);
                   setDeleteTarget(null);
                   if (openId === deleteTarget.id) setOpenId(null);
-                  await refresh();
                 } catch (e) {
                   setError(
                     e instanceof Error ? e.message : "Could not delete order.",

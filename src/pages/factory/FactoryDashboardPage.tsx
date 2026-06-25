@@ -5,8 +5,8 @@ import { addMonths, differenceInCalendarDays, format, startOfMonth } from 'date-
 import { AlertTriangle, BarChart3, Clock, Package, RefreshCw, TrendingUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../../lib/firebase'
-import { listAllOrdersForFactory } from '../../lib/orderService'
-import { listLimitedProducts } from '../../lib/productService'
+import { subscribeAllOrdersForFactory } from '../../lib/orderService'
+import { subscribeLimitedProducts } from '../../lib/productService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -203,25 +203,60 @@ export function FactoryDashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
-  const refresh = useCallback(async () => {
+  // Real-time subscriptions
+  useEffect(() => {
     if (!db) return
     setLoading(true)
     setError(null)
-    try {
-      const [o, p] = await Promise.all([listAllOrdersForFactory(db), listLimitedProducts(db)])
-      setOrders(o)
-      setLimitedProducts(p)
-    } catch {
-      setError('Could not load dashboard data.')
-    } finally {
-      setLoading(false)
-      setTimeout(() => setMounted(true), 100)
+
+    let ordersLoaded = false
+    let productsLoaded = false
+
+    const checkDone = () => {
+      if (ordersLoaded && productsLoaded) {
+        setLoading(false)
+        setTimeout(() => setMounted(true), 100)
+      }
+    }
+
+    const unsubOrders = subscribeAllOrdersForFactory(
+      db,
+      (rows) => {
+        setOrders(rows)
+        ordersLoaded = true
+        checkDone()
+      },
+      () => {
+        setError('Could not load dashboard data.')
+        setLoading(false)
+      }
+    )
+
+    const unsubProducts = subscribeLimitedProducts(
+      db,
+      (rows) => {
+        setLimitedProducts(rows)
+        productsLoaded = true
+        checkDone()
+      },
+      () => {
+        setError('Could not load dashboard data.')
+        setLoading(false)
+      }
+    )
+
+    return () => {
+      unsubOrders()
+      unsubProducts()
     }
   }, [])
 
-  useEffect(() => {
-    queueMicrotask(() => { void refresh() })
-  }, [refresh])
+  const refresh = useCallback(async () => {
+    // Under real-time sync, manual refresh clicks just trigger a visual transition
+    setLoading(true)
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    setLoading(false)
+  }, [])
 
   // ── derived metrics ──────────────────────────────────────────────────────
 

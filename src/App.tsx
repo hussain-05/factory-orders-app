@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Navigate, Route, Routes, useNavigate, useLocation } from 'react-router-dom'
 import { RequireAuth } from './components/RequireAuth'
 import { RequireAdmin } from './components/RequireAdmin'
 import { useAuth } from './contexts/AuthContext'
@@ -49,8 +50,39 @@ function HomeRedirect() {
 }
 
 function AppRoutes() {
-  const { profile } = useAuth()
+  const { profile, loading, user } = useAuth()
   const defaultMode = (profile?.role ?? 'factory') as 'factory' | 'shop'
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    if (loading || !user || !profile) return
+
+    // If session is starting, redirect to default landing page (dashboard)
+    const sessionRedirectKey = 'seva_session_redirected'
+    if (!sessionStorage.getItem(sessionRedirectKey)) {
+      sessionStorage.setItem(sessionRedirectKey, 'true')
+
+      // Avoid overriding deep links (e.g. if the user explicitly clicked a link containing queries or specific paths)
+      // Standard app entries land on `/`, `/login`, `/signup`
+      const isStandardEntry = 
+        location.pathname === '/' || 
+        location.pathname === '/login' || 
+        location.pathname === '/signup'
+
+      if (isStandardEntry) {
+        const dest = profile.isAdmin
+          ? (profile.role === 'shop' ? '/shop/dashboard' : '/factory/dashboard')
+          : profile.role === 'factory'
+            ? '/factory/dashboard'
+            : profile.role === 'factory_staff'
+              ? '/factory/pending'
+              : '/shop/dashboard'
+
+        navigate(dest, { replace: true })
+      }
+    }
+  }, [loading, user, profile, location.pathname, navigate])
 
   return (
     <AdminModeProvider defaultMode={defaultMode}>

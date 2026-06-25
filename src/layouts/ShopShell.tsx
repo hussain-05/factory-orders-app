@@ -12,7 +12,7 @@ import { useAdminMode } from '../contexts/AdminModeContext'
 import { OrderDraftProvider } from '../contexts/OrderDraftContext'
 import { useTheme } from '../hooks/useTheme'
 import { db } from '../lib/firebase'
-import { listOrdersForShop } from '../lib/orderService'
+import { subscribeOrdersForShop } from '../lib/orderService'
 import type { ShopName } from '../types/models'
 import { ThemeToggleIcon } from '../components/ThemeToggleIcon'
 
@@ -34,13 +34,21 @@ export function ShopShell() {
 
   useEffect(() => {
     if (!db || !shopView) return
-    listOrdersForShop(db, shopView).then(orders => {
-      const count = orders.filter(o =>
-        o.status === 'pending' &&
-        (o.dispatches ?? []).some(d => d.items.some(it => !it.confirmedAt))
-      ).length
-      setAwaitingCount(count)
-    }).catch(() => {})
+    const unsub = subscribeOrdersForShop(
+      db,
+      shopView,
+      (orders) => {
+        const count = orders.filter(o =>
+          o.status === 'pending' &&
+          (o.dispatches ?? []).some(d => d.items.some(it => !it.confirmedAt))
+        ).length
+        setAwaitingCount(count)
+      },
+      () => {
+        setAwaitingCount(0)
+      }
+    )
+    return unsub
   }, [shopView])
 
   return (

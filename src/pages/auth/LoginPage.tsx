@@ -21,9 +21,13 @@ export function LoginPage() {
     const dest =
       loc.state?.from && loc.state.from !== '/login'
         ? loc.state.from
-        : profile.role === 'factory'
-          ? '/factory/dashboard'
-          : '/shop/dashboard'
+        : profile.isAdmin
+          ? (profile.role === 'shop' ? '/shop/dashboard' : '/factory/dashboard')
+          : profile.role === 'factory'
+            ? '/factory/dashboard'
+            : profile.role === 'factory_staff'
+              ? '/factory/pending'
+              : '/shop/dashboard'
     return <Navigate to={dest} replace />
   }
 

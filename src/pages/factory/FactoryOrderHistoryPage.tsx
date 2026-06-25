@@ -9,7 +9,7 @@ import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
 import { useUsersMap } from '../../hooks/useUsersMap'
 import { useAuth } from '../../contexts/AuthContext'
-import { listAllOrdersForFactory, deleteOrder } from '../../lib/orderService'
+import { subscribeAllOrdersForFactory, deleteOrder } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -137,32 +137,57 @@ export function FactoryOrderHistoryPage() {
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const { profile } = useAuth()
-  const [filterShop, setFilterShop] = useState<string>('all')
-  const [filterRequestor, setFilterRequestor] = useState<string>('all')
-  const [filterKind, setFilterKind] = useState<string>('all')
-  const [filterStartDate, setFilterStartDate] = useState<string>('')
-  const [filterEndDate, setFilterEndDate] = useState<string>('')
-  const [filterOpen, setFilterOpen] = useState(false)
+  // ── Filter state — persisted across navigation via sessionStorage ──────────
+  const FILTER_KEY = 'seva_factory_history_filters'
+  const loadFilters = () => {
+    try { return JSON.parse(sessionStorage.getItem(FILTER_KEY) ?? '{}') } catch { return {} }
+  }
+  const saved = loadFilters()
+  const [filterShop, setFilterShopRaw] = useState<string>(saved.shop ?? 'all')
+  const [filterRequestor, setFilterRequestorRaw] = useState<string>(saved.requestor ?? 'all')
+  const [filterKind, setFilterKindRaw] = useState<string>(saved.kind ?? 'all')
+  const [filterStartDate, setFilterStartDateRaw] = useState<string>(saved.startDate ?? '')
+  const [filterEndDate, setFilterEndDateRaw] = useState<string>(saved.endDate ?? '')
+  const [filterOpen, setFilterOpen] = useState(
+    !!(saved.shop || saved.requestor || saved.kind || saved.startDate || saved.endDate)
+  )
   const [orderSearch, setOrderSearch] = useState('')
 
-  const refresh = useCallback(async () => {
+  const persistFilters = (patch: Record<string, unknown>) => {
+    const current = loadFilters()
+    sessionStorage.setItem(FILTER_KEY, JSON.stringify({ ...current, ...patch }))
+  }
+  const setFilterShop = (v: string) => { setFilterShopRaw(v); persistFilters({ shop: v }) }
+  const setFilterRequestor = (v: string) => { setFilterRequestorRaw(v); persistFilters({ requestor: v }) }
+  const setFilterKind = (v: string) => { setFilterKindRaw(v); persistFilters({ kind: v }) }
+  const setFilterStartDate = (v: string) => { setFilterStartDateRaw(v); persistFilters({ startDate: v }) }
+  const setFilterEndDate = (v: string) => { setFilterEndDateRaw(v); persistFilters({ endDate: v }) }
+
+  // Real-time subscription
+  useEffect(() => {
     if (!db) return
     setLoading(true)
     setError(null)
-    try {
-      setOrders(await listAllOrdersForFactory(db))
-    } catch {
-      setError('Could not load orders.')
-    } finally {
-      setLoading(false)
-    }
+    const unsub = subscribeAllOrdersForFactory(
+      db,
+      (rows) => {
+        setOrders(rows)
+        setLoading(false)
+      },
+      () => {
+        setError('Could not load orders.')
+        setLoading(false)
+      }
+    )
+    return unsub
   }, [])
 
-  useEffect(() => {
-    queueMicrotask(() => {
-      void refresh()
-    })
-  }, [refresh])
+  const refresh = useCallback(async () => {
+    // Under real-time sync, manual refresh clicks just trigger a visual transition
+    setLoading(true)
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    setLoading(false)
+  }, [])
 
   const requestorOptions = useMemo(
     () => [...new Set(orders.map(o => usersMap[o.shopUserId]?.displayName || o.requestorName).filter(Boolean))].sort(),

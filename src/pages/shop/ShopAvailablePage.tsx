@@ -9,7 +9,7 @@ import { useOrderDraft } from "../../contexts/OrderDraftContext";
 import { db } from "../../lib/firebase";
 import { getFactoryWhatsappNumber } from "../../lib/adminService";
 import { createOrder } from "../../lib/orderService";
-import { listLimitedProducts } from "../../lib/productService";
+import { subscribeLimitedProducts } from "../../lib/productService";
 import { whatsappLink } from "../../utils/whatsapp";
 
 import { Button } from "../../components/ui/Button";
@@ -52,29 +52,31 @@ export function ShopAvailablePage() {
     title: string;
   } | null>(null);
 
-  const refresh = useCallback(async () => {
+  // Real-time subscription for limited products — stock updates live
+  useEffect(() => {
     if (!db) return;
     setLoading(true);
     setError(null);
-    try {
-      const [products, factNum] = await Promise.all([
-        listLimitedProducts(db),
-        getFactoryWhatsappNumber(db),
-      ]);
-      setItems(products);
-      setFactoryNumber(factNum);
-    } catch {
-      setError("Could not load products.");
-    } finally {
-      setLoading(false);
-    }
+    getFactoryWhatsappNumber(db).then(setFactoryNumber).catch(() => {})
+    const unsub = subscribeLimitedProducts(
+      db,
+      (products) => {
+        setItems(products);
+        setLoading(false);
+      },
+      () => {
+        setError("Could not load products.");
+        setLoading(false);
+      },
+    );
+    return unsub;
   }, []);
 
-  useEffect(() => {
-    queueMicrotask(() => {
-      void refresh();
-    });
-  }, [refresh]);
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    setLoading(false);
+  }, []);
 
   const lines = useMemo(() => {
     return Object.entries(cartQtys)

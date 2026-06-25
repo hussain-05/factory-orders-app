@@ -11,16 +11,23 @@ import { Button } from '../components/ui/Button'
 import { FactoryDispatchDraftProvider } from '../contexts/FactoryDispatchDraftContext'
 import { ModeSwitcher } from '../components/ModeSwitcher'
 import { db } from '../lib/firebase'
-import { countPendingOrdersForFactory } from '../lib/orderService'
+import { subscribePendingOrdersForFactory } from '../lib/orderService'
 import { ThemeToggleIcon } from '../components/ThemeToggleIcon'
 
 function usePendingOrderCount() {
   const [count, setCount] = useState<number | null>(null)
   useEffect(() => {
     if (!db) return
-    countPendingOrdersForFactory(db)
-      .then((c) => setCount(c))
-      .catch(() => setCount(null))
+    const unsub = subscribePendingOrdersForFactory(
+      db,
+      (orders) => {
+        setCount(orders.length)
+      },
+      () => {
+        setCount(null)
+      }
+    )
+    return unsub
   }, [])
   return count
 }
