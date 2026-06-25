@@ -1,11 +1,13 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
   query,
   serverTimestamp,
   setDoc,
+  updateDoc,
   where,
   type Firestore,
 } from 'firebase/firestore'
@@ -21,6 +23,7 @@ function userProfileFromDoc(id: string, data: Record<string, unknown>): UserProf
     displayName: String(data.displayName ?? ''),
     role: rawRole === 'factory' ? 'factory' : rawRole === 'factory_staff' ? 'factory_staff' : 'shop',
     shopName: data.shopName as ShopName | undefined,
+    accessibleShops: Array.isArray(data.accessibleShops) ? (data.accessibleShops as ShopName[]) : undefined,
     createdAt: typeof rawCreatedAt?.toMillis === 'function' ? rawCreatedAt.toMillis() : 0,
     whatsappNumber: typeof data.whatsappNumber === 'string' ? data.whatsappNumber : undefined,
   }
@@ -82,4 +85,35 @@ export async function listShopUsers(
   })
 
   return rows
+}
+
+export async function listAllUsers(firestore: Firestore): Promise<UserProfile[]> {
+  const snap = await getDocs(collection(firestore, 'users'))
+  const rows = snap.docs.map((d) => userProfileFromDoc(d.id, d.data()))
+  rows.sort((a, b) => {
+    const an = a.displayName || a.email
+    const bn = b.displayName || b.email
+    return an.localeCompare(bn) || a.email.localeCompare(b.email)
+  })
+  return rows
+}
+
+export async function updateAccessibleShops(
+  firestore: Firestore,
+  uid: string,
+  shops: ShopName[],
+): Promise<void> {
+  const ref = doc(firestore, 'users', uid)
+  await updateDoc(ref, {
+    accessibleShops: shops,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function deleteUserProfileDoc(
+  firestore: Firestore,
+  uid: string,
+): Promise<void> {
+  const ref = doc(firestore, 'users', uid)
+  await deleteDoc(ref)
 }

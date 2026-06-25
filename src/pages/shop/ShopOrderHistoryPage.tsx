@@ -160,9 +160,7 @@ export function ShopOrderHistoryPage() {
   const usersMap = useUsersMap();
   const { user, profile } = useAuth();
   const { shopView } = useAdminMode();
-  const effectiveShopName = profile?.isAdmin
-    ? shopView
-    : (profile?.shopName ?? "");
+  const effectiveShopName = shopView;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

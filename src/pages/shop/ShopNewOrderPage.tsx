@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Fuse from 'fuse.js'
 import { useAuth } from '../../contexts/AuthContext'
+import { useAdminMode } from '../../contexts/AdminModeContext'
 import { useOrderDraft } from '../../contexts/OrderDraftContext'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -15,12 +16,13 @@ import { getFactoryWhatsappNumber } from '../../lib/adminService'
 import { createOrder } from '../../lib/orderService'
 import { listUnlimitedProducts } from '../../lib/productService'
 import { whatsappLink } from '../../utils/whatsapp'
-import type { OrderLineItem, ShopName, UnlimitedProduct } from '../../types/models'
+import type { OrderLineItem, UnlimitedProduct } from '../../types/models'
 
 type ProductGroup = { name: string; variants: UnlimitedProduct[] }
 
 export function ShopNewOrderPage() {
   const { profile, user } = useAuth()
+  const { shopView } = useAdminMode()
   const [catalog, setCatalog] = useState<UnlimitedProduct[]>([])
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
@@ -133,7 +135,7 @@ export function ShopNewOrderPage() {
     try {
       const { orderNumber } = await createOrder(db, {
         orderKind: 'unlimited',
-        shopName: profile.shopName as ShopName,
+        shopName: shopView,
         shopUserId: user.uid,
         requestorName: profile.displayName,
         requestorEmail: profile.email,
@@ -191,7 +193,7 @@ export function ShopNewOrderPage() {
               </p>
               {factoryNumber && (
                 <a
-                  href={whatsappLink(factoryNumber, `Hi, I've placed a new order:\nOrder number: ${lastOrderNumber}\nShop: ${profile?.shopName}\nNo of items: ${lastItemCount}\nRequestor: ${profile?.displayName}\nType: Standard Catalogue`)}
+                  href={whatsappLink(factoryNumber, `Hi, I've placed a new order:\nOrder number: ${lastOrderNumber}\nShop: ${shopView}\nNo of items: ${lastItemCount}\nRequestor: ${profile?.displayName}\nType: Standard Catalogue`)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 rounded-lg bg-[#25D366] dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#1ebe5d] dark:hover:bg-slate-800 transition-colors duration-200"

@@ -44,8 +44,9 @@ export function FactoryShell() {
         {profile?.isAdmin && <ModeSwitcher />}
 
         {/* Row 1: identity + actions */}
-        <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-3 sm:px-6">
-          <div className="min-w-0">
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 pt-3 sm:px-6">
+          {/* Left column: identity */}
+          <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 dark:text-slate-400">
               Seva · Factory
             </p>
@@ -55,14 +56,17 @@ export function FactoryShell() {
             <p className="truncate text-xs text-slate-500 dark:text-slate-400">{profile?.displayName}</p>
           </div>
 
-          {/* Seva logo — absolutely centred */}
-          <img
-            src="/seva-logo.png"
-            alt="Seva"
-            className="absolute left-1/2 top-1/2 h-9 w-auto -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-          />
+          {/* Middle column: Seva logo */}
+          <div className="shrink-0 flex items-center justify-center px-1">
+            <img
+              src="/seva-logo.png"
+              alt="Seva"
+              className="h-8 sm:h-9 w-auto pointer-events-none"
+            />
+          </div>
 
-          <div className="flex items-center gap-2">
+          {/* Right column: actions */}
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0">
             {status === 'unknown' && (
               <Button variant="secondary" className="shrink-0 !gap-1.5" onClick={() => void enable()}>
                 <Bell className="h-4 w-4" />
@@ -70,7 +74,7 @@ export function FactoryShell() {
               </Button>
             )}
             {status === 'denied' && (
-              <span className="flex items-center gap-1.5 text-xs text-slate-400">
+              <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200 shrink-0">
                 <BellOff className="h-4 w-4" />
                 <span className="hidden sm:inline">Notifications blocked</span>
               </span>

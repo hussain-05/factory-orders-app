@@ -51,11 +51,17 @@ service cloud.firestore {
         && (request.resource.data.role != 'shop'
             || request.resource.data.shopName in ['Seva', 'Seva Mart', 'Seva Super Store']);
       allow update: if signedIn()
-        && request.auth.uid == uid
         && (
-          request.resource.data.role == resource.data.role
-          || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fcmTokens'])
+          (
+            request.auth.uid == uid
+            && (
+              request.resource.data.role == resource.data.role
+              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fcmTokens'])
+            )
+          )
+          || isAdmin()
         );
+      allow delete: if signedIn() && isAdmin();
     }
 
     match /unlimitedProducts/{id} {
@@ -76,13 +82,21 @@ service cloud.firestore {
     }
 
     match /orders/{id} {
-      allow read: if signedIn() && (isFactory() || isAdmin() || resource.data.shopName == userDoc().shopName);
+      allow read: if signedIn() && (
+        isFactory()
+        || isAdmin()
+        || resource.data.shopName == userDoc().shopName
+        || resource.data.shopName in userDoc().get('accessibleShops', [])
+      );
       allow create: if signedIn()
         && (
           (
             isShop()
             && request.resource.data.shopUserId == request.auth.uid
-            && request.resource.data.shopName == userDoc().shopName
+            && (
+              request.resource.data.shopName == userDoc().shopName
+              || request.resource.data.shopName in userDoc().get('accessibleShops', [])
+            )
             && request.resource.data.status == 'pending'
           )
           ||
@@ -94,7 +108,14 @@ service cloud.firestore {
           )
         );
       allow update: if isFactory() || isAdmin()
-        || (isShop() && resource.data.shopName == userDoc().shopName && resource.data.status == 'pending');
+        || (
+          isShop()
+          && (
+            resource.data.shopName == userDoc().shopName
+            || resource.data.shopName in userDoc().get('accessibleShops', [])
+          )
+          && resource.data.status == 'pending'
+        );
       allow delete: if isAdmin()
         || (
           isFactoryOwner()

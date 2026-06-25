@@ -190,9 +190,9 @@ function PipelineStage({
 // ─── main page ────────────────────────────────────────────────────────────
 
 export function ShopDashboardPage() {
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
   const { shopView } = useAdminMode()
-  const effectiveShopName = profile?.isAdmin ? shopView : (profile?.shopName ?? '')
+  const effectiveShopName = shopView
   const nav = useNavigate()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -211,7 +211,7 @@ export function ShopDashboardPage() {
       setLoading(false)
       setTimeout(() => setMounted(true), 100)
     }
-  }, [user, profile?.shopName, effectiveShopName])
+  }, [user, effectiveShopName])
 
   useEffect(() => {
     queueMicrotask(() => { void refresh() })

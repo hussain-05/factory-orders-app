@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useState, type ReactNode, useMemo, useEffect } from 'react'
 import type { ShopName } from '../types/models'
+import { useAuth } from './AuthContext'
 
 type AdminMode = 'factory' | 'shop'
 
@@ -31,6 +32,23 @@ export function AdminModeProvider({
   children: ReactNode
   defaultMode?: AdminMode
 }) {
+  const { profile } = useAuth()
+
+  const allowedShops = useMemo<ShopName[]>(() => {
+    if (!profile) return []
+    if (profile.role === 'factory' || profile.role === 'factory_staff' || profile.isAdmin) {
+      return SHOPS
+    }
+    const shopsSet = new Set<ShopName>()
+    if (profile.shopName) {
+      shopsSet.add(profile.shopName)
+    }
+    if (profile.accessibleShops) {
+      profile.accessibleShops.forEach(s => shopsSet.add(s))
+    }
+    return Array.from(shopsSet)
+  }, [profile])
+
   const [mode, setModeState] = useState<AdminMode>(() => {
     try {
       const v = localStorage.getItem('adminMode')
@@ -39,9 +57,38 @@ export function AdminModeProvider({
       return defaultMode
     }
   })
+
   const [shopView, setShopViewState] = useState<ShopName>(() =>
     load<ShopName>('adminShopView', 'Seva'),
   )
+
+  // Keep shopView synchronized and valid for the current user's allowedShops
+  useEffect(() => {
+    if (allowedShops.length === 0) return
+
+    // Load user-specific active shop preference if it exists
+    const storageKey = profile ? `shopView_${profile.uid}` : 'adminShopView'
+    try {
+      const stored = localStorage.getItem(storageKey)
+      if (stored) {
+        const parsed = JSON.parse(stored) as ShopName
+        if (allowedShops.includes(parsed)) {
+          if (shopView !== parsed) {
+            setShopViewState(parsed)
+          }
+          return
+        }
+      }
+    } catch {}
+
+    // Otherwise fallback to default primary shop
+    if (!allowedShops.includes(shopView)) {
+      const defaultShop = (profile?.shopName && allowedShops.includes(profile.shopName))
+        ? profile.shopName
+        : allowedShops[0]
+      setShopViewState(defaultShop)
+    }
+  }, [allowedShops, profile, shopView])
 
   const setMode = (m: AdminMode) => {
     setModeState(m)
@@ -49,12 +96,15 @@ export function AdminModeProvider({
   }
 
   const setShopView = (s: ShopName) => {
-    setShopViewState(s)
-    localStorage.setItem('adminShopView', JSON.stringify(s))
+    if (allowedShops.includes(s)) {
+      setShopViewState(s)
+      const storageKey = profile ? `shopView_${profile.uid}` : 'adminShopView'
+      localStorage.setItem(storageKey, JSON.stringify(s))
+    }
   }
 
   return (
-    <AdminModeContext.Provider value={{ mode, shopView, shops: SHOPS, setMode, setShopView }}>
+    <AdminModeContext.Provider value={{ mode, shopView, shops: allowedShops, setMode, setShopView }}>
       {children}
     </AdminModeContext.Provider>
   )

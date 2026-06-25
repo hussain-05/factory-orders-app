@@ -14,6 +14,7 @@ export interface UserProfile {
   displayName: string
   role: UserRole
   shopName?: ShopName
+  accessibleShops?: ShopName[]
   createdAt: number
   isAdmin?: boolean
   whatsappNumber?: string
