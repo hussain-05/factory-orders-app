@@ -1,4 +1,4 @@
-import { Bell, BellOff, LayoutDashboard, LayoutGrid, Moon, PackagePlus, ScrollText, Sun, User } from 'lucide-react'
+import { Bell, BellOff, LayoutDashboard, LayoutGrid, PackagePlus, ScrollText, User } from 'lucide-react'
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { NavLink, Outlet } from 'react-router-dom'
@@ -14,6 +14,7 @@ import { useTheme } from '../hooks/useTheme'
 import { db } from '../lib/firebase'
 import { listOrdersForShop } from '../lib/orderService'
 import type { ShopName } from '../types/models'
+import { ThemeToggleIcon } from '../components/ThemeToggleIcon'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all sm:gap-2 sm:px-3 ${
@@ -99,21 +100,16 @@ export function ShopShell() {
             )}
             <Button
               variant="secondary"
-              className="shrink-0 !p-2 sm:!px-4 sm:!py-2.5 !rounded-full sm:!rounded-lg"
+              className="shrink-0 !p-2.5 !rounded-full"
               onClick={toggleTheme}
               title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
               aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
             >
-              {theme === 'light' ? (
-                <Moon className="h-4 w-4" />
-              ) : (
-                <Sun className="h-4 w-4" />
-              )}
-              <span className="hidden sm:inline">Theme</span>
+              <ThemeToggleIcon theme={theme} className="h-4 w-4" />
             </Button>
             <Button
               variant="secondary"
-              className="shrink-0 !p-2 sm:!px-4 sm:!py-2.5 !rounded-full sm:!rounded-lg"
+              className="shrink-0 !p-2.5 sm:!px-4 sm:!py-2.5 !rounded-full sm:!rounded-lg"
               onClick={() => setIsDrawerOpen(true)}
             >
               <User className="h-4 w-4" aria-label="Profile" />
