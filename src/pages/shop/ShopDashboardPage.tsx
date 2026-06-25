@@ -137,14 +137,14 @@ function StatCard({
   if (onClick) {
     return (
       <button type="button" onClick={onClick} className="block w-full h-full text-left group min-w-0">
-        <Card className="flex h-full items-start gap-3 sm:gap-4 p-4 sm:p-5 transition-shadow group-hover:shadow-md group-hover:ring-1 group-hover:ring-slate-200 min-w-0">
+        <Card className="w-full flex h-full items-start gap-3 sm:gap-4 p-4 sm:p-5 transition-shadow group-hover:shadow-md group-hover:ring-1 group-hover:ring-slate-200 min-w-0">
           {inner}
         </Card>
       </button>
     )
   }
 
-  return <Card className="flex h-full items-start gap-3 sm:gap-4 p-4 sm:p-5 min-w-0">{inner}</Card>
+  return <Card className="w-full flex h-full items-start gap-3 sm:gap-4 p-4 sm:p-5 min-w-0">{inner}</Card>
 }
 
 function PipelineStage({
@@ -331,7 +331,7 @@ export function ShopDashboardPage() {
 
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5 items-stretch">
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
           <StatCard
             label="Last order"
             value={lastOrder ? format(new Date(lastOrder.createdAt), 'dd MMM') : '—'}
@@ -341,7 +341,7 @@ export function ShopDashboardPage() {
             onClick={lastOrder ? () => nav('/shop/history', { state: { openId: lastOrder.id } }) : undefined}
           />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.06, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.06, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
           <StatCard
             label="Awaiting confirmation"
             value={ordersAwaitingConfirmation}
@@ -351,7 +351,7 @@ export function ShopDashboardPage() {
             onClick={() => nav('/shop/history', { state: { filterAwaiting: true } })}
           />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.12, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.12, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
           <StatCard
             label="Active orders"
             value={pending.length}
@@ -367,7 +367,7 @@ export function ShopDashboardPage() {
             onClick={() => nav('/shop/history')}
           />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.18, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.18, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
           <StatCard
             label="Avg delivery time"
             value={avgLead != null ? `${avgLead}d` : '—'}
@@ -376,7 +376,7 @@ export function ShopDashboardPage() {
             tone="emerald"
           />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.24, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.24, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
           <StatCard
             label="Placed this month"
             value={placedThisMonth}

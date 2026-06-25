@@ -143,14 +143,14 @@ function StatCard({
   if (onClick) {
     return (
       <button type="button" onClick={onClick} className="block w-full h-full text-left group min-w-0">
-        <Card className="flex h-full items-start gap-3 sm:gap-4 p-4 sm:p-5 transition-shadow group-hover:shadow-md group-hover:ring-1 group-hover:ring-slate-200 min-w-0">
+        <Card className="w-full flex h-full items-start gap-3 sm:gap-4 p-4 sm:p-5 transition-shadow group-hover:shadow-md group-hover:ring-1 group-hover:ring-slate-200 min-w-0">
           {inner}
         </Card>
       </button>
     )
   }
 
-  return <Card className="flex h-full items-start gap-3 sm:gap-4 p-4 sm:p-5 min-w-0">{inner}</Card>
+  return <Card className="w-full flex h-full items-start gap-3 sm:gap-4 p-4 sm:p-5 min-w-0">{inner}</Card>
 }
 
 function PipelineStage({
@@ -329,7 +329,7 @@ export function FactoryDashboardPage() {
 
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 items-stretch">
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
           <StatCard
             label="Pending orders"
             value={pending.length}
@@ -339,7 +339,7 @@ export function FactoryDashboardPage() {
             onClick={() => nav('/factory/pending')}
           />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.06, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.06, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
           <StatCard
             label="Completed this month"
             value={completedThisMonth}
@@ -349,7 +349,7 @@ export function FactoryDashboardPage() {
             onClick={() => nav('/factory/history')}
           />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.12, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.12, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
           <StatCard
             label="Avg lead time"
             value={avgLead != null ? `${avgLead}d` : '—'}
@@ -358,7 +358,7 @@ export function FactoryDashboardPage() {
             tone="violet"
           />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.18, ease: [0.25, 0.1, 0.25, 1] }} className="flex">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.18, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
           <StatCard
             label="Total orders"
             value={orders.length}
@@ -447,39 +447,6 @@ export function FactoryDashboardPage() {
           </div>
         </Card>
       </div>
-
-      {/* ── Outstanding quantities ── */}
-      {outstanding.length > 0 && (
-        <Card className="p-5">
-          <p className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 before:block before:h-3 before:w-0.5 before:rounded-full before:bg-emerald-500 dark:before:bg-emerald-400 transition-colors duration-200">
-            Outstanding quantities
-          </p>
-          <div className="space-y-3">
-            {outstanding.map(item => {
-              const pct = Math.round((item.remaining / item.ordered) * 100)
-              return (
-                <div key={item.productId}>
-                  <div className="mb-1 flex items-center justify-between text-sm">
-                    <span className="font-medium text-slate-700 dark:text-slate-300 truncate transition-colors duration-200">
-                      {item.name}{item.size ? ` · ${item.size}` : ''}
-                    </span>
-                    <span className="ml-3 shrink-0 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
-                      <span className="font-semibold text-amber-600">{item.remaining}</span>
-                      {' '}remaining of {item.ordered} ordered
-                    </span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
-                    <div
-                      className="h-2 rounded-full bg-amber-400 transition-all duration-700"
-                      style={{ width: mounted ? `${pct}%` : '0%' }}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </Card>
-      )}
 
       {/* ── Monthly trend ── */}
       <Card className="p-5">
@@ -593,6 +560,39 @@ export function FactoryDashboardPage() {
           )}
         </Card>
       </div>
+
+      {/* ── Outstanding quantities ── */}
+      {outstanding.length > 0 && (
+        <Card className="p-5">
+          <p className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 before:block before:h-3 before:w-0.5 before:rounded-full before:bg-emerald-500 dark:before:bg-emerald-400 transition-colors duration-200">
+            Outstanding quantities
+          </p>
+          <div className="space-y-3">
+            {outstanding.map(item => {
+              const pct = Math.round((item.remaining / item.ordered) * 100)
+              return (
+                <div key={item.productId}>
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span className="font-medium text-slate-700 dark:text-slate-300 truncate transition-colors duration-200">
+                      {item.name}{item.size ? ` · ${item.size}` : ''}
+                    </span>
+                    <span className="ml-3 shrink-0 text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
+                      <span className="font-semibold text-amber-600">{item.remaining}</span>
+                      {' '}remaining of {item.ordered} ordered
+                    </span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
+                    <div
+                      className="h-2 rounded-full bg-amber-400 transition-all duration-700"
+                      style={{ width: mounted ? `${pct}%` : '0%' }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      )}
     </motion.div>
   )
 }

@@ -1,4 +1,4 @@
-import { Bell, BellOff, ClipboardList, LayoutDashboard, Moon, PackagePlus, ScrollText, Sun, User, Warehouse } from 'lucide-react'
+import { Bell, BellOff, ClipboardList, LayoutDashboard, PackagePlus, ScrollText, User, Warehouse } from 'lucide-react'
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { NavLink, Outlet } from 'react-router-dom'
@@ -12,6 +12,7 @@ import { FactoryDispatchDraftProvider } from '../contexts/FactoryDispatchDraftCo
 import { ModeSwitcher } from '../components/ModeSwitcher'
 import { db } from '../lib/firebase'
 import { countPendingOrdersForFactory } from '../lib/orderService'
+import { ThemeToggleIcon } from '../components/ThemeToggleIcon'
 
 function usePendingOrderCount() {
   const [count, setCount] = useState<number | null>(null)
@@ -81,21 +82,16 @@ export function FactoryShell() {
             )}
             <Button
               variant="secondary"
-              className="shrink-0 !p-2 sm:!px-4 sm:!py-2.5 !rounded-full sm:!rounded-lg"
+              className="shrink-0 !p-2.5 !rounded-full"
               onClick={toggleTheme}
               title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
               aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
             >
-              {theme === 'light' ? (
-                <Moon className="h-4 w-4" />
-              ) : (
-                <Sun className="h-4 w-4" />
-              )}
-              <span className="hidden sm:inline">Theme</span>
+              <ThemeToggleIcon theme={theme} className="h-4 w-4" />
             </Button>
             <Button
               variant="secondary"
-              className="shrink-0 !p-2 sm:!px-4 sm:!py-2.5 !rounded-full sm:!rounded-lg"
+              className="shrink-0 !p-2.5 sm:!px-4 sm:!py-2.5 !rounded-full sm:!rounded-lg"
               onClick={() => setIsDrawerOpen(true)}
             >
               <User className="h-4 w-4" aria-label="Profile" />
