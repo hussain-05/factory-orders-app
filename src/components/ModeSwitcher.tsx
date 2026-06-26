@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAdminMode } from '../contexts/AdminModeContext'
+import { motion } from 'framer-motion'
 
 export function ModeSwitcher() {
   const { mode: contextMode, shopView, shops, setMode, setShopView } = useAdminMode()
@@ -30,13 +31,20 @@ export function ModeSwitcher() {
               key={m}
               type="button"
               onClick={() => switchTo(m)}
-              className={`rounded-md px-3 py-1 text-xs font-semibold capitalize transition-colors ${
+              className={`relative rounded-md px-3 py-1 text-xs font-semibold capitalize transition-colors ${
                 mode === m
-                  ? 'bg-white dark:bg-amber-900 text-amber-900 dark:text-amber-100 shadow-sm'
+                  ? 'text-amber-900 dark:text-amber-100'
                   : 'text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200'
               }`}
             >
-              {m}
+              {mode === m && (
+                <motion.div
+                  layoutId="mode-pill"
+                  className="absolute inset-0 rounded-md bg-white dark:bg-amber-900 shadow-sm"
+                  transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                />
+              )}
+              <span className="relative">{m}</span>
             </button>
           ))}
         </div>

@@ -1,5 +1,5 @@
 import { ClipboardList, LayoutDashboard, PackagePlus, ScrollText, User, Warehouse } from 'lucide-react'
-
+import { motion } from 'framer-motion'
 import { NavLink, Outlet } from 'react-router-dom'
 import { UserProfileDrawer } from '../components/UserProfileDrawer'
 import { useEffect, useState } from 'react'
@@ -31,10 +31,11 @@ function usePendingOrderCount() {
   return count
 }
 
+// Base class — background on active is now provided by the sliding motion.div pill
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all sm:gap-2 sm:px-3 ${
+  `relative flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-colors sm:gap-2 sm:px-3 ${
     isActive
-      ? 'bg-slate-900/90 text-white shadow-sm dark:bg-slate-800 dark:text-slate-100'
+      ? 'text-white dark:text-slate-100'
       : 'text-slate-600 hover:bg-white/70 dark:text-slate-400 dark:hover:bg-slate-800/50'
   }`
 
@@ -115,36 +116,91 @@ export function FactoryShell() {
             {profile?.role !== 'factory_staff' && (
               <>
                 <NavLink className={linkClass} to="/factory/dashboard">
-                  <LayoutDashboard className="h-4 w-4 shrink-0" />
-                  <span className="sm:hidden">Dash</span>
-                  <span className="hidden sm:inline">Dashboard</span>
+                  {({ isActive }) => (
+                    <>
+                      {isActive && (
+                        <motion.div
+                          layoutId="factory-nav-pill"
+                          className="absolute inset-0 rounded-xl bg-slate-900/90 shadow-sm dark:bg-slate-800"
+                          transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                        />
+                      )}
+                      <LayoutDashboard className="relative h-4 w-4 shrink-0" />
+                      <span className="relative sm:hidden">Dash</span>
+                      <span className="relative hidden sm:inline">Dashboard</span>
+                    </>
+                  )}
                 </NavLink>
                 <NavLink className={linkClass} to="/factory/products">
-                  <Warehouse className="h-4 w-4 shrink-0" />
-                  <span className="sm:hidden">Items</span>
-                  <span className="hidden sm:inline">Products</span>
+                  {({ isActive }) => (
+                    <>
+                      {isActive && (
+                        <motion.div
+                          layoutId="factory-nav-pill"
+                          className="absolute inset-0 rounded-xl bg-slate-900/90 shadow-sm dark:bg-slate-800"
+                          transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                        />
+                      )}
+                      <Warehouse className="relative h-4 w-4 shrink-0" />
+                      <span className="relative sm:hidden">Items</span>
+                      <span className="relative hidden sm:inline">Products</span>
+                    </>
+                  )}
                 </NavLink>
                 <NavLink className={linkClass} to="/factory/create-order">
-                  <PackagePlus className="h-4 w-4 shrink-0" />
-                  <span className="sm:hidden">Send</span>
-                  <span className="hidden sm:inline">Factory dispatch</span>
+                  {({ isActive }) => (
+                    <>
+                      {isActive && (
+                        <motion.div
+                          layoutId="factory-nav-pill"
+                          className="absolute inset-0 rounded-xl bg-slate-900/90 shadow-sm dark:bg-slate-800"
+                          transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                        />
+                      )}
+                      <PackagePlus className="relative h-4 w-4 shrink-0" />
+                      <span className="relative sm:hidden">Send</span>
+                      <span className="relative hidden sm:inline">Factory dispatch</span>
+                    </>
+                  )}
                 </NavLink>
               </>
             )}
             <NavLink className={linkClass} to="/factory/pending" title="Orders awaiting production or dispatch">
-              <ClipboardList className="h-4 w-4 shrink-0" />
-              <span className="sm:hidden">Pending</span>
-              <span className="hidden sm:inline">Pending orders</span>
-              {pendingCount != null && pendingCount > 0 && (
-                <span className="ml-0.5 animate-pulse rounded-full bg-rose-500 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
-                  {pendingCount}
-                </span>
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <motion.div
+                      layoutId="factory-nav-pill"
+                      className="absolute inset-0 rounded-xl bg-slate-900/90 shadow-sm dark:bg-slate-800"
+                      transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                    />
+                  )}
+                  <ClipboardList className="relative h-4 w-4 shrink-0" />
+                  <span className="relative sm:hidden">Pending</span>
+                  <span className="relative hidden sm:inline">Pending orders</span>
+                  {pendingCount != null && pendingCount > 0 && (
+                    <span className="relative ml-0.5 animate-pulse rounded-full bg-rose-500 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
+                      {pendingCount}
+                    </span>
+                  )}
+                </>
               )}
             </NavLink>
             <NavLink className={linkClass} to="/factory/history">
-              <ScrollText className="h-4 w-4 shrink-0" />
-              <span className="sm:hidden">History</span>
-              <span className="hidden sm:inline">Order history</span>
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <motion.div
+                      layoutId="factory-nav-pill"
+                      className="absolute inset-0 rounded-xl bg-slate-900/90 shadow-sm dark:bg-slate-800"
+                      transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                    />
+                  )}
+                  <ScrollText className="relative h-4 w-4 shrink-0" />
+                  <span className="relative sm:hidden">History</span>
+                  <span className="relative hidden sm:inline">Order history</span>
+                </>
+              )}
             </NavLink>
           </nav>
           </div>

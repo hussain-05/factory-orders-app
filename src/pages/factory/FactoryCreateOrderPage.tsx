@@ -447,16 +447,30 @@ export function FactoryCreateOrderPage() {
               <button
                 type="button"
                 onClick={() => setActiveList("standard")}
-                className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition sm:flex-none ${activeList === "standard" ? "bg-white text-emerald-700 shadow-sm dark:bg-slate-900 dark:text-emerald-300" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"}`}
+                className={`relative flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-colors sm:flex-none ${activeList === "standard" ? "text-emerald-700 dark:text-emerald-300" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"}`}
               >
-                Standard ({standardCount})
+                {activeList === "standard" && (
+                  <motion.div
+                    layoutId="catalog-pill"
+                    className="absolute inset-0 rounded-xl bg-white shadow-sm dark:bg-slate-900"
+                    transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                  />
+                )}
+                <span className="relative">Standard ({standardCount})</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveList("limited")}
-                className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition sm:flex-none ${activeList === "limited" ? "bg-white text-emerald-700 shadow-sm dark:bg-slate-900 dark:text-emerald-300" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"}`}
+                className={`relative flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-colors sm:flex-none ${activeList === "limited" ? "text-emerald-700 dark:text-emerald-300" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"}`}
               >
-                Limited ({limitedCount})
+                {activeList === "limited" && (
+                  <motion.div
+                    layoutId="catalog-pill"
+                    className="absolute inset-0 rounded-xl bg-white shadow-sm dark:bg-slate-900"
+                    transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                  />
+                )}
+                <span className="relative">Limited ({limitedCount})</span>
               </button>
             </div>
           </div>
