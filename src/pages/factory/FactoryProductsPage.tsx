@@ -18,6 +18,7 @@ import {
 } from '../../lib/productService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { Card } from '../../components/ui/Card'
 import { ImageLightbox } from '../../components/ui/ImageLightbox'
 import { Input } from '../../components/ui/Input'
@@ -385,14 +386,13 @@ export function FactoryProductsPage() {
                 </div>
 
                 {filteredLimited.length === 0 && limited.length > 0 ? (
-                  <div className="flex flex-col items-center gap-2 py-10 text-center">
-                    <p className="font-display text-base font-semibold text-slate-700 dark:text-slate-300">
-                      No products found
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Try a different product name, size, stock, or rate.
-                    </p>
-                  </div>
+                  <EmptyState
+                    title="No products found"
+                    description="Try a different product name, size, stock, or rate."
+                    variant="search"
+                    actionLabel="Clear search"
+                    onAction={() => setSearchQuery('')}
+                  />
                 ) : (
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {filteredLimited.map((p) => (
@@ -442,8 +442,12 @@ export function FactoryProductsPage() {
                     ))}
                   </div>
                 )}
-                {!loading && limited.length === 0 && !searchQuery ? (
-                  <p className="mt-5 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">No limited items yet.</p>
+                 {!loading && limited.length === 0 && !searchQuery ? (
+                  <EmptyState
+                    title="No limited stock products"
+                    description="Add products on the left form to start your inventory list."
+                    variant="warehouse"
+                  />
                 ) : null}
               </div>
             )}
@@ -550,7 +554,11 @@ export function FactoryProductsPage() {
                 </div>
               ))}
               {catalog.length === 0 ? (
-                <p className="px-5 py-10 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">No catalogue lines yet.</p>
+                <EmptyState
+                  title="No catalogue items"
+                  description="Use the left panel form to add your standard stock lines."
+                  variant="warehouse"
+                />
               ) : null}
             </div>
           </Card>

@@ -1,9 +1,13 @@
 import { AlertTriangle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, Filter, Printer, Search, Trash2, X } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { useLocation } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
+import Fuse from 'fuse.js'
+import { OrderCardsSkeleton } from '../../components/ui/Skeleton'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { useToast } from '../../contexts/ToastContext'
 import { format } from 'date-fns'
 import { useAuth } from '../../contexts/AuthContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
@@ -163,9 +167,10 @@ function OrderActions({ order }: { order: Order }) {
                 try {
                   await deleteOrder(db, deleteTarget.id)
                   setDeleteTarget(null)
+                  showToast("Order deleted successfully!", "success")
                 } catch (_e) {
-                  alert('Failed to delete order.')
                   setDeleteTarget(null)
+                  showToast("Failed to delete order.", "error")
                 } finally {
                   setBusy(false)
                 }
@@ -640,6 +645,7 @@ export function FactoryPendingPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const { showToast } = useToast()
   const loc = useLocation() as { state?: { openId?: string } }
   const [openId, setOpenId] = useState<string | null>(loc.state?.openId ?? null)
 
@@ -718,11 +724,25 @@ export function FactoryPendingPage() {
     [orders, usersMap]
   )
 
+  // Fuse.js index for full-text search across order fields
+  const fuse = useMemo(() => new Fuse(orders, {
+    keys: [
+      { name: 'orderNumber', weight: 2 },
+      { name: 'shopName', weight: 1.5 },
+      { name: 'requestorName', weight: 1.5 },
+      { name: 'items.name', weight: 1 },
+    ],
+    threshold: 0.35,
+    includeScore: true,
+  }), [orders])
+
   const grouped = useMemo(() => {
     const needle = orderSearch.trim()
+    const textMatched = needle
+      ? fuse.search(needle).map(r => r.item)
+      : orders
 
-    const filtered = orders.filter(o => {
-      if (needle && !(o.orderNumber ?? '').includes(needle)) return false
+    const filtered = textMatched.filter(o => {
       if (filterShop !== 'all' && o.shopName !== filterShop) return false
 
       const reqName = usersMap[o.shopUserId]?.displayName || o.requestorName
@@ -750,6 +770,7 @@ export function FactoryPendingPage() {
   }, [
     orders,
     orderSearch,
+    fuse,
     filterShop,
     filterRequestor,
     filterKind,
@@ -785,8 +806,10 @@ export function FactoryPendingPage() {
         }
       }
 
+      showToast("Order milestone updated!", "success")
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Update failed.')
+      showToast("Failed to update milestone.", "error")
     } finally {
       setBusyId(null)
     }
@@ -805,8 +828,10 @@ export function FactoryPendingPage() {
           message: `Hi ${order.requestorName}, a dispatch for your order ${order.orderNumber ? `#${order.orderNumber}` : ''} from ${order.shopName} is on its way. Please confirm receipt when delivered.`,
         })
       }
+      showToast("Dispatch recorded successfully!", "success")
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Dispatch failed.')
+      showToast("Failed to record dispatch.", "error")
     } finally {
       setBusyId(null)
     }
@@ -852,19 +877,27 @@ export function FactoryPendingPage() {
             <ChevronDown className={`h-4 w-4 text-slate-400 dark:text-slate-500 transition-transform ${filterOpen ? 'rotate-180' : ''} transition-colors duration-200`} />
           </button>
 
-          {/* Order number search — narrower */}
+          {/* Full-text search */}
           <div className="relative flex flex-1 items-center px-3">
             {loading ? <div className="pointer-events-none absolute left-6 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 dark:border-slate-700/50 border-t-slate-600" /> : <Search className="pointer-events-none absolute left-6 h-4 w-4 text-slate-400 dark:text-slate-500 transition-colors duration-200" />}
             <input
               type="text"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="Order #…"
-              aria-label="Search by order number"
+              placeholder="Search orders, shop, product…"
+              aria-label="Search orders"
               value={orderSearch}
-              onChange={e => setOrderSearch(e.target.value.replace(/\D/g, ''))}
-              className="w-full bg-transparent py-3 pl-7 text-base sm:text-sm text-slate-700 dark:text-slate-300 placeholder-slate-400 focus:outline-none transition-colors duration-200"
+              onChange={e => setOrderSearch(e.target.value)}
+              className="w-full bg-transparent py-3 pl-7 pr-7 text-base sm:text-sm text-slate-700 dark:text-slate-300 placeholder-slate-400 focus:outline-none transition-colors duration-200"
             />
+            {orderSearch && (
+              <button
+                type="button"
+                onClick={() => setOrderSearch('')}
+                aria-label="Clear search"
+                className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -963,18 +996,27 @@ export function FactoryPendingPage() {
       )}
 
       {loading ? (
-        <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-900 dark:border-slate-100 border-t-transparent transition-colors duration-200" />
-          Loading…
-        </div>
+        <OrderCardsSkeleton count={3} />
       ) : orders.length === 0 ? (
-        <Card>
-          <p className="text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">No pending orders. Nice and quiet.</p>
-        </Card>
+        <EmptyState
+          title="No pending orders"
+          description="All orders are processed. Nice and quiet!"
+          variant="inbox"
+        />
       ) : totalOrders === 0 ? (
-        <Card>
-          <p className="text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">No orders match the current filters.</p>
-        </Card>
+        <EmptyState
+          title="No matching orders"
+          description="No orders match the current filters. Try adjusting your search term or parameters."
+          variant="search"
+          actionLabel="Clear all filters"
+          onAction={() => {
+            setFilterShop('all')
+            setFilterRequestor('all')
+            setFilterKind('all')
+            setFilterStartDate('')
+            setFilterEndDate('')
+          }}
+        />
       ) : (
         <div className="space-y-8">
           {grouped.map(({ label, orders: groupOrders }) => (

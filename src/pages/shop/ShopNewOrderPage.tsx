@@ -17,12 +17,15 @@ import { createOrder } from '../../lib/orderService'
 import { subscribeUnlimitedProducts } from '../../lib/productService'
 import { whatsappLink } from '../../utils/whatsapp'
 import type { OrderLineItem, UnlimitedProduct } from '../../types/models'
+import { triggerHaptic } from '../../utils/haptic'
+import { useToast } from '../../contexts/ToastContext'
 
 type ProductGroup = { name: string; variants: UnlimitedProduct[] }
 
 export function ShopNewOrderPage() {
   const { profile, user } = useAuth()
   const { shopView } = useAdminMode()
+  const { showToast } = useToast()
   const [catalog, setCatalog] = useState<UnlimitedProduct[]>([])
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
@@ -96,11 +99,13 @@ export function ShopNewOrderPage() {
   }, [fuse, query, grouped])
 
   function setQty(id: string, qty: number) {
+    triggerHaptic('light')
     const clamped = Math.max(0, Math.floor(qty))
     setStandardQty(id, clamped)
   }
 
   function stepQty(id: string, delta: number) {
+    triggerHaptic('light')
     const clamped = Math.max(0, (qtys[id] ?? 0) + delta)
     setStandardQty(id, clamped)
   }
@@ -158,8 +163,10 @@ export function ShopNewOrderPage() {
         setLastOrderNumber(tempOrderNumber)
         setSubmitted(true)
         setPreviewOpen(false)
+        showToast("Order queued (Offline) — Auto-syncing when online!", "info")
       } catch (e) {
         setError('Failed to queue order offline.')
+        showToast("Failed to queue order offline.", "error")
       } finally {
         setBusy(false)
       }
@@ -181,8 +188,10 @@ export function ShopNewOrderPage() {
       setLastOrderNumber(orderNumber)
       setSubmitted(true)
       setPreviewOpen(false)
+      showToast("Order submitted successfully!", "success")
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not submit order.')
+      showToast("Could not submit order.", "error")
     } finally {
       setBusy(false)
     }

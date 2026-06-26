@@ -18,6 +18,8 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Modal } from "../../components/ui/Modal";
+import { triggerHaptic } from "../../utils/haptic";
+import { useToast } from "../../contexts/ToastContext";
 import { db } from "../../lib/firebase";
 import { createFactoryDispatchOrder } from "../../lib/orderService";
 import {
@@ -52,6 +54,7 @@ function productLabel(p: { name: string; size?: string }) {
 
 export function FactoryCreateOrderPage() {
   const { profile, user } = useAuth();
+  const { showToast } = useToast();
   const {
     selectedShop,
     setSelectedShop,
@@ -231,6 +234,7 @@ export function FactoryCreateOrderPage() {
   }, [filteredStandard]);
 
   function setStandardQty(product: UnlimitedProduct, qty: number) {
+    triggerHaptic('light');
     setStandardQtys((prev) => {
       const next = { ...prev };
       const clamped = clampQty(qty);
@@ -245,6 +249,7 @@ export function FactoryCreateOrderPage() {
   }
 
   function setLimitedQty(product: LimitedProduct, qty: number) {
+    triggerHaptic('light');
     setLimitedQtys((prev) => {
       const next = { ...prev };
       const clamped = clampQty(qty, product.stock);
@@ -303,9 +308,8 @@ export function FactoryCreateOrderPage() {
         requestorEmail: profile.email,
         items: [...standardItems, ...limitedItems],
       });
-      setSuccess(
-        `Factory dispatch order #${orderNumber} created and dispatched.`,
-      );
+      showToast(`Dispatch order #${orderNumber} created and sent!`, "success");
+      setSuccess(`Factory dispatch order #${orderNumber} created and dispatched.`);
       clearForm();
     } catch (err) {
       setError(
@@ -313,6 +317,7 @@ export function FactoryCreateOrderPage() {
           ? err.message
           : "Could not create factory dispatch order.",
       );
+      showToast("Failed to create dispatch order.", "error");
     } finally {
       setBusy(false);
     }
