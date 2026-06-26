@@ -539,7 +539,6 @@ export function FactoryCreateOrderPage() {
                           const active = qty > 0;
                           return (
                             <motion.div
-                              layout
                               key={product.id}
                               className={`flex items-center justify-between gap-4 border-l-2 px-5 py-3 transition-all duration-200 ${
                                 active
@@ -669,7 +668,6 @@ export function FactoryCreateOrderPage() {
                     const active = qty > 0;
                     return (
                       <motion.div
-                        layout
                         key={product.id}
                         className={`flex items-center justify-between gap-4 border-l-2 px-5 py-3 transition-all duration-200 ${
                           active
@@ -754,7 +752,7 @@ export function FactoryCreateOrderPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 18 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] backdrop-blur dark:border-slate-800/50 dark:bg-slate-800/95 sm:p-4"
+            className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 dark:border-slate-800/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-3 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] sm:p-4"
           >
             <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -795,7 +793,7 @@ export function FactoryCreateOrderPage() {
           </motion.div>
         ) : null}
       </AnimatePresence>
-      {totalLines > 0 ? <div className="h-24 sm:h-20" /> : null}
+
 
       <Modal
         open={previewOpen}

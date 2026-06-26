@@ -195,7 +195,7 @@ export function ShopAvailablePage() {
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-      className="space-y-6"
+      className="space-y-6 pb-28"
     >
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -432,7 +432,7 @@ export function ShopAvailablePage() {
       )}
 
       {lines.length > 0 ? (
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 dark:border-slate-800/50 bg-white/95 dark:bg-slate-800/90 backdrop-blur p-3 sm:p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] transition-colors duration-200">
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 dark:border-slate-800/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-3 sm:p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] transition-colors duration-200">
           <div className="mx-auto flex max-w-6xl flex-row items-center justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 text-sm text-slate-700 dark:text-slate-300 transition-colors duration-200">
               <span className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
@@ -512,7 +512,7 @@ export function ShopAvailablePage() {
         onClose={() => setImageView(null)}
       />
 
-      {lines.length > 0 ? <div className="h-28 sm:h-24" /> : null}
+
     </motion.div>
   );
 }
