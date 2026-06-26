@@ -2,7 +2,7 @@ import { AlertTriangle } from 'lucide-react'
 import { Minus, Plus, Search, ShoppingBag, X } from 'lucide-react'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Fuse from 'fuse.js'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAdminMode } from '../../contexts/AdminModeContext'
@@ -14,7 +14,7 @@ import { Modal } from '../../components/ui/Modal'
 import { db } from '../../lib/firebase'
 import { getFactoryWhatsappNumber } from '../../lib/adminService'
 import { createOrder } from '../../lib/orderService'
-import { listUnlimitedProducts } from '../../lib/productService'
+import { subscribeUnlimitedProducts } from '../../lib/productService'
 import { whatsappLink } from '../../utils/whatsapp'
 import type { OrderLineItem, UnlimitedProduct } from '../../types/models'
 
@@ -38,29 +38,31 @@ export function ShopNewOrderPage() {
   const qtys = standardDraft.qtys
   const units = standardDraft.units
 
-  const refresh = useCallback(async () => {
+  useEffect(() => {
     if (!db) return
     setLoading(true)
     setError(null)
-    try {
-      const [products, factNum] = await Promise.all([
-        listUnlimitedProducts(db),
-        getFactoryWhatsappNumber(db),
-      ])
-      setCatalog(products)
-      setFactoryNumber(factNum)
-    } catch {
-      setError('Could not load the standard catalogue.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+    
+    // Fetch WhatsApp number once
+    getFactoryWhatsappNumber(db)
+      .then(setFactoryNumber)
+      .catch(() => {})
 
-  useEffect(() => {
-    queueMicrotask(() => {
-      void refresh()
-    })
-  }, [refresh])
+    // Subscribe to catalog items in real-time
+    const unsub = subscribeUnlimitedProducts(
+      db,
+      (products) => {
+        setCatalog(products)
+        setLoading(false)
+      },
+      () => {
+        setError('Could not load the standard catalogue.')
+        setLoading(false)
+      }
+    )
+    
+    return unsub
+  }, [])
 
   const grouped = useMemo<ProductGroup[]>(() => {
     const map = new Map<string, UnlimitedProduct[]>()
@@ -244,14 +246,7 @@ export function ShopNewOrderPage() {
                 {filteredGroups.length} of {grouped.length} products
                 {query ? ` matching "${query}"` : ''}
               </span>
-              <Button
-                variant="ghost"
-                className="!px-2 !py-1 text-xs"
-                onClick={() => void refresh()}
-                disabled={loading}
-              >
-                Reload
-              </Button>
+
             </div>
           </div>
 

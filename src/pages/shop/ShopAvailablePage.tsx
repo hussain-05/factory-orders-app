@@ -1,7 +1,7 @@
 import { AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Minus, Plus, ShoppingBag, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Fuse from "fuse.js";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAdminMode } from "../../contexts/AdminModeContext";
@@ -72,11 +72,7 @@ export function ShopAvailablePage() {
     return unsub;
   }, []);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    setLoading(false);
-  }, []);
+
 
   const lines = useMemo(() => {
     return Object.entries(cartQtys)
@@ -144,7 +140,6 @@ export function ShopAvailablePage() {
       setLastOrderNumber(orderNumber);
       setSubmitted(true);
       setPreviewOpen(false);
-      await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not submit order.");
     } finally {
@@ -169,13 +164,7 @@ export function ShopAvailablePage() {
             cart and submit a single multi-item order.
           </p>
         </div>
-        <Button
-          variant="secondary"
-          onClick={() => void refresh()}
-          disabled={loading}
-        >
-          Refresh
-        </Button>
+
       </div>
 
       {error ? (

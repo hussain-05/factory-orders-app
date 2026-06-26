@@ -1,16 +1,16 @@
 import { AlertTriangle, Shield, Trash2, UserCheck, UserX, Users, CheckCircle, Clock, Trash, KeyRound } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { db } from '../../lib/firebase'
 import {
   addAllowedEmail,
   getFactoryWhatsappNumber,
-  listAllowedEmails,
   removeAllowedEmail,
   setAdminStatus,
   setFactoryWhatsappNumber,
+  subscribeAllowedEmails,
   type AllowedEmail,
 } from '../../lib/adminService'
-import { listAllUsers, updateAccessibleShops, deleteUserProfileDoc } from '../../lib/userService'
+import { subscribeAllUsers, updateAccessibleShops, deleteUserProfileDoc } from '../../lib/userService'
 import type { ShopName, UserProfile } from '../../types/models'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -38,29 +38,47 @@ export function AdminPage() {
   const [updatingUserUid, setUpdatingUserUid] = useState<string | null>(null)
   const [userSearch, setUserSearch] = useState('')
 
-  const refresh = useCallback(async () => {
+  useEffect(() => {
     if (!db) return
     setLoading(true)
     setError(null)
-    try {
-      const [emailList, factNum, userList] = await Promise.all([
-        listAllowedEmails(db),
-        getFactoryWhatsappNumber(db),
-        listAllUsers(db),
-      ])
-      setEmails(emailList)
-      setFactoryNumber(factNum)
-      setUsers(userList)
-    } catch {
-      setError('Could not load settings.')
-    } finally {
-      setLoading(false)
+
+    // Load WhatsApp number once
+    getFactoryWhatsappNumber(db)
+      .then(setFactoryNumber)
+      .catch(() => {})
+
+    // Subscribe to allowed emails
+    const unsubEmails = subscribeAllowedEmails(
+      db,
+      (emailList) => {
+        setEmails(emailList)
+        setLoading(false)
+      },
+      () => {
+        setError('Could not load allowed emails.')
+        setLoading(false)
+      }
+    )
+
+    // Subscribe to users
+    const unsubUsers = subscribeAllUsers(
+      db,
+      (userList) => {
+        setUsers(userList)
+        setLoading(false)
+      },
+      () => {
+        setError('Could not load registered users.')
+        setLoading(false)
+      }
+    )
+
+    return () => {
+      unsubEmails()
+      unsubUsers()
     }
   }, [])
-
-  useEffect(() => {
-    queueMicrotask(() => void refresh())
-  }, [refresh])
 
   async function handleAdd() {
     if (!db || !newEmail.trim()) return
@@ -71,7 +89,6 @@ export function AdminPage() {
       setNewEmail('')
       setNewIsAdmin(false)
       setNewRole('shop')
-      await refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not add email.')
     } finally {
@@ -86,7 +103,6 @@ export function AdminPage() {
     try {
       await removeAllowedEmail(db, email)
       setConfirmDelete(null)
-      await refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not remove email.')
     } finally {
@@ -100,7 +116,6 @@ export function AdminPage() {
     setError(null)
     try {
       await setAdminStatus(db, email, !current)
-      await refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not update admin status.')
     } finally {
@@ -121,7 +136,6 @@ export function AdminPage() {
         next = current.filter(s => s !== shop)
       }
       await updateAccessibleShops(db, user.uid, next)
-      await refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not update accessible shops.')
     } finally {
@@ -138,7 +152,6 @@ export function AdminPage() {
       await removeAllowedEmail(db, user.email)
       setConfirmDeleteUser(null)
       setDeleteWarningUser(user.email)
-      await refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not delete user.')
     } finally {
@@ -351,9 +364,6 @@ export function AdminPage() {
                 <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
                   {emails.length}
                 </span>
-                <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
-                  Refresh
-                </Button>
               </div>
             </div>
 
@@ -460,9 +470,6 @@ export function AdminPage() {
                 onChange={(e) => setUserSearch(e.target.value)}
                 className="w-full sm:w-60"
               />
-              <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
-                Refresh
-              </Button>
             </div>
           </div>
 

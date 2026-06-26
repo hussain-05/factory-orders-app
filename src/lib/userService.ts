@@ -4,6 +4,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   query,
   serverTimestamp,
   setDoc,
@@ -116,4 +117,24 @@ export async function deleteUserProfileDoc(
 ): Promise<void> {
   const ref = doc(firestore, 'users', uid)
   await deleteDoc(ref)
+}
+
+export function subscribeAllUsers(
+  firestore: Firestore,
+  onData: (users: UserProfile[]) => void,
+  onError?: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    collection(firestore, 'users'),
+    (snap) => {
+      const rows = snap.docs.map((d) => userProfileFromDoc(d.id, d.data()))
+      rows.sort((a, b) => {
+        const an = a.displayName || a.email
+        const bn = b.displayName || b.email
+        return an.localeCompare(bn) || a.email.localeCompare(b.email)
+      })
+      onData(rows)
+    },
+    (err) => onError?.(err),
+  )
 }

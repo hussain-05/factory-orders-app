@@ -1,14 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { motion } from 'framer-motion'
 import { addMonths, differenceInCalendarDays, format, startOfMonth } from 'date-fns'
-import { AlertTriangle, BarChart3, Clock, Package, RefreshCw, TrendingUp } from 'lucide-react'
+import { AlertTriangle, BarChart3, Clock, Package, TrendingUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../../lib/firebase'
 import { subscribeAllOrdersForFactory } from '../../lib/orderService'
 import { subscribeLimitedProducts } from '../../lib/productService'
 import { Badge } from '../../components/ui/Badge'
-import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import type { LimitedProduct, Order, OrderDispatch } from '../../types/models'
 import { formatDateTime } from '../../utils/format'
@@ -251,12 +250,7 @@ export function FactoryDashboardPage() {
     }
   }, [])
 
-  const refresh = useCallback(async () => {
-    // Under real-time sync, manual refresh clicks just trigger a visual transition
-    setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    setLoading(false)
-  }, [])
+
 
   // ── derived metrics ──────────────────────────────────────────────────────
 
@@ -348,10 +342,7 @@ export function FactoryDashboardPage() {
             Live view of all pending orders, production stages, and delivery performance.
           </p>
         </div>
-        <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
+
       </div>
 
       {error && (

@@ -3,7 +3,7 @@ import { ScrollText,  ChevronDown, ChevronRight, Filter, Printer, Search, Trash2
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation } from 'react-router-dom'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
@@ -182,12 +182,7 @@ export function FactoryOrderHistoryPage() {
     return unsub
   }, [])
 
-  const refresh = useCallback(async () => {
-    // Under real-time sync, manual refresh clicks just trigger a visual transition
-    setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    setLoading(false)
-  }, [])
+
 
   const requestorOptions = useMemo(
     () => [...new Set(orders.map(o => usersMap[o.shopUserId]?.displayName || o.requestorName).filter(Boolean))].sort(),
@@ -228,9 +223,7 @@ const filtered = orders.filter(o => {
             Full visibility across shops, with printable PDFs for filing and reconciliation.
           </p>
         </div>
-        <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
-          Refresh
-        </Button>
+
       </div>
 
       {/* ── Search + Filter bar ── */}
