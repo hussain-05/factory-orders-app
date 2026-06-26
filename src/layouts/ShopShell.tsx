@@ -13,6 +13,7 @@ import { db } from '../lib/firebase'
 import { subscribeOrdersForShop } from '../lib/orderService'
 import type { ShopName } from '../types/models'
 import { ThemeToggleIcon } from '../components/ThemeToggleIcon'
+import { ConnectionStatus } from '../components/ConnectionStatus'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all sm:gap-2 sm:px-3 ${
@@ -102,6 +103,7 @@ export function ShopShell() {
 
           {/* Right column: actions */}
           <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0">
+            <ConnectionStatus />
             <Button
               variant="secondary"
               className="shrink-0 !p-2.5 !rounded-full"

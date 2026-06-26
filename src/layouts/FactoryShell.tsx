@@ -11,6 +11,7 @@ import { ModeSwitcher } from '../components/ModeSwitcher'
 import { db } from '../lib/firebase'
 import { subscribePendingOrdersForFactory } from '../lib/orderService'
 import { ThemeToggleIcon } from '../components/ThemeToggleIcon'
+import { ConnectionStatus } from '../components/ConnectionStatus'
 
 function usePendingOrderCount() {
   const [count, setCount] = useState<number | null>(null)
@@ -83,6 +84,7 @@ export function FactoryShell() {
 
           {/* Right column: actions */}
           <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0">
+            <ConnectionStatus />
             <Button
               variant="secondary"
               className="shrink-0 !p-2.5 !rounded-full"
