@@ -51,6 +51,17 @@ export function ShopShell() {
     return unsub
   }, [shopView])
 
+  // Sync PWA home screen application badge with awaiting confirmation count
+  useEffect(() => {
+    if ('setAppBadge' in navigator) {
+      if (awaitingCount > 0) {
+        navigator.setAppBadge(awaitingCount).catch(() => {})
+      } else {
+        navigator.clearAppBadge().catch(() => {})
+      }
+    }
+  }, [awaitingCount])
+
   return (
     <div className="min-h-dvh bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl transition-colors duration-200">

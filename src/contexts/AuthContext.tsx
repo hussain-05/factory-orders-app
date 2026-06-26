@@ -145,6 +145,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Non-fatal — proceed with logout even if token removal fails
       }
     }
+    // Clear PWA app icon badge on logout
+    if ('clearAppBadge' in navigator) {
+      try {
+        await navigator.clearAppBadge()
+      } catch {
+        // Non-fatal
+      }
+    }
     await signOut(auth)
   }, [user])
 
