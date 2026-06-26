@@ -17,3 +17,16 @@ createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </StrictMode>,
 )
+
+// Register Firebase messaging service worker for reliable PWA push notifications on mobile
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/firebase-messaging-sw.js')
+      .then((reg) => {
+        console.log('Firebase Service Worker registered with scope:', reg.scope)
+      })
+      .catch((err) => {
+        console.error('Firebase Service Worker registration failed:', err)
+      })
+  })
+}

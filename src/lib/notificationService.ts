@@ -14,7 +14,11 @@ export async function requestNotificationPermission(
   if (permission !== 'granted') return 'denied'
 
   try {
-    const token = await getToken(messaging, { vapidKey: VAPID_KEY })
+    const registration = await navigator.serviceWorker.ready
+    const token = await getToken(messaging, { 
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration
+    })
     if (token) {
       await updateDoc(doc(db, 'users', uid), { fcmTokens: arrayUnion(token) })
     }
@@ -30,7 +34,11 @@ export async function removeNotificationToken(
   uid: string,
 ): Promise<void> {
   try {
-    const token = await getToken(messaging, { vapidKey: VAPID_KEY })
+    const registration = await navigator.serviceWorker.ready
+    const token = await getToken(messaging, { 
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration
+    })
     if (token) {
       await updateDoc(doc(db, 'users', uid), { fcmTokens: arrayRemove(token) })
     }
