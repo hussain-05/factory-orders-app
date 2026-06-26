@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react'
+import { createContext, useContext, useState, type ReactNode, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { triggerHaptic } from '../utils/haptic'
 
@@ -20,7 +20,7 @@ export function useToast() {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null)
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
+  const [timeoutId, setTimeoutId] = useState<ReturnType<typeof setTimeout> | null>(null)
 
   const showToast = useCallback((message: string, type: ToastType = 'success') => {
     // Clear any existing timeout

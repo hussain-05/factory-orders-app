@@ -117,6 +117,7 @@ const WhatsAppIcon = () => (
 function OrderActions({ order }: { order: Order }) {
   const [busy, setBusy] = useState(false)
   const { profile } = useAuth()
+  const { showToast } = useToast()
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
 
   return (

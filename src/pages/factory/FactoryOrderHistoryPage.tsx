@@ -1,5 +1,5 @@
 import { AlertTriangle } from 'lucide-react'
-import { ScrollText, ChevronDown, ChevronRight, Filter, Printer, Search, Trash2, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, Filter, Printer, Search, Trash2, X } from 'lucide-react'
 
 import { motion, AnimatePresence } from 'framer-motion'
 import Fuse from 'fuse.js'

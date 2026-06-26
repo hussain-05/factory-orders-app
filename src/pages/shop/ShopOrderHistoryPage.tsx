@@ -1,6 +1,6 @@
 import { AlertTriangle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ScrollText,
+import {
   ChevronDown,
   ChevronRight,
   Filter,
