@@ -467,7 +467,7 @@ export function ShopDashboardPage() {
                 </div>
                 <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200">
                   <div
-                    className="h-2 rounded-full bg-slate-700 transition-all duration-700"
+                    className="h-2 rounded-full bg-violet-500 transition-all duration-700"
                     style={{ width: mounted ? `${orderTypeSplit.standardPct}%` : '0%' }}
                   />
                 </div>
