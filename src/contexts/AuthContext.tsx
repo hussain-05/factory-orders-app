@@ -15,9 +15,8 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { auth, db, firebaseReady, messaging } from '../lib/firebase'
+import { auth, db, firebaseReady } from '../lib/firebase'
 import { fetchUserProfile, saveUserProfile } from '../lib/userService'
-import { removeNotificationToken } from '../lib/notificationService'
 import type { ShopName, UserProfile, UserRole } from '../types/models'
 
 type AuthState = {
@@ -137,14 +136,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     if (!auth) return
     setError(null)
-    // Remove FCM token before sign-out so this device no longer receives push notifications
-    if (messaging && db && user) {
-      try {
-        await removeNotificationToken(messaging, db, user.uid)
-      } catch {
-        // Non-fatal — proceed with logout even if token removal fails
-      }
-    }
     // Clear PWA app icon badge on logout
     if ('clearAppBadge' in navigator) {
       try {
@@ -154,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
     await signOut(auth)
-  }, [user])
+  }, [])
 
   const value = useMemo<AuthContextValue>(
     () => ({
