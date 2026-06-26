@@ -8,13 +8,16 @@ export async function requestNotificationPermission(
   db: Firestore,
   uid: string,
 ): Promise<'granted' | 'denied' | 'unsupported'> {
-  if (!('Notification' in window)) return 'unsupported'
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) return 'unsupported'
 
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') return 'denied'
 
   try {
-    const registration = await navigator.serviceWorker.ready
+    const registration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 1500))
+    ])
     const token = await getToken(messaging, { 
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: registration
@@ -34,7 +37,11 @@ export async function removeNotificationToken(
   uid: string,
 ): Promise<void> {
   try {
-    const registration = await navigator.serviceWorker.ready
+    if (!('serviceWorker' in navigator)) return
+    const registration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 1000))
+    ])
     const token = await getToken(messaging, { 
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: registration
@@ -43,7 +50,7 @@ export async function removeNotificationToken(
       await updateDoc(doc(db, 'users', uid), { fcmTokens: arrayRemove(token) })
     }
   } catch {
-    // Ignore — token may already be invalid
+    // Ignore — token may already be invalid or SW timed out
   }
 }
 
