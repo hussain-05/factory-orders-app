@@ -1,15 +1,17 @@
 import { AlertTriangle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ScrollText,
+import {
   ChevronDown,
   ChevronRight,
   Filter,
   Printer,
   Search,
   Trash2,
+  X,
  } from 'lucide-react';
 import { useLocation } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
+import Fuse from "fuse.js";
 import { format } from "date-fns";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAdminMode } from "../../contexts/AdminModeContext";
@@ -26,6 +28,9 @@ import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Modal } from "../../components/ui/Modal";
+import { OrderCardsSkeleton } from "../../components/ui/Skeleton";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { useToast } from "../../contexts/ToastContext";
 import type { Order } from "../../types/models";
 import {
   formatDate,
@@ -54,6 +59,7 @@ export function ShopOrderHistoryPage() {
   const usersMap = useUsersMap();
   const { user, profile } = useAuth();
   const { shopView } = useAdminMode();
+  const { showToast } = useToast();
   const effectiveShopName = shopView;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,9 +170,11 @@ export function ShopOrderHistoryPage() {
           };
         }),
       );
+      showToast("Received dispatch confirmed!", "success");
     } catch {
       // Restore accurate state from the latest snapshot on error
       setOrders(latestOrdersRef.current)
+      showToast("Failed to confirm receipt.", "error");
     } finally {
       setConfirmBusyId(null);
     }
@@ -206,11 +214,23 @@ export function ShopOrderHistoryPage() {
     [orders, usersMap],
   );
 
+  // Fuse.js full-text search index
+  const fuse = useMemo(() => new Fuse(orders, {
+    keys: [
+      { name: 'orderNumber', weight: 2 },
+      { name: 'requestorName', weight: 1.5 },
+      { name: 'items.name', weight: 1 },
+    ],
+    threshold: 0.35,
+    includeScore: true,
+  }), [orders])
+
   const grouped = useMemo(() => {
     const needle = orderSearch.trim();
-    const filtered = orders.filter((o) => {
-      if (needle && !(o.orderNumber ?? "").includes(needle)) return false;
-
+    const textMatched = needle
+      ? fuse.search(needle).map(r => r.item)
+      : orders
+    const filtered = textMatched.filter((o) => {
       const reqName = usersMap[o.shopUserId]?.displayName || o.requestorName;
       if (filterRequestor !== "all" && reqName !== filterRequestor)
         return false;
@@ -249,6 +269,7 @@ export function ShopOrderHistoryPage() {
   }, [
     orders,
     orderSearch,
+    fuse,
     filterRequestor,
     filterKind,
     filterAwaiting,
@@ -324,7 +345,7 @@ export function ShopOrderHistoryPage() {
             />
           </button>
 
-          {/* Order number search — narrower */}
+          {/* Full-text search */}
           <div className="relative flex flex-1 items-center px-3">
             {loading ? (
               <div className="pointer-events-none absolute left-6 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 dark:border-slate-700/50 border-t-slate-600" />
@@ -333,16 +354,22 @@ export function ShopOrderHistoryPage() {
             )}
             <input
               type="text"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="Order #…"
-              aria-label="Search by order number"
+              placeholder="Search orders, product…"
+              aria-label="Search orders"
               value={orderSearch}
-              onChange={(e) =>
-                setOrderSearch(e.target.value.replace(/\D/g, ""))
-              }
-              className="w-full bg-transparent py-3 pl-7 text-base sm:text-sm text-slate-700 dark:text-slate-300 placeholder-slate-400 focus:outline-none transition-colors duration-200"
+              onChange={(e) => setOrderSearch(e.target.value)}
+              className="w-full bg-transparent py-3 pl-7 pr-7 text-base sm:text-sm text-slate-700 dark:text-slate-300 placeholder-slate-400 focus:outline-none transition-colors duration-200"
             />
+            {orderSearch && (
+              <button
+                type="button"
+                onClick={() => setOrderSearch('')}
+                aria-label="Clear search"
+                className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -463,26 +490,28 @@ export function ShopOrderHistoryPage() {
       ) : null}
 
       {loading ? (
-        <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
-          Loading…
-        </div>
+        <OrderCardsSkeleton count={3} />
       ) : orders.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <ScrollText className="h-10 w-10 text-slate-300 dark:text-slate-700" />
-          <p className="font-display text-base font-semibold text-slate-700 dark:text-slate-300">No orders found</p>
-          <p className="text-sm text-slate-400 dark:text-slate-500 max-w-xs">
-            Orders will appear here once they've been placed.
-          </p>
-        </div>
+        <EmptyState
+          title="No orders yet"
+          description="Place your first order in the 'New Order' tab to start your history!"
+          variant="warehouse"
+        />
       ) : grouped.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <ScrollText className="h-10 w-10 text-slate-300 dark:text-slate-700" />
-          <p className="font-display text-base font-semibold text-slate-700 dark:text-slate-300">No orders found</p>
-          <p className="text-sm text-slate-400 dark:text-slate-500 max-w-xs">
-            Try clearing your filters to see all orders.
-          </p>
-        </div>
+        <EmptyState
+          title="No matching orders"
+          description="No orders match your current filters. Try adjusting search parameters or clearing filters."
+          variant="search"
+          actionLabel="Clear all filters"
+          onAction={() => {
+            setFilterRequestor("all");
+            setFilterKind("all");
+            setFilterAwaiting(false);
+            setFilterStartDate("");
+            setFilterEndDate("");
+            setOrderSearch("");
+          }}
+        />
       ) : (
         <div className="space-y-8">
           {grouped.map(({ label, orders: groupOrders }) => (
@@ -791,12 +820,14 @@ export function ShopOrderHistoryPage() {
                 try {
                   await deleteOrder(db, deleteTarget.id);
                   setDeleteTarget(null);
+                  showToast("Order deleted successfully!", "success");
                   if (openId === deleteTarget.id) setOpenId(null);
                 } catch (e) {
                   setError(
                     e instanceof Error ? e.message : "Could not delete order.",
                   );
                   setDeleteTarget(null);
+                  showToast("Failed to delete order.", "error");
                 } finally {
                   setDeleteBusy(false);
                 }

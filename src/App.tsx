@@ -124,6 +124,12 @@ function AppRoutes() {
   )
 }
 
+import { ToastProvider } from './contexts/ToastContext'
+
 export default function App() {
-  return <AppRoutes />
+  return (
+    <ToastProvider>
+      <AppRoutes />
+    </ToastProvider>
+  )
 }

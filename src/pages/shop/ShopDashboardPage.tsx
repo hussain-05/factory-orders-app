@@ -11,6 +11,8 @@ import { db } from '../../lib/firebase'
 import { subscribeOrdersForShop } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
+import { StatCardsSkeleton } from '../../components/ui/Skeleton'
+import { EmptyState } from '../../components/ui/EmptyState'
 import type { Order, OrderDispatch } from '../../types/models'
 import { formatDateTime } from '../../utils/format'
 
@@ -282,22 +284,7 @@ export function ShopDashboardPage() {
   // ── render ───────────────────────────────────────────────────────────────
 
   if (loading) {
-    return (
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 animate-pulse pt-8">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-            <div className="flex items-start gap-4">
-              <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800" />
-              <div className="flex-1 space-y-2">
-                <div className="h-3 w-20 rounded bg-slate-100 dark:bg-slate-800" />
-                <div className="h-7 w-14 rounded bg-slate-200 dark:bg-slate-700" />
-                <div className="h-2.5 w-28 rounded bg-slate-100 dark:bg-slate-800" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    )
+    return <StatCardsSkeleton count={4} />
   }
 
   return (
@@ -452,10 +439,11 @@ export function ShopDashboardPage() {
             Order type split
           </p>
           {orders.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <span className="text-2xl">📦</span>
-              <p className="text-sm text-slate-500 dark:text-slate-400">No orders placed yet. Start one to see your history here.</p>
-            </div>
+            <EmptyState
+              title="No orders placed yet"
+              description="Start a new order to see your standard vs limited catalog breakdown."
+              variant="warehouse"
+            />
           ) : (
             <div className="space-y-4">
               <div>

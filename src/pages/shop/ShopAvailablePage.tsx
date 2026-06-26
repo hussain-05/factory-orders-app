@@ -13,9 +13,13 @@ import { subscribeLimitedProducts } from "../../lib/productService";
 import { whatsappLink } from "../../utils/whatsapp";
 
 import { Button } from "../../components/ui/Button";
+import { ProductGridSkeleton } from "../../components/ui/Skeleton";
+import { EmptyState } from "../../components/ui/EmptyState";
 import { Card } from "../../components/ui/Card";
 import { ImageLightbox } from "../../components/ui/ImageLightbox";
 import { Modal } from "../../components/ui/Modal";
+import { triggerHaptic } from "../../utils/haptic";
+import { useToast } from "../../contexts/ToastContext";
 import type {
   LimitedProduct,
   OrderLineItem,
@@ -33,6 +37,7 @@ function stockBarClass(stock: number) {
 export function ShopAvailablePage() {
   const { profile, user } = useAuth();
   const { shopView } = useAdminMode();
+  const { showToast } = useToast();
   const [items, setItems] = useState<LimitedProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,6 +105,7 @@ export function ShopAvailablePage() {
   }, [items, searchQuery, fuse]);
 
   function setQty(product: LimitedProduct, qty: number) {
+    triggerHaptic('light')
     if (qty <= 0) {
       setLimitedQty(product.id, 0);
     } else {
@@ -150,8 +156,10 @@ export function ShopAvailablePage() {
         setLastOrderNumber(tempOrderNumber);
         setSubmitted(true);
         setPreviewOpen(false);
+        showToast("Order queued (Offline) — Auto-syncing when online!", "info");
       } catch (e) {
         setError('Failed to queue order offline.');
+        showToast("Failed to queue order offline.", "error");
       } finally {
         setBusy(false);
       }
@@ -173,8 +181,10 @@ export function ShopAvailablePage() {
       setLastOrderNumber(orderNumber);
       setSubmitted(true);
       setPreviewOpen(false);
+      showToast("Order submitted successfully!", "success");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not submit order.");
+      showToast("Could not submit order.", "error");
     } finally {
       setBusy(false);
     }
@@ -244,10 +254,7 @@ export function ShopAvailablePage() {
       ) : null}
 
       {loading ? (
-        <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
-          Loading catalogue…
-        </div>
+        <ProductGridSkeleton count={6} />
       ) : (
         <>
           <div className="mb-6 max-w-md relative">
@@ -270,15 +277,20 @@ export function ShopAvailablePage() {
             )}
           </div>
 
-          {filteredItems.length === 0 && items.length > 0 ? (
-            <div className="flex flex-col items-center gap-2 py-10 text-center">
-              <p className="font-display text-base font-semibold text-slate-700 dark:text-slate-300">
-                No products found
-              </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Try a different product name, size, description, or rate.
-              </p>
-            </div>
+          {items.length === 0 ? (
+            <EmptyState
+              title="No products available"
+              description="There are no limited stock products listed at the moment."
+              variant="warehouse"
+            />
+          ) : filteredItems.length === 0 ? (
+            <EmptyState
+              title="No products found"
+              description="Try a different product name, size, description, or rate."
+              variant="search"
+              actionLabel="Clear search"
+              onAction={() => setSearchQuery("")}
+            />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {filteredItems.map((p) => {

@@ -1,7 +1,8 @@
 import { AlertTriangle } from 'lucide-react'
-import { ScrollText,  ChevronDown, ChevronRight, Filter, Printer, Search, Trash2  } from 'lucide-react'
+import { ChevronDown, ChevronRight, Filter, Printer, Search, Trash2, X } from 'lucide-react'
 
 import { motion, AnimatePresence } from 'framer-motion'
+import Fuse from 'fuse.js'
 import { useLocation } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
@@ -12,6 +13,9 @@ import { VisualTimeline } from '../../components/VisualTimeline'
 import { useAuth } from '../../contexts/AuthContext'
 import { subscribeAllOrdersForFactory, deleteOrder } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
+import { OrderCardsSkeleton } from '../../components/ui/Skeleton'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { useToast } from '../../contexts/ToastContext'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Modal } from '../../components/ui/Modal'
@@ -50,6 +54,7 @@ export function FactoryOrderHistoryPage() {
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const { profile } = useAuth()
+  const { showToast } = useToast()
   // ── Filter state — persisted across navigation via sessionStorage ──────────
   const FILTER_KEY = 'seva_factory_history_filters'
   const loadFilters = () => {
@@ -102,10 +107,25 @@ export function FactoryOrderHistoryPage() {
     [orders, usersMap]
   )
 
+  // Fuse.js index for full-text search across order fields
+  const fuse = useMemo(() => new Fuse(orders, {
+    keys: [
+      { name: 'orderNumber', weight: 2 },
+      { name: 'shopName', weight: 1.5 },
+      { name: 'requestorName', weight: 1.5 },
+      { name: 'items.name', weight: 1 },
+    ],
+    threshold: 0.35,
+    includeScore: true,
+  }), [orders])
+
   const grouped = useMemo(() => {
     const needle = orderSearch.trim()
-const filtered = orders.filter(o => {
-      if (needle && !(o.orderNumber ?? '').includes(needle)) return false
+    // First apply Fuse text search (if any), then apply dropdown filters
+    const textMatched = needle
+      ? fuse.search(needle).map(r => r.item)
+      : orders
+    const filtered = textMatched.filter(o => {
       if (filterShop !== 'all' && o.shopName !== filterShop) return false
       const reqName = usersMap[o.shopUserId]?.displayName || o.requestorName
       if (filterRequestor !== 'all' && reqName !== filterRequestor) return false
@@ -121,7 +141,7 @@ const filtered = orders.filter(o => {
     })
     const sorted = filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     return groupByMonth(sorted)
-  }, [orders, orderSearch, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate, usersMap])
+  }, [orders, orderSearch, fuse, filterShop, filterRequestor, filterKind, filterStartDate, filterEndDate, usersMap])
 
   const hasActiveFilters = filterShop !== 'all' || filterRequestor !== 'all' || filterKind !== 'all' || filterStartDate !== '' || filterEndDate !== ''
 
@@ -162,19 +182,30 @@ const filtered = orders.filter(o => {
             <ChevronDown className={`h-4 w-4 text-slate-400 dark:text-slate-500 transition-transform ${filterOpen ? 'rotate-180' : ''} transition-colors duration-200`} />
           </button>
 
-          {/* Order number search — narrower */}
+          {/* Full-text search */}
           <div className="relative flex flex-1 items-center px-3">
-            {loading ? <div className="pointer-events-none absolute left-6 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 dark:border-slate-700/50 border-t-slate-600" /> : <Search className="pointer-events-none absolute left-6 h-4 w-4 text-slate-400 dark:text-slate-500 transition-colors duration-200" />}
+            {loading
+              ? <div className="pointer-events-none absolute left-6 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 dark:border-slate-700/50 border-t-slate-600" />
+              : <Search className="pointer-events-none absolute left-6 h-4 w-4 text-slate-400 dark:text-slate-500 transition-colors duration-200" />
+            }
             <input
               type="text"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="Order #…"
-              aria-label="Search by order number"
+              placeholder="Search orders, shop, product…"
+              aria-label="Search orders"
               value={orderSearch}
-              onChange={e => setOrderSearch(e.target.value.replace(/\D/g, ''))}
-              className="w-full bg-transparent py-3 pl-7 text-base sm:text-sm text-slate-700 dark:text-slate-300 placeholder-slate-400 focus:outline-none transition-colors duration-200"
+              onChange={e => setOrderSearch(e.target.value)}
+              className="w-full bg-transparent py-3 pl-7 pr-7 text-base sm:text-sm text-slate-700 dark:text-slate-300 placeholder-slate-400 focus:outline-none transition-colors duration-200"
             />
+            {orderSearch && (
+              <button
+                type="button"
+                onClick={() => setOrderSearch('')}
+                aria-label="Clear search"
+                className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -273,26 +304,28 @@ const filtered = orders.filter(o => {
       ) : null}
 
       {loading ? (
-        <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-900 dark:border-slate-100 border-t-transparent transition-colors duration-200" />
-          Loading…
-        </div>
+        <OrderCardsSkeleton count={3} />
       ) : orders.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <ScrollText className="h-10 w-10 text-slate-300 dark:text-slate-700" />
-          <p className="font-display text-base font-semibold text-slate-700 dark:text-slate-300">No orders found</p>
-          <p className="text-sm text-slate-400 dark:text-slate-500 max-w-xs">
-            Orders will appear here once they've been placed.
-          </p>
-        </div>
+        <EmptyState
+          title="No orders yet"
+          description="Orders placed by shops will show up here. Take a break!"
+          variant="warehouse"
+        />
       ) : grouped.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <ScrollText className="h-10 w-10 text-slate-300 dark:text-slate-700" />
-          <p className="font-display text-base font-semibold text-slate-700 dark:text-slate-300">No orders found</p>
-          <p className="text-sm text-slate-400 dark:text-slate-500 max-w-xs">
-            Try clearing your filters to see all orders.
-          </p>
-        </div>
+        <EmptyState
+          title="No matching orders"
+          description="Try adjusting your filters or search term to locate specific orders."
+          variant="search"
+          actionLabel="Clear all filters"
+          onAction={() => {
+            setFilterShop('all')
+            setFilterRequestor('all')
+            setFilterKind('all')
+            setFilterStartDate('')
+            setFilterEndDate('')
+            setOrderSearch('')
+          }}
+        />
       ) : (
         <div className="space-y-8">
           {grouped.map(({ label, orders: groupOrders }) => (
@@ -457,10 +490,12 @@ const filtered = orders.filter(o => {
                 try {
                   await deleteOrder(db, deleteTarget.id)
                   setDeleteTarget(null)
-                  window.location.reload()
+                  showToast("Order deleted successfully!", "success")
+                  // Add a short delay before reload so they can see the toast
+                  setTimeout(() => window.location.reload(), 1000)
                 } catch (e) {
-                  alert('Failed to delete order.')
                   setDeleteTarget(null)
+                  showToast("Failed to delete order.", "error")
                 } finally {
                   setDeleteBusy(false)
                 }

@@ -11,10 +11,13 @@ const variants = {
 
 type Variant = keyof typeof variants
 
+import { triggerHaptic } from '../../utils/haptic'
+
 export function Button({
   variant = 'primary',
   className = '',
   children,
+  onClick,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: Variant
@@ -22,8 +25,21 @@ export function Button({
 }) {
   const base =
     'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.97]'
+  
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    triggerHaptic('light')
+    if (onClick) {
+      onClick(e)
+    }
+  }
+
   return (
-    <button type="button" className={`${base} ${variants[variant]} ${className}`} {...props}>
+    <button
+      type="button"
+      className={`${base} ${variants[variant]} ${className}`}
+      onClick={handleClick}
+      {...props}
+    >
       {children}
     </button>
   )
