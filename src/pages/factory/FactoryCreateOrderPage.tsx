@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import Fuse from "fuse.js";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useFactoryDispatchDraft } from "../../contexts/FactoryDispatchDraftContext";
 import { Button } from "../../components/ui/Button";
@@ -21,8 +21,8 @@ import { Modal } from "../../components/ui/Modal";
 import { db } from "../../lib/firebase";
 import { createFactoryDispatchOrder } from "../../lib/orderService";
 import {
-  listLimitedProducts,
-  listUnlimitedProducts,
+  subscribeLimitedProducts,
+  subscribeUnlimitedProducts,
 } from "../../lib/productService";
 import { listShopUsers } from "../../lib/userService";
 import type {
@@ -78,29 +78,37 @@ export function FactoryCreateOrderPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  useEffect(() => {
     if (!db) return;
     setLoading(true);
     setError(null);
-    try {
-      const [catalogRows, limitedRows] = await Promise.all([
-        listUnlimitedProducts(db),
-        listLimitedProducts(db),
-      ]);
-      setCatalog(catalogRows);
-      setLimited(limitedRows);
-    } catch {
-      setError("Could not load products.");
-    } finally {
-      setLoading(false);
-    }
+    const unsubCatalog = subscribeUnlimitedProducts(
+      db,
+      (rows) => {
+        setCatalog(rows);
+        setLoading(false);
+      },
+      () => {
+        setError("Could not load catalogue.");
+        setLoading(false);
+      }
+    );
+    const unsubLimited = subscribeLimitedProducts(
+      db,
+      (rows) => {
+        setLimited(rows);
+        setLoading(false);
+      },
+      () => {
+        setError("Could not load limited products.");
+        setLoading(false);
+      }
+    );
+    return () => {
+      unsubCatalog();
+      unsubLimited();
+    };
   }, []);
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      void refresh();
-    });
-  }, [refresh]);
 
   useEffect(() => {
     if (!db) return;
@@ -299,7 +307,6 @@ export function FactoryCreateOrderPage() {
         `Factory dispatch order #${orderNumber} created and dispatched.`,
       );
       clearForm();
-      await refresh();
     } catch (err) {
       setError(
         err instanceof Error
@@ -339,14 +346,7 @@ export function FactoryCreateOrderPage() {
             receiver, add items, and dispatch immediately.
           </p>
         </div>
-        <Button
-          variant="secondary"
-          type="button"
-          onClick={() => void refresh()}
-          disabled={loading}
-        >
-          Refresh
-        </Button>
+
       </div>
 
       <div className="grid gap-2 sm:grid-cols-4">

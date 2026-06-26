@@ -197,6 +197,7 @@ export function ShopDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
 
   // Real-time subscription — re-subscribes whenever the active shop changes
   useEffect(() => {
@@ -492,26 +493,136 @@ export function ShopDashboardPage() {
       </div>
 
       {/* ── Monthly trend ── */}
-      <Card className="p-5">
-        <p className="mb-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 before:block before:h-3 before:w-0.5 before:rounded-full before:bg-emerald-500 dark:before:bg-emerald-400 transition-colors duration-200">
+      <Card className="p-5 overflow-visible">
+        <p className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 before:block before:h-3 before:w-0.5 before:rounded-full before:bg-emerald-500 dark:before:bg-emerald-400 transition-colors duration-200">
           My orders — last 6 months
         </p>
-        <div className="flex h-36 items-end justify-between gap-2">
-          {trend.map(({ label, count }, i) => (
-            <div key={label} className="flex flex-1 flex-col items-center justify-end h-full gap-1">
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">
-                {count > 0 ? count : ''}
-              </span>
+        
+        <div className="relative w-full h-36">
+          {/* HTML Grid Lines */}
+          <div className="absolute inset-x-0 top-[10%] border-t border-slate-100 dark:border-slate-800/50 transition-colors duration-200" />
+          <div className="absolute inset-x-0 top-[50%] border-t border-slate-100 dark:border-slate-800/50 transition-colors duration-200" />
+          <div className="absolute inset-x-0 bottom-[10%] border-t border-slate-100 dark:border-slate-800/50 transition-colors duration-200" />
+
+          {/* SVG Chart Line/Area */}
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10b981" stopOpacity="0.22" />
+                <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+              </linearGradient>
+            </defs>
+
+            {/* Area path */}
+            {mounted && trend.length > 0 && (
+              <path
+                d={`
+                  M 5,90
+                  ${trend.map((t, i) => `L ${5 + i * 18},${90 - (t.count / trendMax) * 80}`).join(' ')}
+                  L 95,90
+                  Z
+                `}
+                fill="url(#chartGradient)"
+                className="transition-all duration-700 ease-out"
+              />
+            )}
+
+            {/* Line path */}
+            {mounted && trend.length > 0 && (
+              <path
+                d={trend.map((t, i) => `${i === 0 ? 'M' : 'L'} ${5 + i * 18},${90 - (t.count / trendMax) * 80}`).join(' ')}
+                fill="none"
+                stroke="#10b981"
+                strokeWidth="2"
+                vectorEffect="non-scaling-stroke"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="transition-all duration-700 ease-out"
+              />
+            )}
+          </svg>
+
+          {/* Active hover indicators (Line + Dot) */}
+          {hoveredIdx !== null && trend[hoveredIdx] && (
+            <>
+              {/* Vertical Tracking Line */}
               <div
-                className="w-full rounded-t-md bg-emerald-500 transition-all duration-500"
+                className="absolute top-[10%] bottom-[10%] w-[1.5px] bg-emerald-500/20 dark:bg-emerald-500/35 -translate-x-1/2 transition-all duration-150 ease-out"
+                style={{ left: `${5 + hoveredIdx * 18}%` }}
+              />
+
+              {/* Interactive Dot */}
+              <div
+                className="absolute h-3 w-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 shadow-md -translate-x-1/2 -translate-y-1/2 transition-all duration-150 ease-out"
                 style={{
-                  height: mounted ? (count === 0 ? '0%' : `${Math.max((count / trendMax) * 100, 8)}%`) : '0%',
-                  minHeight: mounted && count > 0 ? '4px' : '0',
-                  transitionDelay: `${i * 50}ms`
+                  left: `${5 + hoveredIdx * 18}%`,
+                  top: `${90 - (trend[hoveredIdx].count / trendMax) * 80}%`
                 }}
               />
-              <span className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">{label}</span>
-            </div>
+
+              {/* Tooltip */}
+              <div
+                className="absolute pointer-events-none z-30 rounded-xl bg-slate-950/95 dark:bg-slate-900/95 border border-slate-800 dark:border-slate-700/80 px-3 py-1.5 text-xs text-white shadow-xl backdrop-blur-md transition-all duration-150 ease-out"
+                style={{
+                  left: `${5 + hoveredIdx * 18}%`,
+                  top: `${90 - (trend[hoveredIdx].count / trendMax) * 80}%`,
+                  transform: 'translate(-50%, calc(-100% - 10px))',
+                }}
+              >
+                <div className="font-semibold text-[9px] uppercase tracking-wider text-slate-400">
+                  {trend[hoveredIdx].label}
+                </div>
+                <div className="mt-0.5 text-[11px] font-bold text-emerald-400 whitespace-nowrap">
+                  {trend[hoveredIdx].count} {trend[hoveredIdx].count === 1 ? 'order' : 'orders'}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Static values above nodes on the line */}
+          {mounted && trend.map((t, i) => (
+            hoveredIdx !== i && (
+              <div
+                key={`val-${i}`}
+                className="absolute -translate-x-1/2 -translate-y-5 text-[10px] font-bold text-slate-500 dark:text-slate-400 select-none pointer-events-none transition-colors duration-200"
+                style={{
+                  left: `${5 + i * 18}%`,
+                  top: `${90 - (t.count / trendMax) * 80}%`
+                }}
+              >
+                {t.count}
+              </div>
+            )
+          ))}
+
+          {/* Interactive mouse targets (invisible blocks) */}
+          <div className="absolute inset-0">
+            {trend.map((_, i) => (
+              <div
+                key={`target-${i}`}
+                className="absolute top-0 bottom-0 cursor-pointer"
+                style={{
+                  left: `${5 + i * 18}%`,
+                  width: '18%',
+                  transform: 'translateX(-50%)'
+                }}
+                onMouseEnter={() => setHoveredIdx(i)}
+                onMouseLeave={() => setHoveredIdx(null)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* X-Axis labels in pure HTML (never stretches) */}
+        <div className="relative w-full h-5 mt-2">
+          {trend.map((t, i) => (
+            <span
+              key={`label-${i}`}
+              className="absolute text-[11px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider -translate-x-1/2 select-none"
+              style={{ left: `${5 + i * 18}%` }}
+            >
+              {t.label}
+            </span>
           ))}
         </div>
       </Card>

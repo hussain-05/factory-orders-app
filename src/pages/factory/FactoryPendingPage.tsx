@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Check, ChevronDown, ChevronRight, Filter, Printer, Search, Trash2 } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
 import { useLocation } from 'react-router-dom'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { useAuth } from '../../contexts/AuthContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
@@ -110,7 +110,7 @@ const WhatsAppIcon = () => (
   </svg>
 )
 
-function OrderActions({ order, onRefresh }: { order: Order, onRefresh?: () => void }) {
+function OrderActions({ order }: { order: Order }) {
   const [busy, setBusy] = useState(false)
   const { profile } = useAuth()
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
@@ -163,7 +163,6 @@ function OrderActions({ order, onRefresh }: { order: Order, onRefresh?: () => vo
                 try {
                   await deleteOrder(db, deleteTarget.id)
                   setDeleteTarget(null)
-                  onRefresh?.()
                 } catch (_e) {
                   alert('Failed to delete order.')
                   setDeleteTarget(null)
@@ -553,8 +552,7 @@ function PendingCard({
             </TimelineStage>
           </div>
 
-          {/* Actions */}
-          <OrderActions order={o} onRefresh={() => window.dispatchEvent(new CustomEvent('refresh-orders', { detail: { silent: true } }))} />
+          <OrderActions order={o} />
 
           {/* Line items */}
           <details className="rounded-xl border border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 transition-colors duration-200">
@@ -701,14 +699,7 @@ export function FactoryPendingPage() {
     return unsub
   }, [])
 
-  const refresh = useCallback(async (silent = false) => {
-    // Under real-time sync, we just show a visual transition for manual refresh clicks
-    if (!silent) {
-      setLoading(true)
-      await new Promise((resolve) => setTimeout(resolve, 300))
-      setLoading(false)
-    }
-  }, [])
+
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -794,7 +785,6 @@ export function FactoryPendingPage() {
         }
       }
 
-      await refresh(true)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Update failed.')
     } finally {
@@ -815,7 +805,6 @@ export function FactoryPendingPage() {
           message: `Hi ${order.requestorName}, a dispatch for your order ${order.orderNumber ? `#${order.orderNumber}` : ''} from ${order.shopName} is on its way. Please confirm receipt when delivered.`,
         })
       }
-      await refresh(true)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Dispatch failed.')
     } finally {
@@ -839,9 +828,6 @@ export function FactoryPendingPage() {
             Track each order from receipt through dispatch, set delivery dates, and close the loop when the shipment lands.
           </p>
         </div>
-        <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
-          Refresh
-        </Button>
       </div>
 
       {/* ── Search + Filter bar ── */}

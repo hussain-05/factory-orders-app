@@ -3,7 +3,9 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocFromCache,
   getDocs,
+  onSnapshot,
   query,
   serverTimestamp,
   setDoc,
@@ -34,9 +36,19 @@ export async function fetchUserProfile(
   uid: string,
 ): Promise<UserProfile | null> {
   const ref = doc(firestore, 'users', uid)
-  const snap = await getDoc(ref)
-  if (!snap.exists()) return null
-  return userProfileFromDoc(uid, snap.data())
+  try {
+    const snap = await getDoc(ref)
+    if (!snap.exists()) return null
+    return userProfileFromDoc(uid, snap.data())
+  } catch (err) {
+    try {
+      const snap = await getDocFromCache(ref)
+      if (!snap.exists()) return null
+      return userProfileFromDoc(uid, snap.data())
+    } catch (_) {
+      throw err
+    }
+  }
 }
 
 export async function saveUserProfile(
@@ -116,4 +128,24 @@ export async function deleteUserProfileDoc(
 ): Promise<void> {
   const ref = doc(firestore, 'users', uid)
   await deleteDoc(ref)
+}
+
+export function subscribeAllUsers(
+  firestore: Firestore,
+  onData: (users: UserProfile[]) => void,
+  onError?: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    collection(firestore, 'users'),
+    (snap) => {
+      const rows = snap.docs.map((d) => userProfileFromDoc(d.id, d.data()))
+      rows.sort((a, b) => {
+        const an = a.displayName || a.email
+        const bn = b.displayName || b.email
+        return an.localeCompare(bn) || a.email.localeCompare(b.email)
+      })
+      onData(rows)
+    },
+    (err) => onError?.(err),
+  )
 }

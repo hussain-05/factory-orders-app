@@ -3,11 +3,12 @@ import { ScrollText,  ChevronDown, ChevronRight, Filter, Printer, Search, Trash2
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation } from 'react-router-dom'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
 import { useUsersMap } from '../../hooks/useUsersMap'
+import { VisualTimeline } from '../../components/VisualTimeline'
 import { useAuth } from '../../contexts/AuthContext'
 import { subscribeAllOrdersForFactory, deleteOrder } from '../../lib/orderService'
 import { Badge } from '../../components/ui/Badge'
@@ -15,7 +16,7 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Modal } from '../../components/ui/Modal'
 import type { Order } from '../../types/models'
-import { formatDate, formatDateTime, fulfillmentSummary } from '../../utils/format'
+import { formatDateTime, fulfillmentSummary } from '../../utils/format'
 
 function groupByMonth(orders: Order[]): Array<{ label: string; orders: Order[] }> {
   const map = new Map<string, Order[]>()
@@ -27,95 +28,7 @@ function groupByMonth(orders: Order[]): Array<{ label: string; orders: Order[] }
   return Array.from(map.entries()).map(([label, orders]) => ({ label, orders }))
 }
 
-interface TimelineStage {
-  label: string
-  sublabel?: string
-  ts: number | null | undefined
-  done: boolean
-}
 
-function OrderTimeline({ order, usersMap }: { order: Order, usersMap: any }) {
-  const stages: TimelineStage[] = [
-    {
-      label: 'Order placed',
-      sublabel: `${usersMap[order.shopUserId]?.displayName || order.requestorName} · ${order.shopName}`,
-      ts: order.createdAt,
-      done: true,
-    },
-    {
-      label: 'Received by factory',
-      ts: order.milestones.receivedAt,
-      done: Boolean(order.milestones.receivedAt),
-    },
-    {
-      label: 'Delivered',
-      sublabel: order.expectedDeliveryDate
-        ? `Expected ${formatDate(order.expectedDeliveryDate)}`
-        : undefined,
-      ts: order.actualDeliveryDate,
-      done: order.status === 'completed',
-    },
-  ]
-
-  return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 p-4 transition-colors duration-200">
-      <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
-        Order progress
-      </p>
-      <div className="flex flex-col gap-0">
-        {stages.map((stage, idx) => {
-          const isLast = idx === stages.length - 1
-          const nextDone = !isLast && stages[idx + 1].done
-          return (
-            <div key={stage.label} className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <div
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${ stage.done ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 bg-white' }`}
-                >
-                  {stage.done ? (
-                    <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 12 12" fill="none">
-                      <path
-                        d="M2 6l3 3 5-5"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  ) : (
-                    <div className="h-2 w-2 rounded-full bg-slate-300" />
-                  )}
-                </div>
-                {!isLast && (
-                  <div
-                    className={`w-0.5 flex-1 my-1 min-h-[20px] ${ nextDone ? 'bg-emerald-400' : 'bg-slate-200' }`}
-                  />
-                )}
-              </div>
-              <div className={`pb-4 ${isLast ? 'pb-0' : ''}`}>
-                <p
-                  className={`text-sm font-semibold leading-7 ${ stage.done ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400' }`}
-                >
-                  {stage.label}
-                </p>
-                {stage.done && stage.ts ? (
-                  <p className="text-xs text-emerald-600">{formatDateTime(stage.ts)}</p>
-                ) : !stage.done ? (
-                  <p className="text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">Pending</p>
-                ) : null}
-                {stage.sublabel && (
-                  <p className={`text-xs ${stage.done ? 'text-slate-500' : 'text-slate-400'}`}>
-                    {stage.sublabel}
-                  </p>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
 
 export function FactoryOrderHistoryPage() {
   const usersMap = useUsersMap()
@@ -182,12 +95,7 @@ export function FactoryOrderHistoryPage() {
     return unsub
   }, [])
 
-  const refresh = useCallback(async () => {
-    // Under real-time sync, manual refresh clicks just trigger a visual transition
-    setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    setLoading(false)
-  }, [])
+
 
   const requestorOptions = useMemo(
     () => [...new Set(orders.map(o => usersMap[o.shopUserId]?.displayName || o.requestorName).filter(Boolean))].sort(),
@@ -228,9 +136,7 @@ const filtered = orders.filter(o => {
             Full visibility across shops, with printable PDFs for filing and reconciliation.
           </p>
         </div>
-        <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
-          Refresh
-        </Button>
+
       </div>
 
       {/* ── Search + Filter bar ── */}
@@ -446,7 +352,7 @@ const filtered = orders.filter(o => {
                             <div className="space-y-4 border-t border-slate-100 dark:border-slate-800/50 px-4 py-3 transition-colors duration-200">
 
                           {/* Timeline */}
-                          <OrderTimeline order={o} usersMap={usersMap} />
+                          <VisualTimeline order={o} usersMap={usersMap} />
 
                           {/* Requestor */}
                           <div className="rounded-xl bg-slate-50 dark:bg-slate-900/50 p-3 transition-colors duration-200">

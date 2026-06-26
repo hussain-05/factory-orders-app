@@ -1,18 +1,17 @@
-import { Bell, BellOff, ClipboardList, LayoutDashboard, PackagePlus, ScrollText, User, Warehouse } from 'lucide-react'
+import { ClipboardList, LayoutDashboard, PackagePlus, ScrollText, User, Warehouse } from 'lucide-react'
 
-import { motion, AnimatePresence } from 'framer-motion'
 import { NavLink, Outlet } from 'react-router-dom'
 import { UserProfileDrawer } from '../components/UserProfileDrawer'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../hooks/useTheme'
-import { useNotifications } from '../hooks/useNotifications'
 import { Button } from '../components/ui/Button'
 import { FactoryDispatchDraftProvider } from '../contexts/FactoryDispatchDraftContext'
 import { ModeSwitcher } from '../components/ModeSwitcher'
 import { db } from '../lib/firebase'
 import { subscribePendingOrdersForFactory } from '../lib/orderService'
 import { ThemeToggleIcon } from '../components/ThemeToggleIcon'
+import { ConnectionStatus } from '../components/ConnectionStatus'
 
 function usePendingOrderCount() {
   const [count, setCount] = useState<number | null>(null)
@@ -41,7 +40,6 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export function FactoryShell() {
   const { profile } = useAuth()
-  const { status, toast, dismissToast, enable } = useNotifications()
   const pendingCount = usePendingOrderCount()
   const { theme, toggleTheme } = useTheme()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -86,18 +84,7 @@ export function FactoryShell() {
 
           {/* Right column: actions */}
           <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0">
-            {status === 'unknown' && (
-              <Button variant="secondary" className="shrink-0 !gap-1.5" onClick={() => void enable()}>
-                <Bell className="h-4 w-4" />
-                <span className="hidden sm:inline">Enable notifications</span>
-              </Button>
-            )}
-            {status === 'denied' && (
-              <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200 shrink-0">
-                <BellOff className="h-4 w-4" />
-                <span className="hidden sm:inline">Notifications blocked</span>
-              </span>
-            )}
+            <ConnectionStatus />
             <Button
               variant="secondary"
               className="shrink-0 !p-2.5 !rounded-full"
@@ -170,33 +157,7 @@ export function FactoryShell() {
         </FactoryDispatchDraftProvider>
       </main>
 
-      {/* Foreground notification toast */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.25 }}
-            className="fixed bottom-6 left-1/2 z-50 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2"
-          >
-            <div className="flex items-start gap-3 rounded-2xl bg-slate-900 px-4 py-3 shadow-xl">
-              <Bell className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-              <div>
-                <p className="text-sm font-semibold text-white">{toast.title}</p>
-                {toast.body && <p className="text-xs text-slate-400">{toast.body}</p>}
-              </div>
-              <button
-                type="button"
-                onClick={dismissToast}
-                className="ml-2 shrink-0 text-slate-500 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       <UserProfileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
     </div>

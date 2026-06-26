@@ -377,3 +377,55 @@ export function subscribeLimitedProducts(
     (err) => onError?.(err),
   )
 }
+
+function mapUnlimitedProduct(d: import('firebase/firestore').QueryDocumentSnapshot): UnlimitedProduct {
+  const x = d.data()
+  return {
+    id: d.id,
+    name: String(x.name ?? ''),
+    size: String(x.size ?? ''),
+    defaultUnit: normalizeUnit(x.defaultUnit),
+    active: Boolean(x.active ?? true),
+    sortIndex: Number(x.sortIndex ?? 0),
+  }
+}
+
+/**
+ * Subscribe to active unlimited products, sorted by sortIndex then name.
+ */
+export function subscribeUnlimitedProducts(
+  firestore: Firestore,
+  onData: (products: UnlimitedProduct[]) => void,
+  onError?: (err: Error) => void,
+): () => void {
+  const qy = query(
+    collection(firestore, unlimitedCol),
+    where('active', '==', true),
+    limit(500),
+  )
+  return onSnapshot(
+    qy,
+    (snap) => {
+      const rows = snap.docs.map(mapUnlimitedProduct)
+      rows.sort((a, b) => a.sortIndex - b.sortIndex || a.name.localeCompare(b.name))
+      onData(rows)
+    },
+    (err) => onError?.(err),
+  )
+}
+
+/**
+ * Subscribe to all unlimited products, sorted by sortIndex asc.
+ */
+export function subscribeAllUnlimitedForFactory(
+  firestore: Firestore,
+  onData: (products: UnlimitedProduct[]) => void,
+  onError?: (err: Error) => void,
+): () => void {
+  const qy = query(collection(firestore, unlimitedCol), orderBy('sortIndex', 'asc'), limit(1000))
+  return onSnapshot(
+    qy,
+    (snap) => onData(snap.docs.map(mapUnlimitedProduct)),
+    (err) => onError?.(err),
+  )
+}

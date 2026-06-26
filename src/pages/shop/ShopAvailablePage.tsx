@@ -1,7 +1,7 @@
 import { AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Minus, Plus, ShoppingBag, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Fuse from "fuse.js";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAdminMode } from "../../contexts/AdminModeContext";
@@ -51,6 +51,7 @@ export function ShopAvailablePage() {
     url: string;
     title: string;
   } | null>(null);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
   // Real-time subscription for limited products — stock updates live
   useEffect(() => {
@@ -72,11 +73,7 @@ export function ShopAvailablePage() {
     return unsub;
   }, []);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    setLoading(false);
-  }, []);
+
 
   const lines = useMemo(() => {
     return Object.entries(cartQtys)
@@ -129,6 +126,38 @@ export function ShopAvailablePage() {
     }));
     setBusy(true);
     setError(null);
+
+    if (!navigator.onLine) {
+      try {
+        const tempOrderNumber = 'OFFLINE-' + Math.floor(100000 + Math.random() * 900000)
+        const offlineOrder = {
+          id: tempOrderNumber,
+          timestamp: Date.now(),
+          orderKind: 'limited',
+          shopName: shopView,
+          shopUserId: user.uid,
+          requestorName: profile.displayName,
+          requestorEmail: profile.email,
+          shopWhatsappNumber: profile.whatsappNumber,
+          items: payload,
+        }
+        const currentOffline = JSON.parse(localStorage.getItem('seva_offline_orders') ?? '[]')
+        currentOffline.push(offlineOrder)
+        localStorage.setItem('seva_offline_orders', JSON.stringify(currentOffline))
+
+        setLastItemCount(lines.length);
+        clearLimitedDraft();
+        setLastOrderNumber(tempOrderNumber);
+        setSubmitted(true);
+        setPreviewOpen(false);
+      } catch (e) {
+        setError('Failed to queue order offline.');
+      } finally {
+        setBusy(false);
+      }
+      return
+    }
+
     try {
       const { orderNumber } = await createOrder(db, {
         orderKind: "limited",
@@ -144,7 +173,6 @@ export function ShopAvailablePage() {
       setLastOrderNumber(orderNumber);
       setSubmitted(true);
       setPreviewOpen(false);
-      await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not submit order.");
     } finally {
@@ -169,13 +197,7 @@ export function ShopAvailablePage() {
             cart and submit a single multi-item order.
           </p>
         </div>
-        <Button
-          variant="secondary"
-          onClick={() => void refresh()}
-          disabled={loading}
-        >
-          Refresh
-        </Button>
+
       </div>
 
       {error ? (
@@ -188,7 +210,11 @@ export function ShopAvailablePage() {
       {submitted ? (
         <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 w-max max-w-[calc(100vw-2rem)]">
           <div className="flex items-center gap-3 rounded-xl bg-emerald-600 px-5 py-3 shadow-lg shadow-emerald-900/20">
-            <p className="text-sm font-semibold text-white">Order submitted!</p>
+            <p className="text-sm font-semibold text-white">
+              {lastOrderNumber.startsWith('OFFLINE-')
+                ? 'Order queued (Offline) — Auto-syncing when online!'
+                : 'Order submitted!'}
+            </p>
             {factoryNumber && (
               <a
                 href={whatsappLink(
@@ -270,7 +296,7 @@ export function ShopAvailablePage() {
                     <div
                       className={`aspect-[4/3] w-full bg-slate-100 dark:bg-slate-800 transition-colors duration-200 ${p.stock === 0 ? "opacity-60 grayscale-[0.8]" : ""}`}
                     >
-                      {p.photoUrl ? (
+                      {p.photoUrl && !imageErrors[p.id] ? (
                         <button
                           type="button"
                           className="h-full w-full"
@@ -281,11 +307,17 @@ export function ShopAvailablePage() {
                             alt={p.name}
                             className="h-full w-full object-cover"
                             loading="lazy"
+                            onError={() => setImageErrors((prev) => ({ ...prev, [p.id]: true }))}
                           />
                         </button>
                       ) : (
-                        <div className="flex h-full items-center justify-center text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
-                          No photo
+                        <div className="flex h-full flex-col items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 transition-colors duration-200 p-4 text-center">
+                          <svg viewBox="0 0 24 24" className="h-6 w-6 stroke-current fill-none opacity-50 shrink-0" strokeWidth="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
+                          </svg>
+                          <span className="font-medium text-[10px] uppercase tracking-wider">Photo Unavailable</span>
                         </div>
                       )}
                     </div>

@@ -1,11 +1,9 @@
-import { Bell, BellOff, LayoutDashboard, LayoutGrid, PackagePlus, ScrollText, User } from 'lucide-react'
+import { LayoutDashboard, LayoutGrid, PackagePlus, ScrollText, User } from 'lucide-react'
 
-import { motion, AnimatePresence } from 'framer-motion'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { UserProfileDrawer } from '../components/UserProfileDrawer'
-import { useNotifications } from '../hooks/useNotifications'
 import { Button } from '../components/ui/Button'
 import { ModeSwitcher } from '../components/ModeSwitcher'
 import { useAdminMode } from '../contexts/AdminModeContext'
@@ -15,6 +13,10 @@ import { db } from '../lib/firebase'
 import { subscribeOrdersForShop } from '../lib/orderService'
 import type { ShopName } from '../types/models'
 import { ThemeToggleIcon } from '../components/ThemeToggleIcon'
+import { ConnectionStatus } from '../components/ConnectionStatus'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useOfflineSync } from '../hooks/useOfflineSync'
+import { subscribeUnlimitedProducts, subscribeLimitedProducts } from '../lib/productService'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all sm:gap-2 sm:px-3 ${
@@ -30,7 +32,7 @@ export function ShopShell() {
   const [awaitingCount, setAwaitingCount] = useState(0)
   const { theme, toggleTheme } = useTheme()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const { status, toast, dismissToast, enable } = useNotifications()
+  const { toastMessage } = useOfflineSync()
 
   useEffect(() => {
     if (!db || !shopView) return
@@ -61,6 +63,25 @@ export function ShopShell() {
       }
     }
   }, [awaitingCount])
+
+  // Eagerly pre-cache product catalogs in Firestore's persistent cache for offline usage
+  useEffect(() => {
+    if (!db) return
+    const unsubUnlimited = subscribeUnlimitedProducts(
+      db,
+      () => {},
+      () => {}
+    )
+    const unsubLimited = subscribeLimitedProducts(
+      db,
+      () => {},
+      () => {}
+    )
+    return () => {
+      unsubUnlimited()
+      unsubLimited()
+    }
+  }, [])
 
   return (
     <div className="min-h-dvh bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
@@ -105,18 +126,7 @@ export function ShopShell() {
 
           {/* Right column: actions */}
           <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0">
-            {status === 'unknown' && (
-              <Button variant="secondary" className="shrink-0 !gap-1.5" onClick={() => void enable()}>
-                <Bell className="h-4 w-4" />
-                <span className="hidden sm:inline">Enable notifications</span>
-              </Button>
-            )}
-            {status === 'denied' && (
-              <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200 shrink-0">
-                <BellOff className="h-4 w-4" />
-                <span className="hidden sm:inline">Notifications blocked</span>
-              </span>
-            )}
+            <ConnectionStatus />
             <Button
               variant="secondary"
               className="shrink-0 !p-2.5 !rounded-full"
@@ -178,35 +188,22 @@ export function ShopShell() {
         </OrderDraftProvider>
       </main>
 
-      {/* Foreground notification toast */}
+
+
+      <UserProfileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+
       <AnimatePresence>
-        {toast && (
+        {toastMessage && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.25 }}
-            className="fixed bottom-6 left-1/2 z-50 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2"
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            className="fixed bottom-6 right-6 z-50 rounded-xl bg-emerald-600 dark:bg-slate-900 border border-emerald-500/20 dark:border-slate-800 px-5 py-3 shadow-lg shadow-emerald-900/10 text-sm font-semibold text-white transition-colors duration-200"
           >
-            <div className="flex items-start gap-3 rounded-2xl bg-slate-900 px-4 py-3 shadow-xl">
-              <Bell className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-              <div>
-                <p className="text-sm font-semibold text-white">{toast.title}</p>
-                {toast.body && <p className="text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">{toast.body}</p>}
-              </div>
-              <button
-                type="button"
-                onClick={dismissToast}
-                className="ml-2 shrink-0 text-slate-500 dark:text-slate-400 hover:text-white transition-colors duration-200"
-              >
-                ✕
-              </button>
-            </div>
+            {toastMessage}
           </motion.div>
         )}
       </AnimatePresence>
-
-      <UserProfileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
     </div>
   )
 }

@@ -15,9 +15,8 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { auth, db, firebaseReady, messaging } from '../lib/firebase'
+import { auth, db, firebaseReady } from '../lib/firebase'
 import { fetchUserProfile, saveUserProfile } from '../lib/userService'
-import { removeNotificationToken } from '../lib/notificationService'
 import type { ShopName, UserProfile, UserRole } from '../types/models'
 
 type AuthState = {
@@ -52,13 +51,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     if (!db || !user) return
-    const p = await fetchUserProfile(db, user.uid)
-    if (p && user.email) {
-      const allowedSnap = await getDoc(doc(db, 'allowedEmails', user.email.toLowerCase()))
-      p.isAdmin = allowedSnap.exists() && allowedSnap.data()?.isAdmin === true
+    try {
+      const p = await fetchUserProfile(db, user.uid)
+      if (p && user.email) {
+        try {
+          const allowedSnap = await getDoc(doc(db, 'allowedEmails', user.email.toLowerCase()))
+          p.isAdmin = allowedSnap.exists() && allowedSnap.data()?.isAdmin === true
+        } catch (err) {
+          console.warn('Could not verify admin status offline:', err)
+        }
+      }
+      if (p) {
+        localStorage.setItem('seva_cached_profile', JSON.stringify(p))
+        setProfile(p)
+      }
+    } catch (err) {
+      const stored = localStorage.getItem('seva_cached_profile')
+      if (stored) {
+        setProfile(JSON.parse(stored))
+      }
     }
-    setProfile(p)
   }, [user])
+
   useEffect(() => {
     if (!firebaseReady || !auth || !db) return
 
@@ -76,15 +90,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
       try {
-        const p = await fetchUserProfile(db, u.uid)
+        let p = await fetchUserProfile(db, u.uid)
         if (p && u.email) {
-          const allowedSnap = await getDoc(doc(db, 'allowedEmails', u.email.toLowerCase()))
-          p.isAdmin = allowedSnap.exists() && allowedSnap.data()?.isAdmin === true
+          try {
+            const allowedSnap = await getDoc(doc(db, 'allowedEmails', u.email.toLowerCase()))
+            p.isAdmin = allowedSnap.exists() && allowedSnap.data()?.isAdmin === true
+          } catch (err) {
+            console.warn('Could not verify admin status offline:', err)
+          }
         }
-        setProfile(p)
-      } catch {
-        setProfile(null)
-        setError('Could not load your profile from the database.')
+        if (p) {
+          localStorage.setItem('seva_cached_profile', JSON.stringify(p))
+          setProfile(p)
+        } else {
+          const stored = localStorage.getItem('seva_cached_profile')
+          if (stored) {
+            setProfile(JSON.parse(stored))
+          } else {
+            setProfile(null)
+          }
+        }
+      } catch (err) {
+        const stored = localStorage.getItem('seva_cached_profile')
+        if (stored) {
+          setProfile(JSON.parse(stored))
+        } else {
+          setProfile(null)
+          setError('Could not load your profile from the database.')
+        }
       } finally {
         setLoading(false)
       }
@@ -137,14 +170,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     if (!auth) return
     setError(null)
-    // Remove FCM token before sign-out so this device no longer receives push notifications
-    if (messaging && db && user) {
-      try {
-        await removeNotificationToken(messaging, db, user.uid)
-      } catch {
-        // Non-fatal — proceed with logout even if token removal fails
-      }
-    }
     // Clear PWA app icon badge on logout
     if ('clearAppBadge' in navigator) {
       try {
@@ -153,8 +178,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Non-fatal
       }
     }
+    // Clear local storage profile cache
+    try {
+      localStorage.removeItem('seva_cached_profile')
+    } catch (_) {}
     await signOut(auth)
-  }, [user])
+  }, [])
 
   const value = useMemo<AuthContextValue>(
     () => ({

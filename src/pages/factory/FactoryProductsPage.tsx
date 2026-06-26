@@ -1,7 +1,7 @@
 import { AlertTriangle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Fuse from 'fuse.js'
 import { db, storage } from '../../lib/firebase'
 import {
@@ -9,12 +9,12 @@ import {
   createUnlimitedProduct,
   deleteLimitedProductWithPhoto,
   deleteUnlimitedProduct,
-  listAllUnlimitedForFactory,
-  listLimitedProducts,
   replaceUnlimitedCatalogue,
   updateLimitedProduct,
   updateUnlimitedProduct,
   uploadLimitedProductPhoto,
+  subscribeLimitedProducts,
+  subscribeAllUnlimitedForFactory,
 } from '../../lib/productService'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -65,26 +65,37 @@ export function FactoryProductsPage() {
     return fuse.search(q).map((res) => res.item)
   }, [limited, searchQuery, fuse])
 
-  const refresh = useCallback(async () => {
+  useEffect(() => {
     if (!db) return
     setLoading(true)
     setError(null)
-    try {
-      const [l, c] = await Promise.all([listLimitedProducts(db), listAllUnlimitedForFactory(db)])
-      setLimited(l)
-      setCatalog(c)
-    } catch {
-      setError('Could not load products.')
-    } finally {
-      setLoading(false)
+    const unsubLimited = subscribeLimitedProducts(
+      db,
+      (l) => {
+        setLimited(l)
+        setLoading(false)
+      },
+      () => {
+        setError('Could not load limited products.')
+        setLoading(false)
+      }
+    )
+    const unsubCatalog = subscribeAllUnlimitedForFactory(
+      db,
+      (c) => {
+        setCatalog(c)
+        setLoading(false)
+      },
+      () => {
+        setError('Could not load catalogue.')
+        setLoading(false)
+      }
+    )
+    return () => {
+      unsubLimited()
+      unsubCatalog()
     }
   }, [])
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      void refresh()
-    })
-  }, [refresh])
 
   const tabs = useMemo(
     () =>
@@ -118,7 +129,6 @@ export function FactoryProductsPage() {
       setLRate('0')
       setLDescription('')
       setLFile(null)
-      await refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save product.')
     } finally {
@@ -146,7 +156,6 @@ export function FactoryProductsPage() {
       })
       setEdit(null)
       setLFile(null)
-      await refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not update product.')
     } finally {
@@ -165,7 +174,6 @@ export function FactoryProductsPage() {
       setCName('')
       setCSize('')
       setCUnit('pcs')
-      await refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not add line.')
     } finally {
@@ -212,7 +220,6 @@ export function FactoryProductsPage() {
 
       await replaceUnlimitedCatalogue(db, parsed)
       setCatalogFile(null)
-      await refresh()
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Could not parse/import Excel. Check column names.',
@@ -349,9 +356,6 @@ export function FactoryProductsPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">Inventory</h2>
-              <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
-                Refresh
-              </Button>
             </div>
             {loading ? (
               <div className="flex items-center gap-3 p-5 text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
@@ -512,9 +516,6 @@ export function FactoryProductsPage() {
           <Card className="p-0">
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/50 px-5 py-4 transition-colors duration-200">
               <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">Lines</h2>
-              <Button variant="secondary" onClick={() => void refresh()} disabled={loading}>
-                Refresh
-              </Button>
             </div>
             <div className="divide-y divide-slate-100 dark:divide-slate-800/50 transition-colors duration-200">
               {catalog.map((p) => (
@@ -531,7 +532,6 @@ export function FactoryProductsPage() {
                       onClick={async () => {
                         if (!db) return
                         await updateUnlimitedProduct(db, p.id, { active: !p.active })
-                        await refresh()
                       }}
                     >
                       {p.active ? 'Deactivate' : 'Activate'}
@@ -542,7 +542,6 @@ export function FactoryProductsPage() {
                         if (!db) return
                         if (!confirm(`Delete “${p.name}”?`)) return
                         await deleteUnlimitedProduct(db, p.id)
-                        await refresh()
                       }}
                     >
                       Delete
@@ -647,7 +646,6 @@ export function FactoryProductsPage() {
                       })
                       setEdit(null)
                       setLFile(null)
-                      await refresh()
                     } catch (err) {
                       setError(err instanceof Error ? err.message : 'Could not delete product.')
                     } finally {

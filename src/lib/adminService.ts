@@ -4,6 +4,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   setDoc,
   updateDoc,
   type Firestore,
@@ -68,4 +69,26 @@ export async function setFactoryWhatsappNumber(
   number: string,
 ): Promise<void> {
   await setDoc(settingsDoc(firestore), { factoryWhatsappNumber: number.trim() }, { merge: true })
+}
+
+export function subscribeAllowedEmails(
+  firestore: Firestore,
+  onData: (emails: AllowedEmail[]) => void,
+  onError?: (err: Error) => void,
+): () => void {
+  return onSnapshot(
+    collection(firestore, allowedCol),
+    (snap) => {
+      const rows = snap.docs
+        .map((d) => ({
+          email: d.id,
+          isAdmin: d.data()?.isAdmin === true,
+          added: true,
+          role: d.data()?.role,
+        }))
+        .sort((a, b) => a.email.localeCompare(b.email))
+      onData(rows)
+    },
+    (err) => onError?.(err),
+  )
 }
