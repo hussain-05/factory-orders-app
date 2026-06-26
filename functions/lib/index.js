@@ -51,16 +51,25 @@ function toMs(val) {
 }
 // ── Helper: send multicast and silently remove stale tokens ──────────────────
 async function sendToTokens(tokens, notification) {
-    if (tokens.length === 0)
+    const uniqueTokens = Array.from(new Set(tokens.filter(Boolean)));
+    if (uniqueTokens.length === 0)
         return;
-    const response = await messaging.sendEachForMulticast({ tokens, notification });
+    // Send as data-only (no notification field) so the OS never auto-displays it.
+    // The service worker handles background display; onMessage handles foreground.
+    const response = await messaging.sendEachForMulticast({
+        tokens: uniqueTokens,
+        data: {
+            title: notification.title,
+            body: notification.body,
+        },
+    });
     const stale = [];
     response.responses.forEach((r, i) => {
         if (!r.success &&
             r.error &&
             (r.error.code === 'messaging/registration-token-not-registered' ||
                 r.error.code === 'messaging/invalid-registration-token')) {
-            stale.push(tokens[i]);
+            stale.push(uniqueTokens[i]);
         }
     });
     if (stale.length > 0) {
@@ -77,19 +86,29 @@ async function sendToTokens(tokens, notification) {
         await batch.commit();
     }
 }
-// ── Trigger 1: New order placed → notify all factory users ───────────────────
+// ── Trigger 1: New order placed ──────────────────────────────────────────────
 exports.onNewOrder = functions.firestore
     .document('orders/{orderId}')
     .onCreate(async (snap) => {
     const order = snap.data();
     if (!order)
         return;
-    const factoryUsers = await db
-        .collection('users')
-        .where('role', '==', 'factory')
-        .get();
+    if (order.orderKind === 'factory_dispatch') {
+        const userSnap = await db.collection('users').doc(order.shopUserId).get();
+        const tokens = userSnap.data()?.fcmTokens || [];
+        const itemCount = (order.items || []).length;
+        await sendToTokens(tokens, {
+            title: 'Extra stock sent by factory',
+            body: `${itemCount} item${itemCount === 1 ? '' : 's'} have been dispatched to ${order.shopName}. Please confirm receipt after delivery.`,
+        });
+        return;
+    }
+    const [factoryUsers, factoryStaffUsers] = await Promise.all([
+        db.collection('users').where('role', '==', 'factory').get(),
+        db.collection('users').where('role', '==', 'factory_staff').get(),
+    ]);
     const tokens = [];
-    factoryUsers.docs.forEach((doc) => {
+    [...factoryUsers.docs, ...factoryStaffUsers.docs].forEach((doc) => {
         const t = doc.data().fcmTokens || [];
         tokens.push(...t);
     });
@@ -110,7 +129,11 @@ exports.onOrderUpdate = functions.firestore
         return;
     const receivedNow = !before.milestones?.receivedAt && after.milestones?.receivedAt;
     const completedNow = before.status !== 'completed' && after.status === 'completed';
-    if (!receivedNow && !completedNow)
+    const beforeDispatches = before.dispatches || [];
+    const afterDispatches = after.dispatches || [];
+    const dispatchAdded = afterDispatches.length > beforeDispatches.length;
+    const dateChangedLater = !receivedNow && before.expectedDeliveryDate !== after.expectedDeliveryDate && after.expectedDeliveryDate;
+    if (!receivedNow && !completedNow && !dispatchAdded && !dateChangedLater)
         return;
     // Deduplicate using event ID to prevent double-firing
     const eventId = context.eventId;
@@ -119,15 +142,23 @@ exports.onOrderUpdate = functions.firestore
     if (dedupSnap.exists)
         return;
     await dedupRef.set({ processedAt: admin.firestore.FieldValue.serverTimestamp() });
+    // Fetch shop tokens to notify shop user
     const userSnap = await db.collection('users').doc(after.shopUserId).get();
-    const tokens = userSnap.data()?.fcmTokens || [];
-    if (completedNow) {
-        await sendToTokens(tokens, {
-            title: 'Order delivered ✓',
-            body: `Your order from ${after.shopName} has been marked as delivered.`,
-        });
+    const shopTokens = userSnap.data()?.fcmTokens || [];
+    // 1. Notify shop user when dispatch is sent
+    if (dispatchAdded) {
+        const newDispatches = afterDispatches.filter((ad) => !beforeDispatches.some((bd) => bd.id === ad.id));
+        if (newDispatches.length > 0) {
+            const itemsCount = newDispatches.reduce((acc, d) => acc + (d.items || []).length, 0);
+            const orderNumber = after.orderNumber ? `#${after.orderNumber}` : '';
+            await sendToTokens(shopTokens, {
+                title: 'Dispatch sent! 🚚',
+                body: `A new dispatch containing ${itemsCount} item${itemsCount === 1 ? '' : 's'} has been sent for your order ${orderNumber} from the factory.`,
+            });
+        }
     }
-    else if (receivedNow) {
+    // 2. Notify shop user when delivery date is updated
+    if (dateChangedLater) {
         const expectedMs = toMs(after.expectedDeliveryDate);
         const expected = expectedMs
             ? new Date(expectedMs).toLocaleDateString('en-IN', {
@@ -136,7 +167,47 @@ exports.onOrderUpdate = functions.firestore
                 year: 'numeric',
             })
             : null;
-        await sendToTokens(tokens, {
+        const orderNumber = after.orderNumber ? `#${after.orderNumber}` : '';
+        if (expected) {
+            await sendToTokens(shopTokens, {
+                title: 'Delivery date updated 📅',
+                body: `The expected delivery date for order ${orderNumber} from ${after.shopName} has been updated to ${expected}.`,
+            });
+        }
+    }
+    // 3. Notify shop user when order is completed
+    if (completedNow) {
+        const orderNumber = after.orderNumber ? `#${after.orderNumber}` : '';
+        await sendToTokens(shopTokens, {
+            title: 'Order completed! 🎉',
+            body: `All items for order ${orderNumber} from ${after.shopName} have been received and confirmed.`,
+        });
+        // Also notify Factory Managers & Staff that the shop confirmed receipt and order is finished
+        const [factoryUsers, factoryStaffUsers] = await Promise.all([
+            db.collection('users').where('role', '==', 'factory').get(),
+            db.collection('users').where('role', '==', 'factory_staff').get(),
+        ]);
+        const factoryTokens = [];
+        [...factoryUsers.docs, ...factoryStaffUsers.docs].forEach((doc) => {
+            const t = doc.data().fcmTokens || [];
+            factoryTokens.push(...t);
+        });
+        await sendToTokens(factoryTokens, {
+            title: `Order completed at ${after.shopName} ✓`,
+            body: `Order ${orderNumber} placed by ${after.requestorName} has been fully received and marked as completed.`,
+        });
+    }
+    // 4. Notify shop user when order is received by factory
+    if (receivedNow) {
+        const expectedMs = toMs(after.expectedDeliveryDate);
+        const expected = expectedMs
+            ? new Date(expectedMs).toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+            })
+            : null;
+        await sendToTokens(shopTokens, {
             title: 'Order received by factory',
             body: expected
                 ? `Your order is being processed. Expected delivery: ${expected}`
