@@ -1,5 +1,4 @@
 import { LayoutDashboard, LayoutGrid, PackagePlus, ScrollText, User } from 'lucide-react'
-
 import { NavLink, Outlet } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
@@ -18,10 +17,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useOfflineSync } from '../hooks/useOfflineSync'
 import { subscribeUnlimitedProducts, subscribeLimitedProducts } from '../lib/productService'
 
+// Base class — background on active is provided by the sliding motion.div pill
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all sm:gap-2 sm:px-3 ${
+  `relative flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-colors sm:gap-2 sm:px-3 ${
     isActive
-      ? 'bg-emerald-600/90 text-white shadow-sm dark:bg-emerald-700/90'
+      ? 'text-white'
       : 'text-slate-600 hover:bg-white/70 dark:text-slate-400 dark:hover:bg-slate-800/50'
   }`
 
@@ -154,28 +154,72 @@ export function ShopShell() {
             className="inline-flex gap-0.5 rounded-2xl border border-white/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 p-1 shadow-md shadow-slate-900/8 dark:shadow-none backdrop-blur-xl sm:gap-1 sm:p-1.5 transition-colors duration-200"
           >
             <NavLink className={linkClass} to="/shop/dashboard">
-              <LayoutDashboard className="h-4 w-4 shrink-0" />
-              <span className="sm:hidden">Dash</span>
-              <span className="hidden sm:inline">Dashboard</span>
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <motion.div
+                      layoutId="shop-nav-pill"
+                      className="absolute inset-0 rounded-xl bg-emerald-600/90 shadow-sm dark:bg-emerald-700/90"
+                      transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                    />
+                  )}
+                  <LayoutDashboard className="relative h-4 w-4 shrink-0" />
+                  <span className="relative sm:hidden">Dash</span>
+                  <span className="relative hidden sm:inline">Dashboard</span>
+                </>
+              )}
             </NavLink>
             <NavLink className={linkClass} to="/shop/available">
-              <LayoutGrid className="h-4 w-4 shrink-0" />
-              <span className="sm:hidden">Stock</span>
-              <span className="hidden sm:inline">Available products</span>
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <motion.div
+                      layoutId="shop-nav-pill"
+                      className="absolute inset-0 rounded-xl bg-emerald-600/90 shadow-sm dark:bg-emerald-700/90"
+                      transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                    />
+                  )}
+                  <LayoutGrid className="relative h-4 w-4 shrink-0" />
+                  <span className="relative sm:hidden">Stock</span>
+                  <span className="relative hidden sm:inline">Available products</span>
+                </>
+              )}
             </NavLink>
             <NavLink className={linkClass} to="/shop/new-order">
-              <PackagePlus className="h-4 w-4 shrink-0" />
-              <span className="sm:hidden">Order</span>
-              <span className="hidden sm:inline">New order</span>
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <motion.div
+                      layoutId="shop-nav-pill"
+                      className="absolute inset-0 rounded-xl bg-emerald-600/90 shadow-sm dark:bg-emerald-700/90"
+                      transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                    />
+                  )}
+                  <PackagePlus className="relative h-4 w-4 shrink-0" />
+                  <span className="relative sm:hidden">Order</span>
+                  <span className="relative hidden sm:inline">New order</span>
+                </>
+              )}
             </NavLink>
             <NavLink className={linkClass} to="/shop/history">
-              <ScrollText className="h-4 w-4 shrink-0" />
-              <span className="sm:hidden">History</span>
-              <span className="hidden sm:inline">Order history</span>
-              {awaitingCount > 0 && (
-                <span className="animate-pulse rounded-full bg-rose-500 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
-                  {awaitingCount}
-                </span>
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <motion.div
+                      layoutId="shop-nav-pill"
+                      className="absolute inset-0 rounded-xl bg-emerald-600/90 shadow-sm dark:bg-emerald-700/90"
+                      transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                    />
+                  )}
+                  <ScrollText className="relative h-4 w-4 shrink-0" />
+                  <span className="relative sm:hidden">History</span>
+                  <span className="relative hidden sm:inline">Order history</span>
+                  {awaitingCount > 0 && (
+                    <span className="relative animate-pulse rounded-full bg-rose-500 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
+                      {awaitingCount}
+                    </span>
+                  )}
+                </>
               )}
             </NavLink>
           </nav>
