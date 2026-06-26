@@ -46,6 +46,17 @@ export function FactoryShell() {
   const { theme, toggleTheme } = useTheme()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
+  // Sync PWA home screen application badge with pending count
+  useEffect(() => {
+    if ('setAppBadge' in navigator) {
+      if (pendingCount !== null && pendingCount > 0) {
+        navigator.setAppBadge(pendingCount).catch(() => {})
+      } else {
+        navigator.clearAppBadge().catch(() => {})
+      }
+    }
+  }, [pendingCount])
+
   return (
     <div className="min-h-dvh bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl transition-colors duration-200">
