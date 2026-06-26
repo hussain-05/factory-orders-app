@@ -27,3 +27,22 @@ messaging.onBackgroundMessage((payload) => {
     icon: '/favicon.ico',
   });
 });
+
+// Handle notification click to open or focus the PWA standalone app
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Focus the first window client if it exists
+      for (const client of clientList) {
+        if (client.url && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // If no window is open, launch a new one
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
+  );
+});
