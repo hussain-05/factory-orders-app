@@ -14,6 +14,9 @@ import { subscribeOrdersForShop } from '../lib/orderService'
 import type { ShopName } from '../types/models'
 import { ThemeToggleIcon } from '../components/ThemeToggleIcon'
 import { ConnectionStatus } from '../components/ConnectionStatus'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useOfflineSync } from '../hooks/useOfflineSync'
+import { subscribeUnlimitedProducts, subscribeLimitedProducts } from '../lib/productService'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all sm:gap-2 sm:px-3 ${
@@ -29,6 +32,7 @@ export function ShopShell() {
   const [awaitingCount, setAwaitingCount] = useState(0)
   const { theme, toggleTheme } = useTheme()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const { toastMessage } = useOfflineSync()
 
   useEffect(() => {
     if (!db || !shopView) return
@@ -59,6 +63,25 @@ export function ShopShell() {
       }
     }
   }, [awaitingCount])
+
+  // Eagerly pre-cache product catalogs in Firestore's persistent cache for offline usage
+  useEffect(() => {
+    if (!db) return
+    const unsubUnlimited = subscribeUnlimitedProducts(
+      db,
+      () => {},
+      () => {}
+    )
+    const unsubLimited = subscribeLimitedProducts(
+      db,
+      () => {},
+      () => {}
+    )
+    return () => {
+      unsubUnlimited()
+      unsubLimited()
+    }
+  }, [])
 
   return (
     <div className="min-h-dvh bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
@@ -168,6 +191,19 @@ export function ShopShell() {
 
 
       <UserProfileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            className="fixed bottom-6 right-6 z-50 rounded-xl bg-emerald-600 dark:bg-slate-900 border border-emerald-500/20 dark:border-slate-800 px-5 py-3 shadow-lg shadow-emerald-900/10 text-sm font-semibold text-white transition-colors duration-200"
+          >
+            {toastMessage}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

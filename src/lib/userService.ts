@@ -3,6 +3,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocFromCache,
   getDocs,
   onSnapshot,
   query,
@@ -35,9 +36,19 @@ export async function fetchUserProfile(
   uid: string,
 ): Promise<UserProfile | null> {
   const ref = doc(firestore, 'users', uid)
-  const snap = await getDoc(ref)
-  if (!snap.exists()) return null
-  return userProfileFromDoc(uid, snap.data())
+  try {
+    const snap = await getDoc(ref)
+    if (!snap.exists()) return null
+    return userProfileFromDoc(uid, snap.data())
+  } catch (err) {
+    try {
+      const snap = await getDocFromCache(ref)
+      if (!snap.exists()) return null
+      return userProfileFromDoc(uid, snap.data())
+    } catch (_) {
+      throw err
+    }
+  }
 }
 
 export async function saveUserProfile(

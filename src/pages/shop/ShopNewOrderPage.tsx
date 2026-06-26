@@ -134,6 +134,38 @@ export function ShopNewOrderPage() {
     }
     setBusy(true)
     setError(null)
+
+    if (!navigator.onLine) {
+      try {
+        const tempOrderNumber = 'OFFLINE-' + Math.floor(100000 + Math.random() * 900000)
+        const offlineOrder = {
+          id: tempOrderNumber,
+          timestamp: Date.now(),
+          orderKind: 'unlimited',
+          shopName: shopView,
+          shopUserId: user.uid,
+          requestorName: profile.displayName,
+          requestorEmail: profile.email,
+          shopWhatsappNumber: profile.whatsappNumber,
+          items: validLines,
+        }
+        const currentOffline = JSON.parse(localStorage.getItem('seva_offline_orders') ?? '[]')
+        currentOffline.push(offlineOrder)
+        localStorage.setItem('seva_offline_orders', JSON.stringify(currentOffline))
+
+        setLastItemCount(validLines.length)
+        clearStandardDraft()
+        setLastOrderNumber(tempOrderNumber)
+        setSubmitted(true)
+        setPreviewOpen(false)
+      } catch (e) {
+        setError('Failed to queue order offline.')
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
+
     try {
       const { orderNumber } = await createOrder(db, {
         orderKind: 'unlimited',
@@ -191,7 +223,9 @@ export function ShopNewOrderPage() {
           >
             <div className="flex items-center gap-3 rounded-xl bg-emerald-600 px-5 py-3 shadow-lg shadow-emerald-900/20">
               <p className="text-sm font-semibold text-white">
-                Order submitted!
+                {lastOrderNumber.startsWith('OFFLINE-')
+                  ? 'Order queued (Offline) — Auto-syncing when online!'
+                  : 'Order submitted!'}
               </p>
               {factoryNumber && (
                 <a
