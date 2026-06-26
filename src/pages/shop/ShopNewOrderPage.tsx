@@ -202,7 +202,7 @@ export function ShopNewOrderPage() {
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-      className="space-y-6"
+      className="space-y-6 pb-28 lg:pb-6"
     >
       <div>
         <h1 className="font-display text-2xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 transition-colors duration-200">
@@ -392,7 +392,7 @@ export function ShopNewOrderPage() {
 
         {/* ── Order summary — sticky on desktop ── */}
         <div className="space-y-4 lg:sticky lg:top-[92px] lg:self-start">
-          <Card>
+          <div className="ui-card rounded-2xl border border-slate-200/80 dark:border-slate-800/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-6 shadow-sm shadow-slate-200/40">
             <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">Order summary</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 transition-colors duration-200">
               {validLines.length} items ·{' '}
@@ -405,30 +405,24 @@ export function ShopNewOrderPage() {
                   Items you add will appear here. Review before submitting.
                 </p>
               ) : (
-                <AnimatePresence>
-                  {validLines.map((l) => (
-                    <motion.div
-                      key={l.productId}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 px-3 py-2 text-sm transition-colors duration-200 mb-2">
-                        <div className="min-w-0">
-                          <p className="truncate font-medium text-slate-900 dark:text-slate-100 transition-colors duration-200">{l.name}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
-                            {l.size || 'Standard'} · {l.unit}
-                          </p>
-                        </div>
-                        <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">
-                          ×{l.quantity}
-                        </span>
+                validLines.map((l) => (
+                  <div
+                    key={l.productId}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 px-3 py-2 text-sm transition-colors duration-200 mb-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-slate-900 dark:text-slate-100 transition-colors duration-200">{l.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-200">
+                          {l.size || 'Standard'} · {l.unit}
+                        </p>
                       </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                      <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">
+                        ×{l.quantity}
+                      </span>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
 
@@ -444,13 +438,13 @@ export function ShopNewOrderPage() {
                 Preview & submit
               </Button>
             </div>
-          </Card>
+          </div>
         </div>
       </div>
 
       {/* ── Mobile sticky bar ── */}
       {hasItems ? (
-        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-800/90 backdrop-blur border-t border-slate-200 dark:border-slate-800/50 p-3 sm:p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] lg:hidden transition-colors duration-200">
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-800/50 p-3 sm:p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] lg:hidden transition-colors duration-200">
           <div className="mx-auto flex max-w-6xl flex-row items-center justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <span className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
@@ -470,7 +464,7 @@ export function ShopNewOrderPage() {
           </div>
         </div>
       ) : null}
-      {hasItems ? <div className="h-28 sm:h-24 lg:h-0" /> : null}
+
 
       {/* ── Confirm modal ── */}
       <Modal

@@ -41,3 +41,20 @@
   0% { transform: translateX(-100%); }
   100% { transform: translateX(200%); }
 }
+
+/* Synchronize theme transitions across structural elements during toggle */
+.theme-transitioning,
+.theme-transitioning body,
+.theme-transitioning header,
+.theme-transitioning nav,
+.theme-transitioning main,
+.theme-transitioning section,
+.theme-transitioning .ui-card,
+.theme-transitioning [class*="fixed"],
+.theme-transitioning [class*="sticky"],
+.theme-transitioning button,
+.theme-transitioning input,
+.theme-transitioning select,
+.theme-transitioning textarea {
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease, box-shadow 200ms ease !important;
+}

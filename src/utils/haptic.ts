@@ -7,15 +7,17 @@
 export function triggerHaptic(type: 'light' | 'medium' | 'success' = 'light') {
   if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
+      // NOTE: Many physical phone motors require at least 20-30ms to ramp up and spin.
+      // 10ms was too short to be registered by the hardware on most devices.
       if (type === 'light') {
-        navigator.vibrate(10)
+        navigator.vibrate(30)
       } else if (type === 'medium') {
-        navigator.vibrate(25)
+        navigator.vibrate(50)
       } else if (type === 'success') {
-        navigator.vibrate([20, 50, 20])
+        navigator.vibrate([30, 50, 30])
       }
     } catch {
-      // Browsers restrict vibration if no user interaction occurred or due to permission rules
+      // Ignore vibration errors (e.g. user hasn't interacted with document yet)
     }
   }
 }
