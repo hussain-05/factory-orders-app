@@ -9,7 +9,7 @@ import { Select } from '../../components/ui/Select'
 import { MissingFirebase } from '../MissingFirebase'
 import type { ShopName, UserRole } from '../../types/models'
 
-const shops: ShopName[] = ['Seva', 'Seva Mart', 'Seva Super Store']
+const shops: ShopName[] = ['Seva', 'Seva Mart', 'Seva Super Store', 'Test Shop']
 
 export function SignUpPage() {
   const { firebaseReady, loading, user, profile, signUpEmail, error } = useAuth()

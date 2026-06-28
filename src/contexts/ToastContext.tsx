@@ -51,10 +51,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <AnimatePresence>
         {toast && (
           <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            initial={{ opacity: 0, y: -50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.95 }}
-            className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl px-5 py-3 shadow-lg text-sm font-semibold text-white backdrop-blur-sm border ${
+            exit={{ opacity: 0, y: -50, scale: 0.95 }}
+            className={`fixed top-6 right-6 z-[100] flex items-center gap-2 rounded-xl px-5 py-3 shadow-lg text-sm font-semibold text-white backdrop-blur-sm border ${
               toast.type === 'success'
                 ? 'bg-emerald-600 border-emerald-500/20 dark:bg-emerald-950/90 dark:text-emerald-300 dark:border-emerald-800'
                 : toast.type === 'error'

@@ -2,6 +2,7 @@ import { AlertTriangle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import Fuse from 'fuse.js'
 import { db, storage } from '../../lib/firebase'
 import {
@@ -28,6 +29,7 @@ import * as XLSX from 'xlsx'
 type Tab = 'limited' | 'catalog'
 
 export function FactoryProductsPage() {
+  const location = useLocation()
   const [tab, setTab] = useState<Tab>('limited')
   const [limited, setLimited] = useState<LimitedProduct[]>([])
   const [catalog, setCatalog] = useState<UnlimitedProduct[]>([])
@@ -65,6 +67,13 @@ export function FactoryProductsPage() {
     if (!q) return limited
     return fuse.search(q).map((res) => res.item)
   }, [limited, searchQuery, fuse])
+
+  useEffect(() => {
+    if (location.state?.searchQuery) {
+      setSearchQuery(location.state.searchQuery)
+      setTab('limited')
+    }
+  }, [location.state])
 
   useEffect(() => {
     if (!db) return

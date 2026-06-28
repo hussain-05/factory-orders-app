@@ -49,7 +49,7 @@ service cloud.firestore {
         && isEmailAllowed(request.auth.token.email)
         && request.resource.data.role in ['shop', 'factory', 'factory_staff']
         && (request.resource.data.role != 'shop'
-            || request.resource.data.shopName in ['Seva', 'Seva Mart', 'Seva Super Store']);
+            || request.resource.data.shopName in ['Seva', 'Seva Mart', 'Seva Super Store', 'Test Shop']);
       allow update: if signedIn()
         && (
           (

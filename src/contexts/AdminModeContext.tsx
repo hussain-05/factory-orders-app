@@ -4,7 +4,7 @@ import { useAuth } from './AuthContext'
 
 type AdminMode = 'factory' | 'shop'
 
-const SHOPS: ShopName[] = ['Seva', 'Seva Mart', 'Seva Super Store']
+const SHOPS: ShopName[] = ['Seva', 'Seva Mart', 'Seva Super Store', 'Test Shop']
 
 interface AdminModeContextValue {
   mode: AdminMode

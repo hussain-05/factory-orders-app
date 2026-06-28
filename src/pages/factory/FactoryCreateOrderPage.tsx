@@ -36,7 +36,7 @@ import type {
   UserProfile,
 } from "../../types/models";
 
-const shops: ShopName[] = ["Seva", "Seva Mart", "Seva Super Store"];
+const shops: ShopName[] = ["Seva", "Seva Mart", "Seva Super Store", "Test Shop"];
 const units: Unit[] = ["box", "bag", "pcs"];
 
 type StandardLine = { product: UnlimitedProduct; quantity: number; unit: Unit };

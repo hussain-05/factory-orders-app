@@ -1,6 +1,6 @@
 export type UserRole = 'shop' | 'factory' | 'factory_staff'
 
-export type ShopName = 'Seva' | 'Seva Mart' | 'Seva Super Store'
+export type ShopName = 'Seva' | 'Seva Mart' | 'Seva Super Store' | 'Test Shop'
 
 export type OrderKind = 'unlimited' | 'limited' | 'factory_dispatch'
 
@@ -63,6 +63,7 @@ export interface OrderLineItem {
   rate?: number
   notAvailable?: boolean
   source?: OrderLineSource
+  cancelledReason?: string
 }
 
 export interface OrderMilestones {
@@ -91,4 +92,10 @@ export interface Order {
   createdByFactory?: boolean
   factoryCreatedByUid?: string
   factoryCreatedByName?: string
+  closedBy?: {
+    uid: string
+    name: string
+    role: 'shop' | 'factory'
+    timestamp: number
+  }
 }

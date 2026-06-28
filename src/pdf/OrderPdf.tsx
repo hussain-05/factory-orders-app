@@ -89,7 +89,9 @@ function dispatchedQtyByProduct(
   const map: Record<string, number> = {};
   for (const d of dispatches) {
     for (const it of d.items) {
-      map[it.productId] = (map[it.productId] ?? 0) + it.qty;
+      if (it.confirmedAt !== -1) {
+        map[it.productId] = (map[it.productId] ?? 0) + it.qty;
+      }
     }
   }
   return map;
@@ -101,7 +103,7 @@ function confirmedQtyByProduct(
   const map: Record<string, number> = {};
   for (const d of dispatches) {
     for (const it of d.items) {
-      if (it.confirmedAt) {
+      if (it.confirmedAt && it.confirmedAt > 0) {
         map[it.productId] = (map[it.productId] ?? 0) + it.qty;
       }
     }
@@ -164,6 +166,16 @@ export function OrderPdfDocument({
           <Text style={styles.meta}>
             Expected delivery: {expected} · Status: {order.status}
           </Text>
+          {order.closedBy && (
+            <Text style={styles.meta}>
+              {order.closedBy.uid === 'system'
+                ? 'Auto-Cleaned (Reordered): Closed automatically because remaining items were reordered'
+                : order.closedBy.role === 'factory'
+                  ? `Cancelled by Factory: Cancelled by Factory Manager (${order.closedBy.name})`
+                  : `Closed by Shop: Closed by Shopkeeper (${order.closedBy.name})`}{" · "}
+              Finalized on {format(order.closedBy.timestamp, "dd MMM yyyy, HH:mm")}
+            </Text>
+          )}
         </View>
 
         {/* Items ordered (Fulfillment summary) */}
@@ -172,7 +184,7 @@ export function OrderPdfDocument({
           <Text style={styles.cellName}>Item</Text>
           <Text style={styles.cellQty}>Ordered</Text>
           <Text style={styles.cellDispatched}>Dispatched</Text>
-          <Text style={{ width: "15%", textAlign: "right" }}>Confirmed</Text>
+          <Text style={{ width: "15%", textAlign: "right" }}>Received</Text>
         </View>
         {order.items.map((it, idx) => {
           const dispatched = dispQty[it.productId] ?? 0;
@@ -188,7 +200,7 @@ export function OrderPdfDocument({
               <View style={styles.cellName}>
                 <Text
                   style={
-                    it.notAvailable
+                    it.notAvailable || it.cancelledReason
                       ? { textDecoration: "line-through", color: "#94a3b8" }
                       : {}
                   }
@@ -196,9 +208,14 @@ export function OrderPdfDocument({
                   {it.name}
                   {it.size ? ` · ${it.size}` : ""}
                 </Text>
-                {it.notAvailable && (
+                {it.notAvailable && !it.cancelledReason && (
                   <Text style={{ fontSize: 8, color: "#64748b", marginTop: 2 }}>
                     Not Available: {it.quantity - dispatched} {unit}
+                  </Text>
+                )}
+                {it.cancelledReason && (
+                  <Text style={{ fontSize: 8, color: "#d97706", marginTop: 2, fontWeight: "bold" }}>
+                    Status: {it.cancelledReason}
                   </Text>
                 )}
               </View>
@@ -236,11 +253,21 @@ export function OrderPdfDocument({
                   <Text>
                     Dispatch {i + 1} — {format(d.dispatchedAt, "dd MMM yyyy")}
                   </Text>
-                  <Text style={{ color: d.receivedAt ? "#16a34a" : "#d97706" }}>
-                    {d.receivedAt
-                      ? `All confirmed ${format(d.receivedAt, "dd MMM")}`
-                      : "Awaiting confirmation"}
-                  </Text>
+                  {(() => {
+                    if (!d.receivedAt) {
+                      return <Text style={{ color: "#d97706" }}>Awaiting confirmation</Text>;
+                    }
+                    const statuses = d.items.map(x => x.confirmedAt);
+                    const allNotReceived = statuses.every(s => s === -1);
+                    const someNotReceived = statuses.some(s => s === -1);
+                    if (allNotReceived) {
+                      return <Text style={{ color: "#dc2626" }}>Not received</Text>;
+                    }
+                    if (someNotReceived) {
+                      return <Text style={{ color: "#d97706" }}>Partially received</Text>;
+                    }
+                    return <Text style={{ color: "#16a34a" }}>Fully received</Text>;
+                  })()}
                 </View>
                 {d.items.map((it) => (
                   <View key={it.productId} style={styles.dispatchItem}>
@@ -248,8 +275,14 @@ export function OrderPdfDocument({
                       {it.name}
                       {it.size ? ` · ${it.size}` : ""}
                     </Text>
-                    <Text>
-                      {`×${it.qty}  ${it.confirmedAt ? `Confirmed ${format(it.confirmedAt, "dd MMM")}` : "Pending"}`}
+                    <Text style={it.confirmedAt === -1 ? { color: "#dc2626" } : {}}>
+                      {`×${it.qty}  ${
+                        it.confirmedAt === -1
+                          ? "Not received"
+                          : it.confirmedAt && it.confirmedAt > 0
+                            ? `Confirmed ${format(it.confirmedAt, "dd MMM")}`
+                            : "Pending"
+                      }`}
                     </Text>
                   </View>
                 ))}

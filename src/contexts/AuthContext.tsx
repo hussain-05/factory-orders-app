@@ -28,6 +28,7 @@ type AuthState = {
 
 type AuthContextValue = AuthState & {
   firebaseReady: boolean
+  autoHealError: string | null
   signInEmail: (email: string, password: string) => Promise<void>
   signUpEmail: (input: {
     email: string
@@ -48,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(() => firebaseReady)
   const [error, setError] = useState<string | null>(null)
+  const [autoHealError, setAutoHealError] = useState<string | null>(null)
 
   const refreshProfile = useCallback(async () => {
     if (!db || !user) return
@@ -105,7 +107,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           const stored = localStorage.getItem('seva_cached_profile')
           if (stored) {
-            setProfile(JSON.parse(stored))
+            const cachedProfile = JSON.parse(stored)
+            try {
+              console.log('Auto-healing missing remote user profile document...')
+              await saveUserProfile(db, {
+                uid: u.uid,
+                email: u.email || cachedProfile.email,
+                displayName: cachedProfile.displayName || '',
+                role: cachedProfile.role,
+                shopName: cachedProfile.shopName,
+                whatsappNumber: cachedProfile.whatsappNumber,
+              })
+              setProfile(cachedProfile)
+              setAutoHealError(null)
+            } catch (saveErr) {
+              console.error('Failed to auto-heal profile:', saveErr)
+              setAutoHealError(saveErr instanceof Error ? saveErr.message : String(saveErr))
+              setProfile(cachedProfile)
+            }
           } else {
             setProfile(null)
           }
@@ -192,12 +211,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       firebaseReady,
+      autoHealError,
       signInEmail,
       signUpEmail,
       logout,
       refreshProfile,
     }),
-    [user, profile, loading, error, signInEmail, signUpEmail, logout, refreshProfile],
+    [user, profile, loading, error, autoHealError, signInEmail, signUpEmail, logout, refreshProfile],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

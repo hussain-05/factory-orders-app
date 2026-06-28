@@ -21,6 +21,7 @@ import { useUsersMap } from "../../hooks/useUsersMap";
 import { VisualTimeline } from "../../components/VisualTimeline";
 import {
   confirmDispatchItem,
+  closeOrderFromPortal,
   deleteOrder,
   subscribeOrdersForShop,
 } from "../../lib/orderService";
@@ -37,6 +38,71 @@ import {
   formatDateTime,
   fulfillmentSummary,
 } from "../../utils/format";
+
+function triggerConfetti(clientX: number, clientY: number) {
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.pointerEvents = 'none';
+  container.style.left = '0';
+  container.style.top = '0';
+  container.style.width = '100vw';
+  container.style.height = '100vh';
+  container.style.zIndex = '9999';
+  document.body.appendChild(container);
+
+  const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#EC4899', '#8B5CF6'];
+  const particleCount = 40;
+
+  for (let i = 0; i < particleCount; i++) {
+    const p = document.createElement('div');
+    p.style.position = 'absolute';
+    p.style.left = `${clientX}px`;
+    p.style.top = `${clientY}px`;
+    p.style.width = `${Math.random() * 6 + 4}px`;
+    p.style.height = `${Math.random() * 6 + 4}px`;
+    p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    container.appendChild(p);
+
+    const angle = Math.random() * Math.PI * 2;
+    const velocity = Math.random() * 8 + 4;
+    let vx = Math.cos(angle) * velocity;
+    let vy = Math.sin(angle) * velocity - 2;
+    let px = clientX;
+    let py = clientY;
+    let rotation = Math.random() * 360;
+    let rotSpeed = (Math.random() - 0.5) * 15;
+
+    let frames = 0;
+    const maxFrames = 60 + Math.random() * 40;
+
+    function update() {
+      frames++;
+      px += vx;
+      py += vy;
+      vy += 0.25;
+      vx *= 0.96;
+      vy *= 0.96;
+      rotation += rotSpeed;
+
+      p.style.left = `${px}px`;
+      p.style.top = `${py}px`;
+      p.style.transform = `rotate(${rotation}deg)`;
+      p.style.opacity = `${(maxFrames - frames) / maxFrames}`;
+
+      if (frames < maxFrames) {
+        requestAnimationFrame(update);
+      } else {
+        p.remove();
+      }
+    }
+    requestAnimationFrame(update);
+  }
+
+  setTimeout(() => {
+    container.remove();
+  }, 3000);
+}
 
 function groupByMonth(
   orders: Order[],
@@ -112,17 +178,34 @@ export function ShopOrderHistoryPage() {
   const setFilterStartDate = (v: string) => { setFilterStartDateRaw(v); persistFilters({ startDate: v }) }
   const setFilterEndDate = (v: string) => { setFilterEndDateRaw(v); persistFilters({ endDate: v }) }
 
+  const [closeBusyId, setCloseBusyId] = useState<string | null>(null);
+
   async function handleConfirmDispatch(
     orderId: string,
     dispatchId: string,
     productId: string,
+    clientX: number,
+    clientY: number,
+    isMissing?: boolean,
   ) {
     if (!db) return;
     const key = `${dispatchId}:${productId}`;
     setConfirmBusyId(key);
     const now = Date.now();
+    
+    // Synchronously check if this click completes the dispatch
+    let newlyFullyConfirmed = false;
+    const order = orders.find(o => o.id === orderId);
+    const dispatch = order?.dispatches?.find(d => d.id === dispatchId);
+    if (dispatch) {
+      const unconfirmed = dispatch.items.filter(it => !it.confirmedAt);
+      if (unconfirmed.length === 1 && unconfirmed[0].productId === productId) {
+        newlyFullyConfirmed = true;
+      }
+    }
+
     try {
-      await confirmDispatchItem(db, orderId, dispatchId, productId);
+      await confirmDispatchItem(db, orderId, dispatchId, productId, isMissing);
       // Update local state directly — no full refresh, no scroll reset
       setOrders((prev) =>
         prev.map((o) => {
@@ -130,9 +213,9 @@ export function ShopOrderHistoryPage() {
           const updatedDispatches = (o.dispatches ?? []).map((d) => {
             if (d.id !== dispatchId) return d;
             const updatedItems = d.items.map((it) =>
-              it.productId === productId ? { ...it, confirmedAt: now } : it,
+              it.productId === productId ? { ...it, confirmedAt: isMissing ? -1 : now } : it,
             );
-            const allConfirmed = updatedItems.every((it) => it.confirmedAt);
+            const allConfirmed = updatedItems.every((it) => it.confirmedAt !== null && it.confirmedAt !== undefined);
             return {
               ...d,
               items: updatedItems,
@@ -142,7 +225,7 @@ export function ShopOrderHistoryPage() {
           const confirmedQty: Record<string, number> = {};
           for (const d of updatedDispatches) {
             for (const it of d.items) {
-              if (it.confirmedAt)
+              if (it.confirmedAt && it.confirmedAt > 0)
                 confirmedQty[it.productId] =
                   (confirmedQty[it.productId] ?? 0) + it.qty;
             }
@@ -150,8 +233,9 @@ export function ShopOrderHistoryPage() {
           const dispatchedQty: Record<string, number> = {};
           for (const d of updatedDispatches) {
             for (const it of d.items) {
-              dispatchedQty[it.productId] =
-                (dispatchedQty[it.productId] ?? 0) + it.qty;
+              if (it.confirmedAt !== -1)
+                dispatchedQty[it.productId] =
+                  (dispatchedQty[it.productId] ?? 0) + it.qty;
             }
           }
 
@@ -170,13 +254,36 @@ export function ShopOrderHistoryPage() {
           };
         }),
       );
-      showToast("Received dispatch confirmed!", "success");
+      showToast(isMissing ? "Item marked as missing." : "Received dispatch confirmed!", "success");
+      if (newlyFullyConfirmed && !isMissing) {
+        triggerConfetti(clientX, clientY);
+      }
     } catch {
       // Restore accurate state from the latest snapshot on error
       setOrders(latestOrdersRef.current)
       showToast("Failed to confirm receipt.", "error");
     } finally {
       setConfirmBusyId(null);
+    }
+  }
+
+  async function handleCloseOrder(orderId: string) {
+    if (!db || !user) return;
+    const confirmClose = window.confirm("Are you sure you want to close this order? Any outstanding items not yet delivered will be cancelled and stock will be restored.");
+    if (!confirmClose) return;
+
+    setCloseBusyId(orderId);
+    try {
+      await closeOrderFromPortal(db, orderId, {
+        uid: user.uid,
+        displayName: profile?.displayName || user.displayName || user.email || "Shopkeeper",
+        email: user.email || ""
+      }, 'shop');
+      showToast("Order closed successfully!", "success");
+    } catch (err) {
+      showToast("Failed to close order.", "error");
+    } finally {
+      setCloseBusyId(null);
     }
   }
 
@@ -649,15 +756,39 @@ export function ShopOrderHistoryPage() {
                                       Dispatch {i + 1} ·{" "}
                                       {format(d.dispatchedAt, "dd MMM yyyy")}
                                     </span>
-                                    {d.receivedAt ? (
-                                      <span className="text-emerald-600 font-medium">
-                                        ✓ All received
-                                      </span>
-                                    ) : (
-                                      <span className="text-amber-600 font-medium">
-                                        Confirm items below
-                                      </span>
-                                    )}
+                                    {(() => {
+                                      if (!d.receivedAt) {
+                                        return (
+                                          <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 animate-pulse">
+                                            🚚 In transit
+                                          </span>
+                                        );
+                                      }
+
+                                      const statuses = d.items.map((it) => it.confirmedAt);
+                                      const allNotReceived = statuses.every((s) => s === -1);
+                                      const someNotReceived = statuses.some((s) => s === -1);
+
+                                      if (allNotReceived) {
+                                        return (
+                                          <span className="inline-flex items-center gap-1 rounded bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-950/20 dark:text-rose-400">
+                                            ❌ Not received
+                                          </span>
+                                        );
+                                      }
+                                      if (someNotReceived) {
+                                        return (
+                                          <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
+                                            ⚠ Partially received
+                                          </span>
+                                        );
+                                      }
+                                      return (
+                                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400">
+                                          ✓ Fully received
+                                        </span>
+                                      );
+                                    })()}
                                   </div>
                                   {d.items.map((it) => {
                                     const key = `${d.id}:${it.productId}`;
@@ -678,27 +809,76 @@ export function ShopOrderHistoryPage() {
                                           </span>
                                         </div>
                                         {it.confirmedAt ? (
-                                          <span className="shrink-0 text-emerald-600 font-medium">
-                                            ✓ Received{" "}
-                                            {format(it.confirmedAt, "dd MMM")}
-                                          </span>
+                                          it.confirmedAt === -1 ? (
+                                            <div className="flex items-center gap-2 shrink-0">
+                                              <span className="text-[10px] text-rose-500 font-semibold transition-colors">
+                                                ✗ Not Received
+                                              </span>
+                                              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-xs font-bold text-white shadow-sm">
+                                                ✗
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center gap-2 shrink-0">
+                                              <span className="text-[10px] text-slate-400 dark:text-slate-500 transition-colors">
+                                                Received {format(it.confirmedAt, "dd MMM")}
+                                              </span>
+                                              <motion.div
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: 1 }}
+                                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                                className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-xs font-bold text-white shadow-sm"
+                                              >
+                                                ✓
+                                              </motion.div>
+                                            </div>
+                                          )
                                         ) : (
-                                          <Button
-                                            variant="secondary"
-                                            className="!py-1 !text-base sm:!text-xs shrink-0"
-                                            disabled={confirmBusyId === key}
-                                            onClick={() =>
-                                              void handleConfirmDispatch(
-                                                o.id,
-                                                d.id,
-                                                it.productId,
-                                              )
-                                            }
-                                          >
-                                            {confirmBusyId === key
-                                              ? "Confirming…"
-                                              : "Confirm receipt"}
-                                          </Button>
+                                          <div className="flex items-center gap-1.5 shrink-0">
+                                            <button
+                                              type="button"
+                                              disabled={confirmBusyId === key}
+                                              onClick={(e) =>
+                                                void handleConfirmDispatch(
+                                                  o.id,
+                                                  d.id,
+                                                  it.productId,
+                                                  e.clientX,
+                                                  e.clientY,
+                                                )
+                                              }
+                                              className="group flex h-6 w-6 items-center justify-center rounded-full border-2 border-emerald-500/30 dark:border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/10 hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-500/10 transition shrink-0"
+                                              title="Confirm receipt of this item"
+                                            >
+                                              {confirmBusyId === key ? (
+                                                <div className="h-3 w-3 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+                                              ) : (
+                                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                  ✓
+                                                </span>
+                                              )}
+                                            </button>
+                                            <button
+                                              type="button"
+                                              disabled={confirmBusyId === key}
+                                              onClick={() =>
+                                                void handleConfirmDispatch(
+                                                  o.id,
+                                                  d.id,
+                                                  it.productId,
+                                                  0,
+                                                  0,
+                                                  true,
+                                                )
+                                              }
+                                              className="group flex h-6 w-6 items-center justify-center rounded-full border-2 border-rose-500/30 dark:border-rose-500/20 bg-rose-50/50 dark:bg-rose-950/10 hover:border-rose-500 dark:hover:border-rose-400 hover:bg-rose-500/10 transition shrink-0"
+                                              title="Report not received / missing"
+                                            >
+                                              <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                                                ✗
+                                              </span>
+                                            </button>
+                                          </div>
                                         )}
                                       </div>
                                     );
@@ -742,13 +922,36 @@ export function ShopOrderHistoryPage() {
                           </div>
 
                           {o.status === "completed" && (
-                            <div className="rounded-xl bg-slate-50 dark:bg-slate-900/50 p-3 transition-colors duration-200">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
-                                Lead time
-                              </p>
-                              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">
-                                {fulfillmentSummary(o)}
-                              </p>
+                            <div className="space-y-3">
+                              {o.closedBy && (
+                                <div className="rounded-xl bg-rose-50/50 dark:bg-rose-900/10 p-3 border border-rose-100 dark:border-rose-900/30 transition-colors duration-200">
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-rose-500 transition-colors duration-200">
+                                    {o.closedBy.uid === 'system'
+                                      ? 'Auto-Cleaned (Reordered)'
+                                      : o.closedBy.role === 'factory'
+                                        ? 'Cancelled by Factory'
+                                        : 'Closed by Shop'}
+                                  </p>
+                                  <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">
+                                    {o.closedBy.uid === 'system'
+                                      ? 'Closed automatically because remaining items were reordered'
+                                      : o.closedBy.role === 'factory'
+                                        ? `Cancelled by Factory Manager (${o.closedBy.name})`
+                                        : `Closed by Shopkeeper (${o.closedBy.name})`}
+                                  </p>
+                                  <p className="text-xs text-slate-600 dark:text-slate-400 transition-colors duration-200">
+                                    Finalized on {formatDateTime(o.closedBy.timestamp)}
+                                  </p>
+                                </div>
+                              )}
+                              <div className="rounded-xl bg-slate-50 dark:bg-slate-900/50 p-3 transition-colors duration-200">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
+                                  Lead time
+                                </p>
+                                <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">
+                                  {fulfillmentSummary(o)}
+                                </p>
+                              </div>
                             </div>
                           )}
 
@@ -772,15 +975,24 @@ export function ShopOrderHistoryPage() {
                               {pdfBusyId === o.id ? "Preparing…" : "Print"}
                             </Button>
 
-                            {(o.status === "pending" || profile?.isAdmin) && (
+                            {o.status === "pending" && (
+                              <Button
+                                variant="secondary"
+                                className="!border-amber-500 !text-amber-600 dark:!text-amber-500 hover:!bg-amber-50 dark:hover:!bg-amber-950/10 shrink-0"
+                                disabled={closeBusyId === o.id}
+                                onClick={() => void handleCloseOrder(o.id)}
+                              >
+                                {closeBusyId === o.id ? "Closing…" : "✗ Close Order"}
+                              </Button>
+                            )}
+
+                            {profile?.isAdmin && (
                               <Button
                                 variant="danger"
                                 onClick={() => setDeleteTarget(o)}
                               >
                                 <Trash2 className="h-4 w-4" />
-                                {o.status === "pending" && !profile?.isAdmin
-                                  ? "Cancel order"
-                                  : "Delete order"}
+                                Delete order
                               </Button>
                             )}
                           </div>
@@ -804,7 +1016,7 @@ export function ShopOrderHistoryPage() {
                                     </span>
                                     {it.notAvailable && (
                                       <Badge tone="neutral">
-                                        Not Available
+                                        {it.cancelledReason ? it.cancelledReason : "Not Available"}
                                       </Badge>
                                     )}
                                   </div>
