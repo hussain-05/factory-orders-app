@@ -8,7 +8,7 @@ import Fuse from 'fuse.js'
 import { OrderCardsSkeleton } from '../../components/ui/Skeleton'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { useToast } from '../../contexts/ToastContext'
-import { format } from 'date-fns'
+import { format, differenceInCalendarDays } from 'date-fns'
 import { useAuth } from '../../contexts/AuthContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
@@ -640,6 +640,40 @@ function TimelineStage({ isLast, nextDone, dot, label, timestamp, sub, children 
   )
 }
 
+function isOrderOverdue(o: Order, today: Date): boolean {
+  if (o.status !== 'pending') return false
+
+  const dispatches = o.dispatches ?? []
+
+  // 1.3: do not show those orders for which there is an active dispatch and the shop has still pending confirmations
+  const hasPendingConfirmations = dispatches.some(d => d.items.some(it => !it.confirmedAt))
+  if (hasPendingConfirmations) return false
+
+  // Check if there is not a single dispatch made for the order
+  if (dispatches.length === 0) {
+    // 1.1: its been more than 5 days since order was placed and there is not a single dispatch made for the order
+    const daysSincePlaced = differenceInCalendarDays(today, new Date(o.createdAt))
+    return daysSincePlaced > 5
+  }
+
+  // If there are dispatches, check if there are remaining items to dispatch
+  const totalQty = o.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
+  const dispatchedQty = dispatches.reduce((sum, d) => sum + d.items.reduce((s, it) => s + Number(it.qty || 0), 0), 0)
+  const hasRemainingItems = totalQty - dispatchedQty > 0
+
+  if (hasRemainingItems) {
+    // 1.2: its been more than 5 days since any partial dispatch was made, and there remaining items to dispatch
+    // Note: since hasPendingConfirmations is false, all items from previous dispatches have been confirmed.
+    const latestDispatchTime = Math.max(...dispatches.map(d => d.dispatchedAt ?? 0))
+    if (latestDispatchTime > 0) {
+      const daysSinceLatestDispatch = differenceInCalendarDays(today, new Date(latestDispatchTime))
+      return daysSinceLatestDispatch > 5
+    }
+  }
+
+  return false
+}
+
 export function FactoryPendingPage() {
   const usersMap = useUsersMap()
   const [orders, setOrders] = useState<Order[]>([])
@@ -647,8 +681,9 @@ export function FactoryPendingPage() {
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const { showToast } = useToast()
-  const loc = useLocation() as { state?: { openId?: string } }
+  const loc = useLocation() as { state?: { openId?: string; filterOverdue?: boolean } }
   const [openId, setOpenId] = useState<string | null>(loc.state?.openId ?? null)
+  const [filterOverdue, setFilterOverdue] = useState<boolean>(loc.state?.filterOverdue ?? false)
 
   useEffect(() => {
     const id = loc.state?.openId
@@ -763,6 +798,10 @@ export function FactoryPendingPage() {
         if ((o.createdAt ?? 0) > end) return false
       }
 
+      if (filterOverdue) {
+        if (!isOrderOverdue(o, new Date())) return false
+      }
+
       return true
     })
 
@@ -777,11 +816,12 @@ export function FactoryPendingPage() {
     filterKind,
     filterStartDate,
     filterEndDate,
+    filterOverdue,
     usersMap,
   ])
 
   const totalOrders = grouped.reduce((s, g) => s + g.orders.length, 0)
-  const hasActiveFilters = filterShop !== 'all' || filterRequestor !== 'all' || filterKind !== 'all' || filterStartDate !== '' || filterEndDate !== ''
+  const hasActiveFilters = filterShop !== 'all' || filterRequestor !== 'all' || filterKind !== 'all' || filterStartDate !== '' || filterEndDate !== '' || filterOverdue
 
   async function patch(order: Order, p: Parameters<typeof updateOrderMilestones>[2]) {
     if (!db) return
@@ -847,9 +887,24 @@ export function FactoryPendingPage() {
     >
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 transition-colors duration-200">
-            Pending orders
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="font-display text-2xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 transition-colors duration-200">
+              Pending orders
+            </h1>
+            {filterOverdue && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 dark:bg-rose-950/20 px-2.5 py-0.5 text-xs font-semibold text-rose-800 dark:text-rose-300 ring-1 ring-rose-200 dark:ring-rose-900/30">
+                Overdue
+                <button
+                  type="button"
+                  onClick={() => setFilterOverdue(false)}
+                  className="hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-full p-0.5 transition-colors"
+                  title="Clear overdue filter"
+                >
+                  <X className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                </button>
+              </span>
+            )}
+          </div>
           <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400 transition-colors duration-200">
             Track each order from receipt through dispatch, set delivery dates, and close the loop when the shipment lands.
           </p>
@@ -977,7 +1032,7 @@ export function FactoryPendingPage() {
               <div className="flex justify-end pt-1">
                 <button
                   type="button"
-                  onClick={() => { setFilterShop('all'); setFilterRequestor('all'); setFilterKind('all'); setFilterStartDate(''); setFilterEndDate('') }}
+                  onClick={() => { setFilterShop('all'); setFilterRequestor('all'); setFilterKind('all'); setFilterStartDate(''); setFilterEndDate(''); setFilterOverdue(false) }}
                   className="text-xs font-medium text-rose-600 hover:text-rose-700"
                 >
                   Clear all
@@ -995,6 +1050,8 @@ export function FactoryPendingPage() {
         </p>
         </div>
       )}
+
+
 
       {loading ? (
         <OrderCardsSkeleton count={3} />
@@ -1016,6 +1073,7 @@ export function FactoryPendingPage() {
             setFilterKind('all')
             setFilterStartDate('')
             setFilterEndDate('')
+            setFilterOverdue(false)
           }}
         />
       ) : (

@@ -1,6 +1,7 @@
 import { AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Minus, Plus, ShoppingBag, X } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import Fuse from "fuse.js";
 import { useAuth } from "../../contexts/AuthContext";
@@ -35,6 +36,7 @@ function stockBarClass(stock: number) {
 }
 
 export function ShopAvailablePage() {
+  const location = useLocation();
   const { profile, user } = useAuth();
   const { shopView } = useAdminMode();
   const { showToast } = useToast();
@@ -48,7 +50,9 @@ export function ShopAvailablePage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(() => {
+    return (location.state as any)?.searchQuery ?? "";
+  });
   const [lastOrderNumber, setLastOrderNumber] = useState("");
   const [lastItemCount, setLastItemCount] = useState(0);
   const [factoryNumber, setFactoryNumber] = useState("");
