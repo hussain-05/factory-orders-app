@@ -232,6 +232,7 @@ export function FactoryOrderHistoryPage() {
                       <option value="Seva">Seva</option>
                       <option value="Seva Mart">Seva Mart</option>
                       <option value="Seva Super Store">Seva Super Store</option>
+                      <option value="Test Shop">Test Shop</option>
                     </select>
                   </div>
 
@@ -450,13 +451,36 @@ export function FactoryOrderHistoryPage() {
                             <p className="text-xs text-slate-600 dark:text-slate-400 transition-colors duration-200">{o.requestorEmail}</p>
                           </div>
 
-                          {/* Lead time — only when completed */}
+                          {/* Lead time & Closure Metadata */}
                           {o.status === 'completed' && (
-                            <div className="rounded-xl bg-slate-50 dark:bg-slate-900/50 p-3 transition-colors duration-200">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
-                                Lead time
-                              </p>
-                              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{fulfillmentSummary(o)}</p>
+                            <div className="space-y-3">
+                              {o.closedBy && (
+                                <div className="rounded-xl bg-rose-50/50 dark:bg-rose-900/10 p-3 border border-rose-100 dark:border-rose-900/30 transition-colors duration-200">
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-rose-500 transition-colors duration-200">
+                                    {o.closedBy.uid === 'system'
+                                      ? 'Auto-Cleaned (Reordered)'
+                                      : o.closedBy.role === 'factory'
+                                        ? 'Cancelled by Factory'
+                                        : 'Closed by Shop'}
+                                  </p>
+                                  <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">
+                                    {o.closedBy.uid === 'system'
+                                      ? 'Closed automatically because remaining items were reordered'
+                                      : o.closedBy.role === 'factory'
+                                        ? `Cancelled by Factory Manager (${o.closedBy.name})`
+                                        : `Closed by Shopkeeper (${o.closedBy.name})`}
+                                  </p>
+                                  <p className="text-xs text-slate-600 dark:text-slate-400 transition-colors duration-200">
+                                    Finalized on {formatDateTime(o.closedBy.timestamp)}
+                                  </p>
+                                </div>
+                              )}
+                              <div className="rounded-xl bg-slate-50 dark:bg-slate-900/50 p-3 transition-colors duration-200">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 transition-colors duration-200">
+                                  Lead time
+                                </p>
+                                <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors duration-200">{fulfillmentSummary(o)}</p>
+                              </div>
                             </div>
                           )}
 
@@ -499,7 +523,7 @@ export function FactoryOrderHistoryPage() {
                                       {it.name}{it.size ? ` · ${it.size}` : ''}
                                     </span>
                                     {it.notAvailable && (
-                                      <Badge tone="neutral">Not Available</Badge>
+                                      <Badge tone="neutral">{it.cancelledReason ? it.cancelledReason : "Not Available"}</Badge>
                                     )}
                                   </div>
                                   <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-slate-100 transition-colors duration-200">

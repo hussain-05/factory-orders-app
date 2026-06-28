@@ -13,7 +13,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { previewOrderPdf } from '../../lib/downloadOrderPdf'
 import { db } from '../../lib/firebase'
 import { useUsersMap } from '../../hooks/useUsersMap'
-import { addDispatch, deleteOrder, subscribePendingOrdersForFactory, updateOrderMilestones } from '../../lib/orderService'
+import { addDispatch, deleteOrder, subscribePendingOrdersForFactory, updateOrderMilestones, closeOrderFromPortal } from '../../lib/orderService'
 import { whatsappLink } from '../../utils/whatsapp'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -52,7 +52,8 @@ function currentStageMeta(o: Order): {
   label: 'Order placed' | 'In production' | 'Awaiting delivery'
   tone: 'neutral' | 'warning' | 'success'
 } {
-  if (o.milestones?.dispatchedAt) {
+  const hasActiveDispatch = (o.dispatches ?? []).some(d => !d.receivedAt)
+  if (hasActiveDispatch) {
     return { label: 'Awaiting delivery', tone: 'success' }
   }
 
@@ -71,7 +72,10 @@ function getFulfilmentMeta(order: Order) {
   const dispatchedQty = (order.dispatches ?? []).reduce((sum, dispatch) => {
     return (
       sum +
-      dispatch.items.reduce((itemSum, item) => itemSum + Number(item.qty || 0), 0)
+      dispatch.items.reduce((itemSum, item) => {
+        if (item.confirmedAt === -1) return itemSum
+        return itemSum + Number(item.qty || 0)
+      }, 0)
     )
   }, 0)
 
@@ -88,7 +92,9 @@ function dispatchedQtyByProduct(dispatches: OrderDispatch[]): Record<string, num
   const map: Record<string, number> = {}
   for (const d of dispatches) {
     for (const it of d.items) {
-      map[it.productId] = (map[it.productId] ?? 0) + it.qty
+      if (it.confirmedAt !== -1) {
+        map[it.productId] = (map[it.productId] ?? 0) + it.qty
+      }
     }
   }
   return map
@@ -116,16 +122,37 @@ const WhatsAppIcon = () => (
 
 function OrderActions({ order }: { order: Order }) {
   const [busy, setBusy] = useState(false)
-  const { profile } = useAuth()
+  const [closeBusy, setCloseBusy] = useState(false)
+  const { profile, user } = useAuth()
   const { showToast } = useToast()
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null)
+
+  async function handleCloseOrder() {
+    if (!db || !user) return
+    const confirmClose = window.confirm("Are you sure you want to close this order? Outstanding items will be marked as unavailable, and the order will be finalized.")
+    if (!confirmClose) return
+
+    setCloseBusy(true)
+    try {
+      await closeOrderFromPortal(db, order.id, {
+        uid: user.uid,
+        displayName: profile?.displayName || user.displayName || user.email || "Factory Owner",
+        email: user.email || ""
+      }, 'factory')
+      showToast("Order closed successfully!", "success")
+    } catch (err) {
+      showToast("Failed to close order.", "error")
+    } finally {
+      setCloseBusy(false)
+    }
+  }
 
   return (
     <>
       <div className="flex flex-wrap gap-2">
         <Button
           variant="secondary"
-          disabled={busy}
+          disabled={busy || closeBusy}
           onClick={async () => {
             setBusy(true)
             try { await previewOrderPdf(order) } finally { setBusy(false) }
@@ -134,10 +161,20 @@ function OrderActions({ order }: { order: Order }) {
           <Printer className="h-4 w-4" />
           {busy ? 'Preparing…' : 'Print'}
         </Button>
+        {order.status === 'pending' && (
+          <Button
+            variant="secondary"
+            className="!border-amber-500 !text-amber-600 dark:!text-amber-500 hover:!bg-amber-50 dark:hover:!bg-amber-950/10 shrink-0"
+            disabled={closeBusy || busy}
+            onClick={() => void handleCloseOrder()}
+          >
+            {closeBusy ? 'Closing…' : '✗ Close Order'}
+          </Button>
+        )}
         {profile?.isAdmin && (
           <Button
             variant="danger"
-            disabled={busy}
+            disabled={busy || closeBusy}
             onClick={() => setDeleteTarget(order)}
           >
             <Trash2 className="h-4 w-4" />
@@ -257,13 +294,20 @@ function DispatchForm({
               <div className="min-w-0">
                 <p className={`font-medium min-w-0 whitespace-normal break-words text-sm ${isNa ? 'text-slate-400 dark:text-slate-500 line-through transition-colors duration-200' : 'text-slate-800 dark:text-slate-200 transition-colors duration-200'}`}>
                   {it.name}{it.size ? ` · ${it.size}` : ''}
+                  {it.cancelledReason && (
+                    <span className="ml-2 inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-300 ring-1 ring-inset ring-amber-600/20">
+                      {it.cancelledReason}
+                    </span>
+                  )}
                 </p>
-                <p className="mt-0.5 whitespace-normal break-words text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">
-                  Ordered {it.quantity} {(it as any).unit || ((it as any)?.source === 'limited' || order.orderKind === 'limited' ? 'pcs' : 'box')} · {dispatchedQty[it.productId] ?? 0} already sent · {remaining} remaining
-                </p>
+                {!it.cancelledReason && (
+                  <p className="mt-0.5 whitespace-normal break-words text-xs text-slate-400 dark:text-slate-500 transition-colors duration-200">
+                    Ordered {it.quantity} {(it as any).unit || ((it as any)?.source === 'limited' || order.orderKind === 'limited' ? 'pcs' : 'box')} · {dispatchedQty[it.productId] ?? 0} already sent · {remaining} remaining
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                {showNaToggle && (
+                {showNaToggle && !it.cancelledReason && (
                   <button
                     type="button"
                     onClick={() => setLocalNa(prev => ({ ...prev, [it.productId]: !isNa }))}
@@ -274,19 +318,21 @@ function DispatchForm({
                     <span className="text-[10px] font-bold">{isNa ? 'A' : 'NA'}</span>
                   </button>
                 )}
-                <Input
-                  type="number"
-                  min={0}
-                  max={remaining}
-                  value={isNa ? 0 : (draft[it.productId] ?? 0)}
-                  onChange={e => setDraft(prev => ({
-                    ...prev,
-                    [it.productId]: Math.min(remaining, Math.max(0, Number(e.target.value))),
-                  }))}
-                  onFocus={e => e.target.select()}
-                  disabled={busy || isNa}
-                  className="!w-20 !py-1 text-base sm:!text-xs"
-                />
+                {!it.cancelledReason && (
+                  <Input
+                    type="number"
+                    min={0}
+                    max={remaining}
+                    value={isNa ? 0 : (draft[it.productId] ?? 0)}
+                    onChange={e => setDraft(prev => ({
+                      ...prev,
+                      [it.productId]: Math.min(remaining, Math.max(0, Number(e.target.value))),
+                    }))}
+                    onFocus={e => e.target.select()}
+                    disabled={busy || isNa}
+                    className="!w-20 !py-1 text-base sm:!text-xs"
+                  />
+                )}
               </div>
             </div>
           )
@@ -467,10 +513,18 @@ function PendingCard({
                         <span className="font-semibold text-slate-700 dark:text-slate-300 transition-colors duration-200">
                           Dispatch {i + 1} · {format(d.dispatchedAt, 'dd MMM yyyy')}
                         </span>
-                        {d.receivedAt
-                          ? <span className="text-emerald-600 font-medium">✓ All confirmed</span>
-                          : <span className="text-amber-600 font-medium">⏳ Awaiting confirmation</span>
-                        }
+                        {(() => {
+                          const statuses = d.items.map(it => it.confirmedAt)
+                          const hasAwaiting = statuses.some(s => s === undefined || s === null || s === 0)
+                          const hasNotReceived = statuses.some(s => s === -1)
+                          if (hasAwaiting) {
+                            return <span className="text-amber-600 font-medium">⏳ Awaiting confirmation</span>
+                          }
+                          if (hasNotReceived) {
+                            return <span className="text-rose-600 dark:text-rose-400 font-semibold">❌ Not received by shop</span>
+                          }
+                          return <span className="text-emerald-600 font-medium">✓ All confirmed</span>
+                        })()}
                       </div>
                       {d.items.map(it => {
                         const originalItem = o.items.find(oi => oi.productId === it.productId)
@@ -480,10 +534,13 @@ function PendingCard({
                             <span>{it.name}{it.size ? ` · ${it.size}` : ''}</span>
                             <span className="flex items-center gap-2">
                               <span className="font-semibold tabular-nums">×{it.qty} {unit}</span>
-                              {it.confirmedAt
-                                ? <span className="text-emerald-600">✓ {format(it.confirmedAt, 'dd MMM')}</span>
-                                : <span className="text-amber-500">⏳</span>
-                              }
+                              {it.confirmedAt === -1 ? (
+                                <span className="text-rose-600 dark:text-rose-400 font-medium">❌ Not received</span>
+                              ) : it.confirmedAt && it.confirmedAt > 0 ? (
+                                <span className="text-emerald-600">✓ {format(it.confirmedAt, 'dd MMM')}</span>
+                              ) : (
+                                <span className="text-amber-500">⏳</span>
+                              )}
                             </span>
                           </div>
                         )
@@ -576,7 +633,9 @@ function PendingCard({
                       {it.name}{it.size ? ` · ${it.size}` : ''}
                     </span>
                     {it.notAvailable && (
-                      <Badge tone="neutral">Not Available</Badge>
+                      <Badge tone={it.cancelledReason ? "warning" : "neutral"}>
+                        {it.cancelledReason || "Not Available"}
+                      </Badge>
                     )}
                   </div>
                   <div className="flex items-center gap-4 shrink-0">
@@ -658,7 +717,10 @@ function isOrderOverdue(o: Order, today: Date): boolean {
 
   // If there are dispatches, check if there are remaining items to dispatch
   const totalQty = o.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
-  const dispatchedQty = dispatches.reduce((sum, d) => sum + d.items.reduce((s, it) => s + Number(it.qty || 0), 0), 0)
+  const dispatchedQty = dispatches.reduce((sum, d) => sum + d.items.reduce((s, it) => {
+    if (it.confirmedAt === -1) return s
+    return s + Number(it.qty || 0)
+  }, 0), 0)
   const hasRemainingItems = totalQty - dispatchedQty > 0
 
   if (hasRemainingItems) {
@@ -708,7 +770,13 @@ export function FactoryPendingPage() {
   const [filterStartDate, setFilterStartDateRaw] = useState<string>(saved.startDate ?? '')
   const [filterEndDate, setFilterEndDateRaw] = useState<string>(saved.endDate ?? '')
   const [filterOpen, setFilterOpen] = useState(
-    !!(saved.shop || saved.requestor || saved.kind || saved.startDate || saved.endDate)
+    !!(
+      (saved.shop && saved.shop !== 'all') ||
+      (saved.requestor && saved.requestor !== 'all') ||
+      (saved.kind && saved.kind !== 'all') ||
+      saved.startDate ||
+      saved.endDate
+    )
   )
   const [orderSearch, setOrderSearch] = useState('')
 
@@ -983,6 +1051,7 @@ export function FactoryPendingPage() {
                     <option value="Seva">Seva</option>
                     <option value="Seva Mart">Seva Mart</option>
                     <option value="Seva Super Store">Seva Super Store</option>
+                    <option value="Test Shop">Test Shop</option>
                   </select>
                 </div>
 

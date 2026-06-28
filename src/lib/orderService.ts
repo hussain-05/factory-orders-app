@@ -16,6 +16,7 @@ import {
   where,
   type DocumentSnapshot,
   type Firestore,
+  increment,
 } from 'firebase/firestore'
 import type { Order, OrderDispatch, OrderKind, OrderLineItem, OrderMilestones, OrderStatus } from '../types/models'
 
@@ -25,6 +26,119 @@ const counterRef = (firestore: Firestore) => doc(firestore, 'counters', 'orders'
 
 function nextOrderNumber(current: number): string {
   return String(current + 1).padStart(6, '0')
+}
+
+function prepareReconciliationUpdates(
+  pendingOrdersSnaps: Array<{ id: string; snap: DocumentSnapshot }>,
+  productSnaps: Map<string, DocumentSnapshot>,
+  newItems: OrderLineItem[],
+  newOrderNumber: string,
+  now: number
+): {
+  ordersToUpdate: Array<{ refId: string; updates: Record<string, unknown> }>
+  productsToUpdate: Array<{ refId: string; stock: number }>
+} {
+  const ordersToUpdate: Array<{ refId: string; updates: Record<string, unknown> }> = []
+  const productsToUpdate: Array<{ refId: string; stock: number }> = []
+  
+  // Track modified stocks locally during planning
+  const productStocks = new Map<string, number>()
+  for (const [productId, snap] of productSnaps) {
+    if (snap.exists()) {
+      productStocks.set(productId, Number(snap.data()?.stock ?? 0))
+    }
+  }
+
+  for (const { id, snap } of pendingOrdersSnaps) {
+    if (!snap.exists()) continue
+    const o = mapOrder(id, snap.data() as Record<string, unknown>)
+    if (o.status !== 'pending') continue
+
+    let orderChanged = false
+
+    // Tally confirmed and dispatched quantities
+    const confirmedQty: Record<string, number> = {}
+    const dispatchedQty: Record<string, number> = {}
+    for (const d of o.dispatches ?? []) {
+      for (const it of d.items) {
+        if (it.confirmedAt && it.confirmedAt > 0) {
+          confirmedQty[it.productId] = (confirmedQty[it.productId] ?? 0) + it.qty
+        }
+        if (it.confirmedAt !== -1) {
+          dispatchedQty[it.productId] = (dispatchedQty[it.productId] ?? 0) + it.qty
+        }
+      }
+    }
+
+    const updatedItems = o.items.map(it => {
+      const matchingNewItem = newItems.find(ni => ni.productId === it.productId)
+      if (matchingNewItem) {
+        const conf = confirmedQty[it.productId] ?? 0
+        const remaining = Math.max(it.quantity - conf, 0)
+        
+        if (remaining > 0 && !it.notAvailable) {
+          orderChanged = true
+          return {
+            ...it,
+            notAvailable: true,
+            cancelledReason: `Reordered in #${newOrderNumber}`
+          }
+        }
+      }
+      return it
+    })
+
+    if (orderChanged) {
+      // Restock limited stock items cancelled in the old order
+      for (const it of o.items) {
+        const matchingNewItem = newItems.find(ni => ni.productId === it.productId)
+        if (matchingNewItem) {
+          const conf = confirmedQty[it.productId] ?? 0
+          const cancelledQty = Math.max(it.quantity - conf, 0)
+          
+          if (cancelledQty > 0 && !it.notAvailable && (it.source === 'limited' || o.orderKind === 'limited')) {
+            const currentVal = productStocks.get(it.productId)
+            if (currentVal !== undefined) {
+              const newVal = currentVal + cancelledQty
+              productStocks.set(it.productId, newVal)
+              
+              // Add to updates list
+              const existingIdx = productsToUpdate.findIndex(p => p.refId === it.productId)
+              if (existingIdx !== -1) {
+                productsToUpdate[existingIdx].stock = newVal
+              } else {
+                productsToUpdate.push({ refId: it.productId, stock: newVal })
+              }
+            }
+          }
+        }
+      }
+
+      // Check if all items in this old order are now resolved
+      const allResolved = updatedItems.every(it => {
+        const conf = confirmedQty[it.productId] ?? 0
+        return it.notAvailable || conf >= it.quantity
+      })
+
+      const updates: Record<string, unknown> = {
+        items: updatedItems,
+        updatedAt: Timestamp.fromMillis(now)
+      }
+      if (allResolved) {
+        updates.status = 'completed'
+        updates.completedAt = Timestamp.fromMillis(now)
+        updates.closedBy = {
+          uid: 'system',
+          name: 'Auto-Cleanup System',
+          role: 'shop',
+          timestamp: now
+        }
+      }
+      ordersToUpdate.push({ refId: id, updates })
+    }
+  }
+
+  return { ordersToUpdate, productsToUpdate }
 }
 
 export async function createOrder(
@@ -41,6 +155,16 @@ export async function createOrder(
 ): Promise<{ orderNumber: string }> {
   if (input.items.length === 0) throw new Error('Add at least one line item.')
 
+  // Query pending orders OUTSIDE the transaction!
+  const qy = query(
+    collection(firestore, ordersCol),
+    where('shopUserId', '==', input.shopUserId),
+    where('shopName', '==', input.shopName),
+    where('status', '==', 'pending')
+  )
+  const snap = await getDocs(qy)
+  const pendingOrders = snap.docs.map(d => mapOrder(d.id, d.data() as Record<string, unknown>))
+
   if (input.orderKind === 'limited') {
     const qtyByProduct = new Map<string, { qty: number; label: string }>()
     for (const line of input.items) {
@@ -53,30 +177,66 @@ export async function createOrder(
     let orderNumber = ''
 
     await runTransaction(firestore, async (tx) => {
-      // Phase 1: all reads (counter + stock)
+      // Phase 1: All Reads (Counter, Product Stocks, Pending Orders)
       const counterSnap = await tx.get(counterRef(firestore))
-      const snapshots = new Map<string, { snap: DocumentSnapshot; qty: number; label: string }>()
+      
+      const stockSnaps = new Map<string, { snap: DocumentSnapshot; qty: number; label: string }>()
       for (const [productId, { qty, label }] of qtyByProduct) {
         const ref = doc(firestore, limitedCol, productId)
-        snapshots.set(productId, { snap: await tx.get(ref), qty, label })
+        stockSnaps.set(productId, { snap: await tx.get(ref), qty, label })
       }
 
-      // Phase 2: validate stock
-      for (const { snap, qty, label } of snapshots.values()) {
+      const pendingOrdersSnaps = []
+      for (const oldOrder of pendingOrders) {
+        const docRef = doc(firestore, ordersCol, oldOrder.id)
+        pendingOrdersSnaps.push({ id: oldOrder.id, snap: await tx.get(docRef) })
+      }
+
+      const limitedProductIdsToRead = new Set<string>()
+      for (const o of pendingOrders) {
+        for (const it of o.items) {
+          const matchingNewItem = input.items.find(ni => ni.productId === it.productId)
+          if (matchingNewItem && (it.source === 'limited' || o.orderKind === 'limited')) {
+            limitedProductIdsToRead.add(it.productId)
+          }
+        }
+      }
+
+      const reconciliationProductSnaps = new Map<string, DocumentSnapshot>()
+      for (const productId of limitedProductIdsToRead) {
+        const existing = stockSnaps.get(productId)
+        if (existing) {
+          reconciliationProductSnaps.set(productId, existing.snap)
+        } else {
+          const ref = doc(firestore, limitedCol, productId)
+          reconciliationProductSnaps.set(productId, await tx.get(ref))
+        }
+      }
+
+      // Phase 2: Validations
+      for (const { snap, qty, label } of stockSnaps.values()) {
         if (!snap.exists()) throw new Error(`Product missing: ${label}`)
         const stock = Number(snap.data()?.stock ?? 0)
         if (stock < qty) throw new Error(`Insufficient stock for "${label}".`)
       }
 
-      // Phase 3: all writes
+      // Phase 3: All Writes
       const lastNum = counterSnap.exists() ? Number(counterSnap.data()?.lastOrderNumber ?? 0) : 0
       orderNumber = nextOrderNumber(lastNum)
       tx.set(counterRef(firestore), { lastOrderNumber: lastNum + 1 }, { merge: true })
 
-      for (const { snap, qty } of snapshots.values()) {
-        tx.update(snap.ref, { stock: Number(snap.data()?.stock ?? 0) - qty, updatedAt: serverTimestamp() })
-      }
+      const now = Date.now()
 
+      // Calculate reconciliation updates
+      const recon = prepareReconciliationUpdates(
+        pendingOrdersSnaps,
+        reconciliationProductSnaps,
+        input.items,
+        orderNumber,
+        now
+      )
+
+      // Create new order
       tx.set(orderRef, {
         orderKind: input.orderKind,
         shopName: input.shopName,
@@ -93,19 +253,80 @@ export async function createOrder(
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       })
+
+      // Update new stock levels
+      for (const { snap, qty } of stockSnaps.values()) {
+        const reconUpdate = recon.productsToUpdate.find(p => p.refId === snap.id)
+        const baseNewStock = Number(snap.data()?.stock ?? 0) - qty
+        const finalStock = reconUpdate ? (reconUpdate.stock - qty) : baseNewStock
+        
+        tx.update(snap.ref, { stock: finalStock, updatedAt: serverTimestamp() })
+      }
+
+      // Update reconciliation stock levels for non-overlapping items
+      for (const p of recon.productsToUpdate) {
+        if (!stockSnaps.has(p.refId)) {
+          const productDocRef = doc(firestore, limitedCol, p.refId)
+          tx.update(productDocRef, { stock: p.stock, updatedAt: serverTimestamp() })
+        }
+      }
+
+      // Update resolved pending orders
+      for (const ord of recon.ordersToUpdate) {
+        const docRef = doc(firestore, ordersCol, ord.refId)
+        tx.update(docRef, ord.updates)
+      }
     })
     return { orderNumber }
   }
 
-  // Unlimited — use transaction for counter
+  // Unlimited
   let orderNumber = ''
   const orderRef = doc(collection(firestore, ordersCol))
 
   await runTransaction(firestore, async (tx) => {
+    // Phase 1: All Reads (Counter, Pending Orders, Reconciled stocks if applicable)
     const counterSnap = await tx.get(counterRef(firestore))
+
+    const pendingOrdersSnaps = []
+    for (const oldOrder of pendingOrders) {
+      const docRef = doc(firestore, ordersCol, oldOrder.id)
+      pendingOrdersSnaps.push({ id: oldOrder.id, snap: await tx.get(docRef) })
+    }
+
+    const limitedProductIdsToRead = new Set<string>()
+    for (const o of pendingOrders) {
+      for (const it of o.items) {
+        const matchingNewItem = input.items.find(ni => ni.productId === it.productId)
+        if (matchingNewItem && (it.source === 'limited' || o.orderKind === 'limited')) {
+          limitedProductIdsToRead.add(it.productId)
+        }
+      }
+    }
+
+    const reconciliationProductSnaps = new Map<string, DocumentSnapshot>()
+    for (const productId of limitedProductIdsToRead) {
+      const ref = doc(firestore, limitedCol, productId)
+      reconciliationProductSnaps.set(productId, await tx.get(ref))
+    }
+
+    // Phase 2: All Writes
     const lastNum = counterSnap.exists() ? Number(counterSnap.data()?.lastOrderNumber ?? 0) : 0
     orderNumber = nextOrderNumber(lastNum)
     tx.set(counterRef(firestore), { lastOrderNumber: lastNum + 1 }, { merge: true })
+
+    const now = Date.now()
+
+    // Calculate reconciliation updates
+    const recon = prepareReconciliationUpdates(
+      pendingOrdersSnaps,
+      reconciliationProductSnaps,
+      input.items,
+      orderNumber,
+      now
+    )
+
+    // Create new order
     tx.set(orderRef, {
       orderKind: input.orderKind,
       shopName: input.shopName,
@@ -122,6 +343,18 @@ export async function createOrder(
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
+
+    // Update reconciliation stock levels
+    for (const p of recon.productsToUpdate) {
+      const productDocRef = doc(firestore, limitedCol, p.refId)
+      tx.update(productDocRef, { stock: p.stock, updatedAt: serverTimestamp() })
+    }
+
+    // Update resolved pending orders
+    for (const ord of recon.ordersToUpdate) {
+      const docRef = doc(firestore, ordersCol, ord.refId)
+      tx.update(docRef, ord.updates)
+    }
   })
   return { orderNumber }
 }
@@ -283,6 +516,7 @@ function mapOrder(id: string, d: Record<string, unknown>): Order {
     createdByFactory: Boolean(d.createdByFactory),
     factoryCreatedByUid: typeof d.factoryCreatedByUid === 'string' ? d.factoryCreatedByUid : undefined,
     factoryCreatedByName: typeof d.factoryCreatedByName === 'string' ? d.factoryCreatedByName : undefined,
+    closedBy: d.closedBy ? (d.closedBy as any) : undefined,
     dispatches: Array.isArray(d.dispatches)
       ? (d.dispatches as Array<Record<string, unknown>>).map(disp => ({
           id: String(disp.id ?? ''),
@@ -530,6 +764,7 @@ export async function confirmDispatchItem(
   orderId: string,
   dispatchId: string,
   productId: string,
+  isMissing?: boolean,
 ): Promise<void> {
   const ref = doc(firestore, ordersCol, orderId)
   const now = Date.now()
@@ -543,10 +778,10 @@ export async function confirmDispatchItem(
       if (d.id !== dispatchId) return d
       const updatedItems = d.items.map(it =>
         it.productId === productId && !it.confirmedAt
-          ? { ...it, confirmedAt: now }
+          ? { ...it, confirmedAt: isMissing ? -1 : now }
           : it,
       )
-      const allItemsConfirmed = updatedItems.every(it => it.confirmedAt)
+      const allItemsConfirmed = updatedItems.every(it => it.confirmedAt !== null && it.confirmedAt !== undefined)
       return {
         ...d,
         items: updatedItems,
@@ -558,7 +793,7 @@ export async function confirmDispatchItem(
     const confirmedQty: Record<string, number> = {}
     for (const d of dispatches) {
       for (const it of d.items) {
-        if (it.confirmedAt) {
+        if (it.confirmedAt && it.confirmedAt > 0) {
           confirmedQty[it.productId] = (confirmedQty[it.productId] ?? 0) + it.qty
         }
       }
@@ -567,7 +802,9 @@ export async function confirmDispatchItem(
     const dispatchedQty: Record<string, number> = {}
     for (const d of dispatches) {
       for (const it of d.items) {
-        dispatchedQty[it.productId] = (dispatchedQty[it.productId] ?? 0) + it.qty
+        if (it.confirmedAt !== -1) {
+          dispatchedQty[it.productId] = (dispatchedQty[it.productId] ?? 0) + it.qty
+        }
       }
     }
 
@@ -720,4 +957,89 @@ export function subscribeAllOrdersForFactory(
     },
     (err) => onError?.(err),
   )
+}
+
+export async function closeOrderFromPortal(
+  firestore: Firestore,
+  orderId: string,
+  user: { uid: string; displayName: string; email: string },
+  role: 'shop' | 'factory'
+): Promise<void> {
+  const ref = doc(firestore, ordersCol, orderId)
+  const now = Date.now()
+
+  await runTransaction(firestore, async (tx) => {
+    const snap = await tx.get(ref)
+    if (!snap.exists()) throw new Error('Order not found')
+    const order = mapOrder(orderId, snap.data() as Record<string, unknown>)
+    if (order.status === 'completed') return
+
+    // 1. Tally confirmed quantities across dispatches
+    const confirmedQty: Record<string, number> = {}
+    const dispatches = (order.dispatches ?? []).map(d => {
+      const updatedItems = d.items.map(it => {
+        if (!it.confirmedAt) {
+          return { ...it, confirmedAt: -1 }
+        }
+        return it
+      })
+      
+      for (const it of updatedItems) {
+        if (it.confirmedAt && it.confirmedAt > 0) {
+          confirmedQty[it.productId] = (confirmedQty[it.productId] ?? 0) + it.qty
+        }
+      }
+      return {
+        ...d,
+        items: updatedItems,
+        receivedAt: d.receivedAt ?? now
+      }
+    })
+
+    // 2. Mark remaining items in order as notAvailable
+    const updatedItems = order.items.map(it => {
+      const conf = confirmedQty[it.productId] ?? 0
+      const remaining = Math.max(it.quantity - conf, 0)
+      if (remaining > 0) {
+        return {
+          ...it,
+          notAvailable: true,
+          cancelledReason: `Cancelled on order closure`
+        }
+      }
+      return it
+    })
+
+    // 3. For any limited products, restore the cancelled backlog to inventory stock
+    if (order.orderKind === 'limited' || order.items.some(it => it.source === 'limited')) {
+      for (const it of order.items) {
+        const conf = confirmedQty[it.productId] ?? 0
+        const cancelledQty = Math.max(it.quantity - conf, 0)
+        
+        if (cancelledQty > 0 && (it.source === 'limited' || order.orderKind === 'limited')) {
+          const productRef = doc(firestore, limitedCol, it.productId)
+          tx.update(productRef, {
+            stock: increment(cancelledQty),
+            updatedAt: now
+          })
+        }
+      }
+    }
+
+    // 4. Update the order object in Firestore
+    const updates: Record<string, unknown> = {
+      dispatches,
+      items: updatedItems,
+      status: 'completed',
+      completedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      closedBy: {
+        uid: user.uid,
+        name: user.displayName || user.email || 'Staff Member',
+        role,
+        timestamp: now
+      }
+    }
+    tx.update(ref, updates)
+  })
 }

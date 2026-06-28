@@ -187,7 +187,8 @@ export function ShopAvailablePage() {
       setPreviewOpen(false);
       showToast("Order submitted successfully!", "success");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not submit order.");
+      console.error("Order submission error details:", e);
+      setError(e instanceof Error ? `${e.name}: ${e.message}` : "Could not submit order.");
       showToast("Could not submit order.", "error");
     } finally {
       setBusy(false);

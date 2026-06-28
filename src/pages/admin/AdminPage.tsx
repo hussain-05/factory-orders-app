@@ -18,7 +18,7 @@ import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
 
-const SHOPS: ShopName[] = ['Seva', 'Seva Mart', 'Seva Super Store']
+const SHOPS: ShopName[] = ['Seva', 'Seva Mart', 'Seva Super Store', 'Test Shop']
 
 export function AdminPage() {
   const [emails, setEmails] = useState<AllowedEmail[]>([])

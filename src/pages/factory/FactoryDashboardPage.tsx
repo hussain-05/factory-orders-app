@@ -14,7 +14,7 @@ import { formatDateTime } from '../../utils/format'
 
 // ─── helpers ──────────────────────────────────────────────────────────────
 
-const SHOPS = ['Seva', 'Seva Mart', 'Seva Super Store'] as const
+const SHOPS = ['Seva', 'Seva Mart', 'Seva Super Store', 'Test Shop'] as const
 
 function lastActivityLabel(o: Order): { label: string; tone: 'success' | 'neutral' | 'warning' } {
   if (o.status === 'completed') return { label: 'Completed', tone: 'success' }
@@ -26,7 +26,11 @@ function lastActivityLabel(o: Order): { label: string; tone: 'success' | 'neutra
 function dispQtyByProduct(dispatches: OrderDispatch[]): Record<string, number> {
   const map: Record<string, number> = {}
   for (const d of dispatches) {
-    for (const it of d.items) map[it.productId] = (map[it.productId] ?? 0) + it.qty
+    for (const it of d.items) {
+      if (it.confirmedAt !== -1) {
+        map[it.productId] = (map[it.productId] ?? 0) + it.qty
+      }
+    }
   }
   return map
 }
@@ -35,9 +39,11 @@ type DispatchStage = 'new' | 'partial' | 'awaiting'
 function orderDispatchStage(o: Order): DispatchStage {
   const dispatches = o.dispatches ?? []
   if (dispatches.length === 0) return 'new'
-  const dispatched = dispQtyByProduct(dispatches)
-  const allSent = o.items.every(it => (dispatched[it.productId] ?? 0) >= it.quantity)
-  return allSent ? 'awaiting' : 'partial'
+
+  const hasActiveDispatch = dispatches.some(d => !d.receivedAt)
+  if (hasActiveDispatch) return 'awaiting'
+
+  return 'partial'
 }
 
 interface OutstandingItem {
@@ -390,7 +396,10 @@ function isOrderOverdue(o: Order, today: Date): boolean {
 
   // If there are dispatches, check if there are remaining items to dispatch
   const totalQty = o.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
-  const dispatchedQty = dispatches.reduce((sum, d) => sum + d.items.reduce((s, it) => s + Number(it.qty || 0), 0), 0)
+  const dispatchedQty = dispatches.reduce((sum, d) => sum + d.items.reduce((s, it) => {
+    if (it.confirmedAt === -1) return s
+    return s + Number(it.qty || 0)
+  }, 0), 0)
   const hasRemainingItems = totalQty - dispatchedQty > 0
 
   if (hasRemainingItems) {
