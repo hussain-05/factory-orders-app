@@ -939,7 +939,7 @@ function isOrderOverdue(o: Order, today: Date): boolean {
                 <li key={p.id}>
                   <button
                     type="button"
-                    onClick={() => nav('/factory/products')}
+                    onClick={() => nav('/factory/products', { state: { searchQuery: p.name } })}
                     className="flex w-full items-center justify-between gap-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg px-1 -mx-1"
                   >
                     <div className="min-w-0">
