@@ -1,20 +1,24 @@
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, BarChart3, Clock, PackageCheck, Repeat, TrendingUp, Truck } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { motion } from 'framer-motion'
 import { addMonths, differenceInCalendarDays, format, startOfMonth } from 'date-fns'
-import { BarChart3, Clock, PackageCheck, Repeat, TrendingUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAdminMode } from '../../contexts/AdminModeContext'
+import { useOrderDraft } from '../../contexts/OrderDraftContext'
 import { db } from '../../lib/firebase'
 import { subscribeOrdersForShop } from '../../lib/orderService'
+import { subscribeLimitedProducts } from '../../lib/productService'
 import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
 import { StatCardsSkeleton } from '../../components/ui/Skeleton'
 import { EmptyState } from '../../components/ui/EmptyState'
-import type { Order, OrderDispatch } from '../../types/models'
+import { useToast } from '../../contexts/ToastContext'
+import { triggerHaptic } from '../../utils/haptic'
+import type { Order, OrderDispatch, LimitedProduct } from '../../types/models'
 import { formatDateTime } from '../../utils/format'
+
 
 // ─── helpers ──────────────────────────────────────────────────────────────
 
@@ -41,7 +45,7 @@ function buildMonthlyTrend(orders: Order[]) {
 }
 
 function topProducts(orders: Order[], limit = 8) {
-  const map = new Map<string, { name: string; size?: string; totalQty: number; orderCount: number }>()
+  const map = new Map<string, { productId: string; name: string; size?: string; totalQty: number; orderCount: number }>()
   for (const o of orders) {
     for (const item of o.items) {
       const key = item.productId
@@ -51,6 +55,7 @@ function topProducts(orders: Order[], limit = 8) {
         existing.orderCount += 1
       } else {
         map.set(key, {
+          productId: key,
           name: item.name,
           size: item.size,
           totalQty: item.quantity,
@@ -195,31 +200,62 @@ export function ShopDashboardPage() {
   const { shopView } = useAdminMode()
   const effectiveShopName = shopView
   const nav = useNavigate()
+  const { showToast } = useToast()
+  const { setStandardQty, setLimitedQty } = useOrderDraft()
   const [orders, setOrders] = useState<Order[]>([])
+  const [limitedProducts, setLimitedProducts] = useState<LimitedProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
 
-  // Real-time subscription — re-subscribes whenever the active shop changes
+  // Real-time subscriptions — re-subscribes whenever the active shop changes
   useEffect(() => {
     if (!db || !user) return
     setLoading(true)
     setError(null)
-    const unsub = subscribeOrdersForShop(
+
+    let ordersLoaded = false
+    let productsLoaded = false
+
+    const checkDone = () => {
+      if (ordersLoaded && productsLoaded) {
+        setLoading(false)
+        setTimeout(() => setMounted(true), 100)
+      }
+    }
+
+    const unsubOrders = subscribeOrdersForShop(
       db,
       effectiveShopName,
       (rows) => {
         setOrders(rows)
-        setLoading(false)
-        setTimeout(() => setMounted(true), 100)
+        ordersLoaded = true
+        checkDone()
       },
       () => {
         setError('Could not load dashboard data.')
         setLoading(false)
       },
     )
-    return unsub
+
+    const unsubProducts = subscribeLimitedProducts(
+      db,
+      (rows) => {
+        setLimitedProducts(rows)
+        productsLoaded = true
+        checkDone()
+      },
+      () => {
+        setError('Could not load dashboard data.')
+        setLoading(false)
+      }
+    )
+
+    return () => {
+      unsubOrders()
+      unsubProducts()
+    }
   }, [user, effectiveShopName])
 
   // ── derived metrics ──────────────────────────────────────────────────────
@@ -234,7 +270,6 @@ export function ShopDashboardPage() {
     awaiting: pending.filter(o => orderDispatchStage(o) === 'awaiting').length,
   }), [pending])
 
-  const ordersAwaitingConfirmation = useMemo(() => orders.filter(o => o.status === 'pending' && (o.dispatches ?? []).some(d => d.items.some(it => !it.confirmedAt))).length, [orders])
   const pendingConfirmations = useMemo(() =>
     pending.reduce((count, o) =>
       count + (o.dispatches ?? []).reduce((c, d) =>
@@ -281,10 +316,99 @@ export function ShopDashboardPage() {
   const trend = useMemo(() => buildMonthlyTrend(orders), [orders])
   const trendMax = useMemo(() => Math.max(...trend.map(m => m.count), 1), [trend])
 
+  // Factory Stock Scarcity Alerts (FOMO Board) - cross-reference shop frequent products
+  const scarceProducts = useMemo(() => {
+    const freq = topProducts(orders, 8)
+    return limitedProducts.filter(lp => {
+      const isFreq = freq.some(fp => fp.productId === lp.id || fp.name.trim().toLowerCase() === lp.name.trim().toLowerCase())
+      return isFreq && lp.stock <= 10
+    })
+  }, [orders, limitedProducts])
+
+  // Active Dispatches (In-Transit Tracker)
+  const inTransitDispatches = useMemo(() => {
+    const list: Array<{
+      orderId: string
+      orderNumber?: string
+      dispatchIndex: number
+      dispatchedAt: number
+      itemCount: number
+    }> = []
+    for (const o of pending) {
+      const dispatches = o.dispatches ?? []
+      dispatches.forEach((d, idx) => {
+        const hasUnconfirmed = d.items.some(it => !it.confirmedAt)
+        if (d.dispatchedAt && hasUnconfirmed) {
+          list.push({
+            orderId: o.id,
+            orderNumber: o.orderNumber,
+            dispatchIndex: idx,
+            dispatchedAt: d.dispatchedAt,
+            itemCount: d.items.filter(it => !it.confirmedAt).length,
+          })
+        }
+      })
+    }
+    return list.sort((a, b) => b.dispatchedAt - a.dispatchedAt)
+  }, [pending])
+
+  // Smart Reorder Engine (Auto-Replenish Recommendation) — Checks top 3 products not ordered in last 7 days
+  const smartRecommendations = useMemo(() => {
+    const top3 = topProducts(orders, 3)
+    const now = Date.now()
+    const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000
+
+    const recommendations: Array<{
+      productId: string
+      name: string
+      size?: string
+      lastOrderedAt: number | null
+      daysSinceLastOrder: number | null
+    }> = []
+
+    for (const tp of top3) {
+      let latestTime: number | null = null
+      for (const o of orders) {
+        const hasProduct = o.items.some(it => it.productId === tp.productId)
+        if (hasProduct && o.createdAt) {
+          if (latestTime === null || o.createdAt > latestTime) {
+            latestTime = o.createdAt
+          }
+        }
+      }
+
+      const daysSince = latestTime ? differenceInCalendarDays(new Date(), new Date(latestTime)) : null
+
+      if (latestTime === null || latestTime < sevenDaysAgo) {
+        recommendations.push({
+          productId: tp.productId,
+          name: tp.name,
+          size: tp.size,
+          lastOrderedAt: latestTime,
+          daysSinceLastOrder: daysSince,
+        })
+      }
+    }
+    return recommendations
+  }, [orders])
+
+  const handleReorder = (productId: string, name: string, isLimited: boolean) => {
+    triggerHaptic('light')
+    if (isLimited) {
+      setLimitedQty(productId, 1)
+      showToast(`Added ${name} to limited stock order draft!`, 'success')
+      nav('/shop/available')
+    } else {
+      setStandardQty(productId, 1)
+      showToast(`Added ${name} to standard catalogue draft!`, 'success')
+      nav('/shop/new-order')
+    }
+  }
+
   // ── render ───────────────────────────────────────────────────────────────
 
   if (loading) {
-    return <StatCardsSkeleton count={4} />
+    return <StatCardsSkeleton count={5} />
   }
 
   return (
@@ -322,8 +446,181 @@ export function ShopDashboardPage() {
         </div>
       )}
 
+      {/* Proactive Actions & Alerts */}
+      {(scarceProducts.length > 0 || inTransitDispatches.length > 0 || smartRecommendations.length > 0) && (
+        <div className="space-y-6">
+          {/* FOMO Stock Scarcity alerts */}
+          {scarceProducts.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-3"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-rose-500 dark:text-rose-400 transition-colors duration-200">
+                  Factory Stock Scarcity Alerts
+                </p>
+                {scarceProducts.length > 2 && (
+                  <span className="text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 font-semibold px-2 py-0.5 rounded-full">
+                    {scarceProducts.length} items
+                  </span>
+                )}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {scarceProducts.slice(0, 2).map(p => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => nav('/shop/available', { state: { searchQuery: p.name } })}
+                    className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50/50 p-4 text-left dark:border-rose-900/30 dark:bg-rose-950/20 transition hover:shadow-md hover:ring-1 hover:ring-rose-300 dark:hover:ring-rose-800/50 w-full"
+                  >
+                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600 dark:text-rose-400 animate-pulse" />
+                    <div>
+                      <p className="text-sm font-semibold text-rose-900 dark:text-rose-200">
+                        Only {p.stock} left in factory
+                      </p>
+                      <p className="mt-0.5 text-xs text-rose-700 dark:text-rose-400">
+                        {p.name} {p.size ? `(${p.size})` : ''}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {scarceProducts.length > 2 && (
+                <button
+                  type="button"
+                  onClick={() => nav('/shop/available')}
+                  className="w-full text-center text-xs font-semibold text-rose-700 dark:text-rose-400 hover:underline py-1 transition-colors"
+                >
+                  + {scarceProducts.length - 2} more low-stock alert{scarceProducts.length - 2 === 1 ? '' : 's'}. View & restock all →
+                </button>
+              )}
+            </motion.div>
+          )}
+
+          {/* Active Dispatches */}
+          {inTransitDispatches.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Card className="p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 before:block before:h-3 before:w-0.5 before:rounded-full before:bg-amber-500 dark:before:bg-amber-400 transition-colors duration-200">
+                    Active Dispatches (In-Transit)
+                  </p>
+                  <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400 transition-colors duration-200">
+                    {inTransitDispatches.length} shipment{inTransitDispatches.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  {inTransitDispatches.slice(0, 4).map(d => (
+                    <div
+                      key={`${d.orderId}-${d.dispatchIndex}`}
+                      className="flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800/50 dark:bg-slate-900/40 transition hover:shadow-sm hover:ring-1 hover:ring-amber-500/20"
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Truck className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400 shrink-0 animate-pulse" />
+                          <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                            {d.orderNumber ? `#${d.orderNumber}` : 'Shipment'}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 transition-colors duration-200">
+                          Sent {format(d.dispatchedAt, 'dd MMM, HH:mm')}
+                        </p>
+                        <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300 transition-colors duration-200">
+                          <span className="font-bold text-amber-600 dark:text-amber-500">{d.itemCount}</span> items
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => nav('/shop/history', { state: { openId: d.orderId, filterAwaiting: true } })}
+                        className="mt-3 w-full rounded-lg bg-amber-600 dark:bg-amber-500 py-1.5 text-center text-[10px] font-semibold text-white shadow-sm hover:opacity-90 transition shrink-0"
+                      >
+                        Confirm Receipt
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {inTransitDispatches.length > 4 && (
+                  <div className="mt-4 border-t border-slate-100 dark:border-slate-800/50 pt-3 text-center">
+                    <button
+                      type="button"
+                      onClick={() => nav('/shop/history', { state: { filterAwaiting: true } })}
+                      className="text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline transition-colors"
+                    >
+                      + {inTransitDispatches.length - 4} more shipment{inTransitDispatches.length - 4 === 1 ? '' : 's'} in transit. View & confirm all →
+                    </button>
+                  </div>
+                )}
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Smart Reorder Engine */}
+          {smartRecommendations.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-3"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-500 dark:text-emerald-400 transition-colors duration-200">
+                Smart Reorder Recommendations
+              </p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {smartRecommendations.map(rec => {
+                  const isLimited = limitedProducts.some(lp => lp.id === rec.productId);
+                  return (
+                    <div
+                      key={rec.productId}
+                      className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-100 bg-white dark:border-slate-800/50 dark:bg-slate-900 p-4 shadow-sm transition-colors duration-200"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                            <Repeat className="h-4 w-4" />
+                          </div>
+                          <Badge tone={isLimited ? 'warning' : 'neutral'}>
+                            {isLimited ? 'Limited' : 'Catalogue'}
+                          </Badge>
+                        </div>
+                        <div className="mt-3">
+                          <p className="text-sm font-semibold text-slate-950 dark:text-slate-50 line-clamp-1">
+                            {rec.name}
+                          </p>
+                          {rec.size && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                              Size: {rec.size}
+                            </p>
+                          )}
+                          <p className="mt-2 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            {rec.daysSinceLastOrder !== null
+                              ? `It has been ${rec.daysSinceLastOrder} days since your last order of this product.`
+                              : 'You order this frequently but haven\'t ordered it recently.'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleReorder(rec.productId, rec.name, isLimited)}
+                        className="w-full rounded-xl bg-emerald-600 dark:bg-emerald-500 py-2 text-center text-xs font-semibold text-white shadow-sm hover:opacity-90 transition"
+                      >
+                        Reorder Now
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </div>
+      )}
+
       {/* ── Stat cards ── */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5 items-stretch">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 items-stretch">
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
           <StatCard
             label="Last order"
@@ -335,16 +632,6 @@ export function ShopDashboardPage() {
           />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.06, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
-          <StatCard
-            label="Awaiting confirmation"
-            value={ordersAwaitingConfirmation}
-            sub="Dispatched orders waiting for your confirmation"
-            icon={<PackageCheck className="h-5 w-5" />}
-            tone={ordersAwaitingConfirmation > 0 ? 'amber' : 'sky'}
-            onClick={() => nav('/shop/history', { state: { filterAwaiting: true } })}
-          />
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.12, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
           <StatCard
             label="Active orders"
             value={pending.length}
@@ -360,7 +647,7 @@ export function ShopDashboardPage() {
             onClick={() => nav('/shop/history')}
           />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.18, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.12, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
           <StatCard
             label="Avg delivery time"
             value={avgLead != null ? `${avgLead}d` : '—'}
@@ -369,7 +656,7 @@ export function ShopDashboardPage() {
             tone="emerald"
           />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.24, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.18, ease: [0.25, 0.1, 0.25, 1] }} className="flex w-full">
           <StatCard
             label="Placed this month"
             value={placedThisMonth}
