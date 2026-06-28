@@ -569,8 +569,6 @@ export function FactoryOrderHistoryPage() {
                   await deleteOrder(db, deleteTarget.id)
                   setDeleteTarget(null)
                   showToast("Order deleted successfully!", "success")
-                  // Add a short delay before reload so they can see the toast
-                  setTimeout(() => window.location.reload(), 1000)
                 } catch (e) {
                   setDeleteTarget(null)
                   showToast("Failed to delete order.", "error")
