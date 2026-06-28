@@ -161,138 +161,192 @@ export function FactoryOrderHistoryPage() {
 
       {/* ── Search + Filter bar ── */}
       <div className="sticky top-[104px] z-20 -mx-4 mb-4 border-b border-slate-200/60 bg-slate-50/80 px-4 py-3 backdrop-blur-sm dark:border-slate-800/60 dark:bg-slate-950/80 sm:-mx-6 sm:px-6">
-      <div className="rounded-xl border-2 border-slate-300 dark:border-slate-700/50 bg-slate-50/80 dark:bg-slate-900/80 transition-colors duration-200 shadow-sm">
-        <div className="flex divide-x divide-slate-200 dark:divide-slate-800/50 transition-colors duration-200">
+        <div className="space-y-3">
+          <div className="flex gap-2 items-center">
+            <div className="relative flex-1 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800/50 dark:bg-slate-900/60 transition-colors duration-200">
+              {loading ? (
+                <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 dark:border-slate-700/50 border-t-slate-600" />
+              ) : (
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+              )}
+              <input
+                type="text"
+                placeholder="Search orders, shop, product…"
+                aria-label="Search orders"
+                value={orderSearch}
+                onChange={e => setOrderSearch(e.target.value)}
+                className="w-full bg-transparent py-2.5 pl-10 pr-10 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none transition-colors duration-200"
+              />
+              {orderSearch && (
+                <button
+                  type="button"
+                  onClick={() => setOrderSearch('')}
+                  aria-label="Clear search"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
 
-          {/* Filter toggle — wider */}
-          <button
-            type="button"
-            onClick={() => setFilterOpen(!filterOpen)}
-            className="flex flex-[2] items-center justify-between px-4 py-3 text-left"
-          >
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400 dark:text-slate-500 transition-colors duration-200" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-300 transition-colors duration-200">Filters</span>
+            <button
+              type="button"
+              onClick={() => setFilterOpen(!filterOpen)}
+              className={`flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-xs font-semibold shadow-sm transition duration-200 ${
+                filterOpen || hasActiveFilters
+                  ? 'border-emerald-600/30 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-950/20 dark:text-emerald-400'
+                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800/50 dark:bg-slate-900 dark:text-slate-300'
+              }`}
+            >
+              <Filter className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Filters</span>
               {hasActiveFilters && (
-                <span className="rounded-full bg-slate-900 px-1.5 py-0.5 text-xs font-semibold text-white leading-none">
+                <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white dark:bg-emerald-500 shrink-0">
                   {[filterShop !== 'all', filterRequestor !== 'all', filterKind !== 'all', filterStartDate !== '', filterEndDate !== ''].filter(Boolean).length}
                 </span>
               )}
-            </div>
-            <ChevronDown className={`h-4 w-4 text-slate-400 dark:text-slate-500 transition-transform ${filterOpen ? 'rotate-180' : ''} transition-colors duration-200`} />
-          </button>
-
-          {/* Full-text search */}
-          <div className="relative flex flex-1 items-center px-3">
-            {loading
-              ? <div className="pointer-events-none absolute left-6 h-4 w-4 animate-spin rounded-full border-2 border-slate-300 dark:border-slate-700/50 border-t-slate-600" />
-              : <Search className="pointer-events-none absolute left-6 h-4 w-4 text-slate-400 dark:text-slate-500 transition-colors duration-200" />
-            }
-            <input
-              type="text"
-              placeholder="Search orders, shop, product…"
-              aria-label="Search orders"
-              value={orderSearch}
-              onChange={e => setOrderSearch(e.target.value)}
-              className="w-full bg-transparent py-3 pl-7 pr-7 text-base sm:text-sm text-slate-700 dark:text-slate-300 placeholder-slate-400 focus:outline-none transition-colors duration-200"
-            />
-            {orderSearch && (
-              <button
-                type="button"
-                onClick={() => setOrderSearch('')}
-                aria-label="Clear search"
-                className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+            </button>
           </div>
+
+          <AnimatePresence>
+            {filterOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className="rounded-xl border border-slate-100 bg-white dark:border-slate-800/60 dark:bg-slate-900/80 backdrop-blur-md p-4 shadow-md transition duration-200 space-y-4"
+              >
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+                  {/* Shop filter */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      Shop
+                    </label>
+                    <select
+                      value={filterShop}
+                      onChange={e => setFilterShop(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white py-1.5 px-2.5 text-xs font-semibold text-slate-700 focus:outline-none dark:border-slate-800/50 dark:bg-slate-900 dark:text-slate-300 transition-colors duration-200"
+                    >
+                      <option value="all">All Shops</option>
+                      <option value="Seva">Seva</option>
+                      <option value="Seva Mart">Seva Mart</option>
+                      <option value="Seva Super Store">Seva Super Store</option>
+                    </select>
+                  </div>
+
+                  {/* Requestor filter */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      Requestor
+                    </label>
+                    <select
+                      value={filterRequestor}
+                      onChange={e => setFilterRequestor(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white py-1.5 px-2.5 text-xs font-semibold text-slate-700 focus:outline-none dark:border-slate-800/50 dark:bg-slate-900 dark:text-slate-300 transition-colors duration-200"
+                    >
+                      <option value="all">All Requestors</option>
+                      {requestorOptions.map(name => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Order type filter */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      Order Type
+                    </label>
+                    <select
+                      value={filterKind}
+                      onChange={e => setFilterKind(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white py-1.5 px-2.5 text-xs font-semibold text-slate-700 focus:outline-none dark:border-slate-800/50 dark:bg-slate-900 dark:text-slate-300 transition-colors duration-200"
+                    >
+                      <option value="all">All Types</option>
+                      <option value="unlimited">Standard</option>
+                      <option value="limited">Limited</option>
+                    </select>
+                  </div>
+
+                  {/* Date range filter */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      Date Range
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="date"
+                        value={filterStartDate}
+                        onChange={e => setFilterStartDate(e.target.value)}
+                        aria-label="Start date"
+                        className="w-full rounded-lg border border-slate-200 bg-white py-1 px-1.5 text-[11px] font-medium text-slate-600 focus:outline-none dark:border-slate-800/50 dark:bg-slate-900 dark:text-slate-300 transition-colors duration-200"
+                      />
+                      <span className="text-[10px] text-slate-400 uppercase font-bold shrink-0">to</span>
+                      <input
+                        type="date"
+                        value={filterEndDate}
+                        onChange={e => setFilterEndDate(e.target.value)}
+                        aria-label="End date"
+                        className="w-full rounded-lg border border-slate-200 bg-white py-1 px-1.5 text-[11px] font-medium text-slate-600 focus:outline-none dark:border-slate-800/50 dark:bg-slate-900 dark:text-slate-300 transition-colors duration-200"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tags & Clear all actions */}
+                <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/50 pt-2.5">
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">
+                      Active filters
+                    </span>
+                    {filterShop !== 'all' && (
+                      <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                        Shop: {filterShop}
+                        <button type="button" onClick={() => setFilterShop('all')} className="text-slate-400 hover:text-slate-600"><X className="h-2.5 w-2.5" /></button>
+                      </span>
+                    )}
+                    {filterRequestor !== 'all' && (
+                      <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                        Req: {filterRequestor}
+                        <button type="button" onClick={() => setFilterRequestor('all')} className="text-slate-400 hover:text-slate-600"><X className="h-2.5 w-2.5" /></button>
+                      </span>
+                    )}
+                    {filterKind !== 'all' && (
+                      <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                        Type: {filterKind === 'unlimited' ? 'Standard' : 'Limited'}
+                        <button type="button" onClick={() => setFilterKind('all')} className="text-slate-400 hover:text-slate-600"><X className="h-2.5 w-2.5" /></button>
+                      </span>
+                    )}
+                    {filterStartDate && (
+                      <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                        From: {filterStartDate}
+                        <button type="button" onClick={() => setFilterStartDate('')} className="text-slate-400 hover:text-slate-600"><X className="h-2.5 w-2.5" /></button>
+                      </span>
+                    )}
+                    {filterEndDate && (
+                      <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                        To: {filterEndDate}
+                        <button type="button" onClick={() => setFilterEndDate('')} className="text-slate-400 hover:text-slate-600"><X className="h-2.5 w-2.5" /></button>
+                      </span>
+                    )}
+                    {!hasActiveFilters && (
+                      <span className="text-[10px] font-medium text-slate-400 italic">None</span>
+                    )}
+                  </div>
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      onClick={() => { setFilterShop('all'); setFilterRequestor('all'); setFilterKind('all'); setFilterStartDate(''); setFilterEndDate('') }}
+                      className="text-xs font-semibold text-rose-600 hover:text-rose-700 transition-colors"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-
-        {filterOpen && (
-          <div className="border-t border-slate-200 dark:border-slate-800/50 px-4 pb-4 pt-3 space-y-3 transition-colors duration-200">
-            <div className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors duration-200">Shop</span>
-              <div className="flex flex-wrap gap-1.5">
-                {(['all', 'Seva', 'Seva Mart', 'Seva Super Store'] as const).map(s => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setFilterShop(s)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${ filterShop === s ? 'bg-slate-900 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 ring-1 ring-slate-200 hover:bg-slate-100' }`}
-                  >
-                    {s === 'all' ? 'All' : s}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors duration-200">Requestor</span>
-              <select
-                value={filterRequestor}
-                onChange={e => setFilterRequestor(e.target.value)}
-                aria-label="Filter by requestor"
-                className="rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
-              >
-                <option value="all">All</option>
-                {requestorOptions.map(name => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors duration-200">Type</span>
-              <div className="flex gap-1.5">
-                {([['all', 'All'], ['unlimited', 'Standard'], ['limited', 'Limited']] as [string, string][]).map(([val, label]) => (
-                  <button
-                    key={val}
-                    type="button"
-                    onClick={() => setFilterKind(val)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${ filterKind === val ? 'bg-slate-900 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 ring-1 ring-slate-200 hover:bg-slate-100' }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors duration-200">Date Range</span>
-              <div className="flex items-center gap-2 flex-wrap">
-                <input
-                  type="date"
-                  value={filterStartDate}
-                  onChange={e => setFilterStartDate(e.target.value)}
-                  aria-label="Start date"
-                  className="w-full sm:w-auto rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-base sm:text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                />
-                <span className="text-slate-400 dark:text-slate-500 transition-colors duration-200">to</span>
-                <input
-                  type="date"
-                  value={filterEndDate}
-                  onChange={e => setFilterEndDate(e.target.value)}
-                  aria-label="End date"
-                  className="w-full sm:w-auto rounded-lg border border-slate-200 dark:border-slate-800/50 bg-white dark:bg-slate-900 transition-colors duration-200 px-2.5 py-1 text-base sm:text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                />
-              </div>
-            </div>
-
-            {hasActiveFilters && (
-              <div className="flex justify-end pt-1">
-                <button
-                  type="button"
-                  onClick={() => { setFilterShop('all'); setFilterRequestor('all'); setFilterKind('all'); setFilterStartDate(''); setFilterEndDate('') }}
-                  className="text-xs font-medium text-rose-600 hover:text-rose-700"
-                >
-                  Clear all
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
       </div>
 
       {error ? (
